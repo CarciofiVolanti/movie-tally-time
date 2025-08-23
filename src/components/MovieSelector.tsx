@@ -188,7 +188,7 @@ export const MovieSelector = () => {
                 <MovieCard
                   key={movie.movieTitle}
                   movie={movie}
-                  people={people}
+                  people={presentPeople}
                   onRatingChange={(personId, rating) => 
                     updateRating(movie.movieTitle, personId, rating)
                   }

@@ -67,12 +67,8 @@ export const MovieCard = ({
                 <span className="text-sm">{person.name}</span>
                 <StarRating
                   rating={movie.ratings[person.id] || 0}
-                  onRatingChange={
-                    currentPersonId === person.id 
-                      ? (rating) => onRatingChange?.(person.id, rating)
-                      : undefined
-                  }
-                  readonly={currentPersonId !== person.id}
+                  onRatingChange={(rating) => onRatingChange?.(person.id, rating)}
+                  readonly={false}
                   size="sm"
                 />
               </div>
