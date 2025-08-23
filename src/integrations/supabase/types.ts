@@ -14,7 +14,140 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      movie_proposals: {
+        Row: {
+          created_at: string
+          id: string
+          movie_title: string
+          person_id: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          movie_title: string
+          person_id: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          movie_title?: string
+          person_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movie_proposals_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "session_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movie_proposals_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "movie_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      movie_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          person_id: string
+          proposal_id: string
+          rating: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          person_id: string
+          proposal_id: string
+          rating: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          person_id?: string
+          proposal_id?: string
+          rating?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movie_ratings_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "session_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movie_ratings_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "movie_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      movie_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      session_people: {
+        Row: {
+          created_at: string
+          id: string
+          is_present: boolean
+          name: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_present?: boolean
+          name: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_present?: boolean
+          name?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_people_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "movie_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

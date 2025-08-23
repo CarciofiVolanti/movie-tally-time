@@ -8,79 +8,271 @@ import { PersonCard, Person } from "./PersonCard";
 import { MovieCard, MovieRating } from "./MovieCard";
 import { Users, Film, Trophy, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const MovieSelector = () => {
   const [people, setPeople] = useState<Person[]>([]);
   const [newPersonName, setNewPersonName] = useState("");
   const [movieRatings, setMovieRatings] = useState<MovieRating[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const addPerson = () => {
-    if (newPersonName.trim()) {
+  // Initialize session and load data
+  useEffect(() => {
+    initializeSession();
+  }, []);
+
+  const initializeSession = async () => {
+    try {
+      // Create a new session for this movie selection
+      const { data: session, error } = await supabase
+        .from('movie_sessions')
+        .insert([{ name: `Movie Session ${new Date().toLocaleDateString()}` }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setSessionId(session.id);
+      await loadSessionData(session.id);
+    } catch (error) {
+      console.error('Error initializing session:', error);
+      toast({
+        title: "Error",
+        description: "Failed to initialize session. Please refresh the page.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSessionData = async (sessionId: string) => {
+    try {
+      // Load people
+      const { data: peopleData, error: peopleError } = await supabase
+        .from('session_people')
+        .select('*')
+        .eq('session_id', sessionId);
+
+      if (peopleError) throw peopleError;
+
+      // Load movie proposals  
+      const { data: proposalsData, error: proposalsError } = await supabase
+        .from('movie_proposals')
+        .select('*')
+        .eq('session_id', sessionId);
+
+      if (proposalsError) throw proposalsError;
+
+      // Load ratings
+      const { data: ratingsData, error: ratingsError } = await supabase
+        .from('movie_ratings')
+        .select('*');
+
+      if (ratingsError) throw ratingsError;
+
+      // Transform data to match existing interface
+      const transformedPeople: Person[] = peopleData.map(person => ({
+        id: person.id,
+        name: person.name,
+        isPresent: person.is_present,
+        movies: proposalsData
+          .filter(p => p.person_id === person.id)
+          .map(p => p.movie_title)
+      }));
+
+      const transformedRatings: MovieRating[] = proposalsData.map(proposal => {
+        const proposer = peopleData.find(p => p.id === proposal.person_id);
+        const ratings: Record<string, number> = {};
+        
+        ratingsData
+          .filter(r => r.proposal_id === proposal.id)
+          .forEach(rating => {
+            ratings[rating.person_id] = rating.rating;
+          });
+
+        return {
+          movieTitle: proposal.movie_title,
+          proposedBy: proposer?.name || 'Unknown',
+          ratings
+        };
+      });
+
+      setPeople(transformedPeople);
+      setMovieRatings(transformedRatings);
+    } catch (error) {
+      console.error('Error loading session data:', error);
+    }
+  };
+
+  const addPerson = async () => {
+    if (!newPersonName.trim() || !sessionId) return;
+
+    try {
+      const { data: person, error } = await supabase
+        .from('session_people')
+        .insert([{
+          session_id: sessionId,
+          name: newPersonName.trim(),
+          is_present: true
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
       const newPerson: Person = {
-        id: Date.now().toString(),
-        name: newPersonName.trim(),
+        id: person.id,
+        name: person.name,
         movies: [],
-        isPresent: true
+        isPresent: person.is_present
       };
-      setPeople([...people, newPerson]);
+
+      setPeople(prev => [...prev, newPerson]);
       setNewPersonName("");
+      
       toast({
         title: "Person added",
         description: `${newPerson.name} has been added to the group.`
       });
+    } catch (error) {
+      console.error('Error adding person:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add person. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
-  const updatePerson = (updatedPerson: Person) => {
-    setPeople(people.map(p => p.id === updatedPerson.id ? updatedPerson : p));
-    updateMovieRatings();
+  const updatePerson = async (updatedPerson: Person) => {
+    if (!sessionId) return;
+
+    try {
+      // Update person presence
+      await supabase
+        .from('session_people')
+        .update({ is_present: updatedPerson.isPresent })
+        .eq('id', updatedPerson.id);
+
+      // Get current proposals for this person
+      const { data: currentProposals } = await supabase
+        .from('movie_proposals')
+        .select('movie_title')
+        .eq('person_id', updatedPerson.id);
+
+      const currentMovies = currentProposals?.map(p => p.movie_title) || [];
+      
+      // Find movies to add and remove
+      const moviesToAdd = updatedPerson.movies.filter(m => !currentMovies.includes(m));
+      const moviesToRemove = currentMovies.filter(m => !updatedPerson.movies.includes(m));
+
+      // Add new movies
+      if (moviesToAdd.length > 0) {
+        await supabase
+          .from('movie_proposals')
+          .insert(
+            moviesToAdd.map(movie => ({
+              session_id: sessionId,
+              person_id: updatedPerson.id,
+              movie_title: movie
+            }))
+          );
+      }
+
+      // Remove movies
+      if (moviesToRemove.length > 0) {
+        await supabase
+          .from('movie_proposals')
+          .delete()
+          .eq('person_id', updatedPerson.id)
+          .in('movie_title', moviesToRemove);
+      }
+
+      setPeople(prev => prev.map(p => p.id === updatedPerson.id ? updatedPerson : p));
+      await loadSessionData(sessionId); // Reload to update movie ratings
+    } catch (error) {
+      console.error('Error updating person:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to update person. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const deletePerson = (id: string) => {
+  const deletePerson = async (id: string) => {
     const person = people.find(p => p.id === id);
-    setPeople(people.filter(p => p.id !== id));
-    if (person) {
+    if (!person) return;
+
+    try {
+      await supabase
+        .from('session_people')
+        .delete()
+        .eq('id', id);
+
+      setPeople(prev => prev.filter(p => p.id !== id));
+      await loadSessionData(sessionId!); // Reload to update movie ratings
+      
       toast({
         title: "Person removed",
         description: `${person.name} has been removed from the group.`
       });
+    } catch (error) {
+      console.error('Error deleting person:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove person. Please try again.",
+        variant: "destructive"
+      });
     }
-    updateMovieRatings();
   };
 
-  const updateMovieRatings = () => {
-    const allMovies: MovieRating[] = [];
-    
-    people.forEach(person => {
-      person.movies.forEach(movie => {
-        const existingMovie = allMovies.find(m => m.movieTitle === movie);
-        if (existingMovie) return;
-        
-        allMovies.push({
-          movieTitle: movie,
-          proposedBy: person.name,
-          ratings: {}
+  const updateRating = async (movieTitle: string, personId: string, rating: number) => {
+    try {
+      // Find the proposal for this movie
+      const { data: proposals } = await supabase
+        .from('movie_proposals')
+        .select('id')
+        .eq('movie_title', movieTitle)
+        .eq('session_id', sessionId);
+
+      if (!proposals || proposals.length === 0) return;
+      
+      const proposalId = proposals[0].id;
+
+      // Upsert the rating
+      await supabase
+        .from('movie_ratings')
+        .upsert({
+          proposal_id: proposalId,
+          person_id: personId,
+          rating: rating
         });
-      });
-    });
 
-    setMovieRatings(prevRatings => {
-      return allMovies.map(movie => {
-        const existingRating = prevRatings.find(r => r.movieTitle === movie.movieTitle);
-        return existingRating || movie;
-      });
-    });
-  };
+      // Update local state
+      setMovieRatings(prev => 
+        prev.map(movie => 
+          movie.movieTitle === movieTitle 
+            ? { ...movie, ratings: { ...movie.ratings, [personId]: rating } }
+            : movie
+        )
+      );
 
-  const updateRating = (movieTitle: string, personId: string, rating: number) => {
-    setMovieRatings(prev => 
-      prev.map(movie => 
-        movie.movieTitle === movieTitle 
-          ? { ...movie, ratings: { ...movie.ratings, [personId]: rating } }
-          : movie
-      )
-    );
+      toast({
+        title: "Rating saved",
+        description: `Your rating for "${movieTitle}" has been saved.`
+      });
+    } catch (error) {
+      console.error('Error updating rating:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save rating. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const presentPeople = people.filter(p => p.isPresent);
@@ -95,10 +287,16 @@ export const MovieSelector = () => {
     .filter(movie => presentPeople.some(p => p.movies.includes(movie.movieTitle)))
     .sort((a, b) => b.averageRating - a.averageRating);
 
-  // Update movie ratings when people or their movies change
-  useEffect(() => {
-    updateMovieRatings();
-  }, [people]);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading movie session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
