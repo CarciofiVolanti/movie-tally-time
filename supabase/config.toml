@@ -1,1 +1,4 @@
 project_id = "nptmzqetvlzfhoisubav"
+
+[functions.search-movie]
+verify_jwt = false
