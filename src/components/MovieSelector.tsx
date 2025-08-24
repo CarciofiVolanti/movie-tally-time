@@ -246,11 +246,17 @@ export const MovieSelector = () => {
         }));
       } else {
         // Upsert the rating
-        await supabase.from('movie_ratings').upsert({
-          proposal_id: proposalId,
-          person_id: personId,
-          rating: rating
-        });
+        await supabase.from("movie_ratings").upsert(
+          {
+            proposal_id: proposalId,
+            person_id: personId,
+            rating,
+          },
+          {
+            onConflict: "proposal_id,person_id",
+          }
+        );
+
 
         // Update local state
         setMovieRatings(prev => prev.map(movie => movie.movieTitle === movieTitle ? {
