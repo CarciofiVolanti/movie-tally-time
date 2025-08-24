@@ -16,31 +16,75 @@ export const MovieSelector = () => {
   const [movieRatings, setMovieRatings] = useState<MovieRating[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showNewSession, setShowNewSession] = useState(false);
+  const [newSessionName, setNewSessionName] = useState("");
   const { toast } = useToast();
 
   // Initialize session and load data
   useEffect(() => {
-    initializeSession();
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionIdFromUrl = urlParams.get('session');
+    
+    if (sessionIdFromUrl) {
+      loadExistingSession(sessionIdFromUrl);
+    } else {
+      setShowNewSession(true);
+      setLoading(false);
+    }
   }, []);
 
-  const initializeSession = async () => {
+  const loadExistingSession = async (sessionId: string) => {
     try {
-      // Create a new session for this movie selection
+      // Check if session exists
       const { data: session, error } = await supabase
         .from('movie_sessions')
-        .insert([{ name: `Movie Session ${new Date().toLocaleDateString()}` }])
+        .select()
+        .eq('id', sessionId)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (session) {
+        setSessionId(session.id);
+        await loadSessionData(session.id);
+      } else {
+        setShowNewSession(true);
+      }
+    } catch (error) {
+      console.error('Error loading session:', error);
+      setShowNewSession(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createNewSession = async () => {
+    if (!newSessionName.trim()) return;
+
+    try {
+      setLoading(true);
+      const { data: session, error } = await supabase
+        .from('movie_sessions')
+        .insert([{ name: newSessionName.trim() }])
         .select()
         .single();
 
       if (error) throw error;
       
       setSessionId(session.id);
+      setShowNewSession(false);
+      
+      // Update URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('session', session.id);
+      window.history.pushState({}, '', newUrl);
+      
       await loadSessionData(session.id);
     } catch (error) {
-      console.error('Error initializing session:', error);
+      console.error('Error creating session:', error);
       toast({
         title: "Error",
-        description: "Failed to initialize session. Please refresh the page.",
+        description: "Failed to create session. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -132,11 +176,6 @@ export const MovieSelector = () => {
 
       setPeople(prev => [...prev, newPerson]);
       setNewPersonName("");
-      
-      toast({
-        title: "Person added",
-        description: `${newPerson.name} has been added to the group.`
-      });
     } catch (error) {
       console.error('Error adding person:', error);
       toast({
@@ -215,11 +254,6 @@ export const MovieSelector = () => {
 
       setPeople(prev => prev.filter(p => p.id !== id));
       await loadSessionData(sessionId!); // Reload to update movie ratings
-      
-      toast({
-        title: "Person removed",
-        description: `${person.name} has been removed from the group.`
-      });
     } catch (error) {
       console.error('Error deleting person:', error);
       toast({
@@ -243,28 +277,44 @@ export const MovieSelector = () => {
       
       const proposalId = proposals[0].id;
 
-      // Upsert the rating
-      await supabase
-        .from('movie_ratings')
-        .upsert({
-          proposal_id: proposalId,
-          person_id: personId,
-          rating: rating
-        });
+      if (rating === 0) {
+        // Delete the rating if it's 0
+        await supabase
+          .from('movie_ratings')
+          .delete()
+          .eq('proposal_id', proposalId)
+          .eq('person_id', personId);
+        
+        // Update local state by removing the rating
+        setMovieRatings(prev => 
+          prev.map(movie => {
+            if (movie.movieTitle === movieTitle) {
+              const newRatings = { ...movie.ratings };
+              delete newRatings[personId];
+              return { ...movie, ratings: newRatings };
+            }
+            return movie;
+          })
+        );
+      } else {
+        // Upsert the rating
+        await supabase
+          .from('movie_ratings')
+          .upsert({
+            proposal_id: proposalId,
+            person_id: personId,
+            rating: rating
+          });
 
-      // Update local state
-      setMovieRatings(prev => 
-        prev.map(movie => 
-          movie.movieTitle === movieTitle 
-            ? { ...movie, ratings: { ...movie.ratings, [personId]: rating } }
-            : movie
-        )
-      );
-
-      toast({
-        title: "Rating saved",
-        description: `Your rating for "${movieTitle}" has been saved.`
-      });
+        // Update local state
+        setMovieRatings(prev => 
+          prev.map(movie => 
+            movie.movieTitle === movieTitle 
+              ? { ...movie, ratings: { ...movie.ratings, [personId]: rating } }
+              : movie
+          )
+        );
+      }
     } catch (error) {
       console.error('Error updating rating:', error);
       toast({
@@ -298,6 +348,36 @@ export const MovieSelector = () => {
     );
   }
 
+  if (showNewSession) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Create New Session</CardTitle>
+            <p className="text-muted-foreground">Start a new movie selection session</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Input
+                placeholder="Session name (e.g., Friday Movie Night)"
+                value={newSessionName}
+                onChange={(e) => setNewSessionName(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && createNewSession()}
+              />
+            </div>
+            <Button 
+              onClick={createNewSession} 
+              disabled={!newSessionName.trim()}
+              className="w-full"
+            >
+              Create Session
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto py-8 px-4">
@@ -308,6 +388,18 @@ export const MovieSelector = () => {
           <p className="text-muted-foreground text-lg">
             Collaborative movie selection made easy
           </p>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              setShowNewSession(true);
+              setSessionId(null);
+              window.history.pushState({}, '', window.location.pathname);
+            }}
+            className="mt-2"
+          >
+            Start New Session
+          </Button>
         </div>
 
         <Tabs defaultValue="people" className="space-y-6">

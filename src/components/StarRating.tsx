@@ -27,7 +27,7 @@ export const StarRating = ({
           key={star}
           type="button"
           disabled={readonly}
-          onClick={() => onRatingChange?.(star)}
+          onClick={() => onRatingChange?.(rating === star ? 0 : star)}
           className={cn(
             "transition-all duration-200",
             readonly ? "cursor-default" : "cursor-pointer hover:scale-110",
