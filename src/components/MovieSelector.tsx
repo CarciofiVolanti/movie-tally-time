@@ -278,154 +278,162 @@ export const MovieSelector = () => {
   })).filter(movie => presentPeople.some(p => p.movies.includes(movie.movieTitle))).sort((a, b) => b.averageRating - a.averageRating);
   if (loading) {
     return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading movie session...</p>
-        </div>
-      </div>;
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Loading movie session...</p>
+      </div>
+    </div>;
   }
   if (showNewSession) {
     return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Create New Session</CardTitle>
-            <p className="text-muted-foreground">Start a new movie selection session</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Input placeholder="Session name (e.g., Friday Movie Night)" value={newSessionName} onChange={e => setNewSessionName(e.target.value)} onKeyPress={e => e.key === "Enter" && createNewSession()} />
-            </div>
-            <Button onClick={createNewSession} disabled={!newSessionName.trim()} className="w-full">
-              Create Session
-            </Button>
-          </CardContent>
-        </Card>
-      </div>;
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Create New Session</CardTitle>
+          <p className="text-muted-foreground">Start a new movie selection session</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Input placeholder="Session name (e.g., Friday Movie Night)" value={newSessionName} onChange={e => setNewSessionName(e.target.value)} onKeyPress={e => e.key === "Enter" && createNewSession()} />
+          </div>
+          <Button onClick={createNewSession} disabled={!newSessionName.trim()} className="w-full">
+            Create Session
+          </Button>
+        </CardContent>
+      </Card>
+    </div>;
   }
   return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <div className="container mx-auto py-8 px-4">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-cinema bg-clip-text text-transparent mb-4">CarciOscar</h1>
-          
-          <Button variant="outline" size="sm" onClick={() => {
+    <div className="container mx-auto py-8 px-4">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold bg-gradient-cinema bg-clip-text text-transparent mb-4">CarciOscar</h1>
+
+        <Button variant="outline" size="sm" onClick={() => {
           setShowNewSession(true);
           setSessionId(null);
           window.history.pushState({}, '', window.location.pathname);
         }} className="mt-2">
-            Start New Session
-          </Button>
-        </div>
-
-        <Tabs defaultValue="people" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="people" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              People ({people.length})
-            </TabsTrigger>
-            <TabsTrigger value="rate" className="flex items-center gap-2">
-              <Film className="w-4 h-4" />
-              Rate Movies ({movieRatings.length})
-            </TabsTrigger>
-            <TabsTrigger value="results" className="flex items-center gap-2">
-              <Trophy className="w-4 h-4" />
-              Results
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="people" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Add People</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
-                  <Input placeholder="Enter person's name..." value={newPersonName} onChange={e => setNewPersonName(e.target.value)} onKeyPress={e => e.key === "Enter" && addPerson()} className="flex-1" />
-                  <Button onClick={addPerson} disabled={!newPersonName.trim()}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Person
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {people.map(person => <PersonCard key={person.id} person={person} onUpdatePerson={updatePerson} onDeletePerson={deletePerson} />)}
-            </div>
-
-            {people.length === 0 && <Card className="text-center py-8">
-                <CardContent>
-                  <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No people added yet. Add some people to get started!</p>
-                </CardContent>
-              </Card>}
-          </TabsContent>
-
-          <TabsContent value="rate" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Rate All Movies
-                  <Badge variant="secondary">
-                    {presentPeople.length} present
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-            </Card>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {movieRatings.map(movie => <MovieCard key={movie.movieTitle} movie={movie} people={presentPeople} onRatingChange={(personId, rating) => updateRating(movie.movieTitle, personId, rating)} showAllRatings />)}
-            </div>
-
-            {movieRatings.length === 0 && <Card className="text-center py-8">
-                <CardContent>
-                  <Film className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No movies suggested yet. Add people and their movie suggestions first!</p>
-                </CardContent>
-              </Card>}
-          </TabsContent>
-
-          <TabsContent value="results" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Top Rated Movies
-                  <Badge variant="secondary">
-                    Based on {presentPeople.length} present people
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-            </Card>
-
-            <div className="space-y-4">
-              {rankedMovies.map((movie, index) => <Card key={movie.movieTitle} className="relative overflow-hidden">
-                  <div className="absolute left-0 top-0 h-full w-1 bg-gradient-cinema" />
-                  <CardContent className="flex items-center justify-between p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-full">
-                        <span className="font-bold text-primary">#{index + 1}</span>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">{movie.movieTitle}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Proposed by {movie.proposedBy} • {movie.totalRatings}/{presentPeople.length} ratings
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 text-lg px-3 py-1">
-                      ★ {movie.averageRating.toFixed(1)}
-                    </Badge>
-                  </CardContent>
-                </Card>)}
-            </div>
-
-            {rankedMovies.length === 0 && <Card className="text-center py-8">
-                <CardContent>
-                  <Trophy className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No ratings yet. Start rating movies to see results!</p>
-                </CardContent>
-              </Card>}
-          </TabsContent>
-        </Tabs>
+          Start New Session
+        </Button>
       </div>
-    </div>;
+
+      <Tabs defaultValue="people" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="people" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            People ({people.length})
+          </TabsTrigger>
+          <TabsTrigger value="rate" className="flex items-center gap-2">
+            <Film className="w-4 h-4" />
+            Rate Movies ({movieRatings.length})
+          </TabsTrigger>
+          <TabsTrigger value="results" className="flex items-center gap-2">
+            <Trophy className="w-4 h-4" />
+            Results
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="people" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Add People</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2">
+                <Input placeholder="Enter person's name..." value={newPersonName} onChange={e => setNewPersonName(e.target.value)} onKeyPress={e => e.key === "Enter" && addPerson()} className="flex-1" />
+                <Button onClick={addPerson} disabled={!newPersonName.trim()}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Person
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {people.map(person => <PersonCard key={person.id} person={person} onUpdatePerson={updatePerson} onDeletePerson={deletePerson} />)}
+          </div>
+
+          {people.length === 0 && <Card className="text-center py-8">
+            <CardContent>
+              <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No people added yet. Add some people to get started!</p>
+            </CardContent>
+          </Card>}
+        </TabsContent>
+
+        <TabsContent value="rate" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Rate All Movies
+                <Badge variant="secondary">
+                  {presentPeople.length} present
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {movieRatings.map(movie =>
+              <MovieCard
+                key={movie.movieTitle}
+                movie={movie}
+                people={presentPeople}
+                onRatingChange={updateRating}
+                showAllRatings
+              />
+            )}
+          </div>
+
+          {movieRatings.length === 0 && <Card className="text-center py-8">
+            <CardContent>
+              <Film className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No movies suggested yet. Add people and their movie suggestions first!</p>
+            </CardContent>
+          </Card>}
+        </TabsContent>
+
+        <TabsContent value="results" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                Top Rated Movies
+                <Badge variant="secondary">
+                  Based on {presentPeople.length} present people
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
+          <div className="space-y-4">
+            {rankedMovies.map((movie, index) => <Card key={movie.movieTitle} className="relative overflow-hidden">
+              <div className="absolute left-0 top-0 h-full w-1 bg-gradient-cinema" />
+              <CardContent className="flex items-center justify-between p-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-full">
+                    <span className="font-bold text-primary">#{index + 1}</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">{movie.movieTitle}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Proposed by {movie.proposedBy} • {movie.totalRatings}/{presentPeople.length} ratings
+                    </p>
+                  </div>
+                </div>
+                <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 text-lg px-3 py-1">
+                  ★ {movie.averageRating.toFixed(1)}
+                </Badge>
+              </CardContent>
+            </Card>)}
+          </div>
+
+          {rankedMovies.length === 0 && <Card className="text-center py-8">
+            <CardContent>
+              <Trophy className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No ratings yet. Start rating movies to see results!</p>
+            </CardContent>
+          </Card>}
+        </TabsContent>
+      </Tabs>
+    </div>
+  </div>;
 };

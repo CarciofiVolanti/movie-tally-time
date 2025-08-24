@@ -17,16 +17,16 @@ interface MovieCardProps {
   showAllRatings?: boolean;
 }
 
-export const MovieCard = ({ 
-  movie, 
-  people, 
-  currentPersonId, 
+export const MovieCard = ({
+  movie,
+  people,
+  currentPersonId,
   onRatingChange,
-  showAllRatings = false 
+  showAllRatings = false
 }: MovieCardProps) => {
   const presentPeople = people.filter(p => p.isPresent);
   const totalRatings = presentPeople.filter(p => movie.ratings[p.id] !== undefined).length;
-  const averageRating = presentPeople.length > 0 
+  const averageRating = presentPeople.length > 0
     ? presentPeople.reduce((sum, p) => sum + (movie.ratings[p.id] || 0), 0) / presentPeople.length
     : 0;
 
@@ -52,7 +52,7 @@ export const MovieCard = ({
           </Badge>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>{totalRatings}/{presentPeople.length} ratings</span>
@@ -67,7 +67,9 @@ export const MovieCard = ({
                 <span className="text-sm">{person.name}</span>
                 <StarRating
                   rating={movie.ratings[person.id] || 0}
-                  onRatingChange={(rating) => onRatingChange?.(person.id, rating)}
+                  onRatingChange={(rating) =>
+                    onRatingChange?.(movie.movieTitle, person.id, rating)
+                  }
                   readonly={false}
                   size="sm"
                 />
@@ -82,7 +84,9 @@ export const MovieCard = ({
               <span className="text-sm font-medium">Your Rating</span>
               <StarRating
                 rating={movie.ratings[currentPersonId] || 0}
-                onRatingChange={(rating) => onRatingChange?.(currentPersonId, rating)}
+                onRatingChange={(rating) =>
+                  onRatingChange?.(movie.movieTitle, currentPersonId, rating)
+                }
                 size="md"
               />
             </div>
