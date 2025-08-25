@@ -3,17 +3,28 @@ import { Badge } from "@/components/ui/badge";
 import { StarRating } from "./StarRating";
 import { Film } from "lucide-react";
 
+export interface MovieDetails {
+  poster?: string;
+  genre?: string;
+  runtime?: string;
+  year?: string;
+  director?: string;
+  plot?: string;
+  imdbRating?: string;
+}
+
 export interface MovieRating {
   movieTitle: string;
   proposedBy: string;
   ratings: Record<string, number>; // personId -> rating
+  details?: MovieDetails;
 }
 
 interface MovieCardProps {
   movie: MovieRating;
   people: Array<{ id: string; name: string; isPresent: boolean }>;
   currentPersonId?: string;
-  onRatingChange?: (personId: string, rating: number) => void;
+  onRatingChange?: (movieTitle: string, personId: string, rating: number) => void;
   showAllRatings?: boolean;
 }
 
@@ -33,21 +44,36 @@ export const MovieCard = ({
   return (
     <Card className="transition-all duration-300 hover:shadow-glow group">
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Film className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            {movie.details?.poster && movie.details.poster !== 'N/A' ? (
+              <img 
+                src={movie.details.poster} 
+                alt={`${movie.movieTitle} poster`}
+                className="w-16 h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
+              />
+            ) : (
+              <div className="w-16 h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Film className="w-6 h-6 text-primary" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-lg group-hover:text-primary transition-colors truncate">
                 {movie.movieTitle}
               </h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground mb-1">
                 Proposed by {movie.proposedBy}
               </p>
+              {movie.details && (
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  {movie.details.year && <p>Year: {movie.details.year}</p>}
+                  {movie.details.runtime && <p>Runtime: {movie.details.runtime}</p>}
+                  {movie.details.genre && <p className="truncate">Genre: {movie.details.genre}</p>}
+                </div>
+              )}
             </div>
           </div>
-          <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
+          <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0">
             ★ {averageRating.toFixed(1)}
           </Badge>
         </div>
@@ -62,19 +88,21 @@ export const MovieCard = ({
         {showAllRatings && (
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Individual Ratings</h4>
-            {presentPeople.map((person) => (
-              <div key={person.id} className="flex items-center justify-between p-2 bg-secondary/50 rounded-md">
-                <span className="text-sm">{person.name}</span>
-                <StarRating
-                  rating={movie.ratings[person.id] || 0}
-                  onRatingChange={(rating) =>
-                    onRatingChange?.(movie.movieTitle, person.id, rating)
-                  }
-                  readonly={false}
-                  size="sm"
-                />
-              </div>
-            ))}
+            <div className="grid gap-2 sm:grid-cols-1">
+              {presentPeople.map((person) => (
+                <div key={person.id} className="flex items-center justify-between p-2 bg-secondary/50 rounded-md">
+                  <span className="text-sm truncate mr-2">{person.name}</span>
+                  <StarRating
+                    rating={movie.ratings[person.id] || 0}
+                    onRatingChange={(rating) =>
+                      onRatingChange?.(movie.movieTitle, person.id, rating)
+                    }
+                    readonly={false}
+                    size="sm"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

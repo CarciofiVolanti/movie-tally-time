@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PersonCard, Person } from "./PersonCard";
-import { MovieCard, MovieRating } from "./MovieCard";
-import { Users, Film, Trophy, Plus } from "lucide-react";
+import { MovieCard, MovieRating, MovieDetails } from "./MovieCard";
+import { Users, Film, Trophy, Plus, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 export const MovieSelector = () => {
@@ -17,6 +17,7 @@ export const MovieSelector = () => {
   const [loading, setLoading] = useState(true);
   const [showNewSession, setShowNewSession] = useState(false);
   const [newSessionName, setNewSessionName] = useState("");
+  const [fetchingDetails, setFetchingDetails] = useState(false);
   const {
     toast
   } = useToast();
@@ -122,13 +123,71 @@ export const MovieSelector = () => {
         return {
           movieTitle: proposal.movie_title,
           proposedBy: proposer?.name || 'Unknown',
-          ratings
+          ratings,
+          details: undefined // Will be fetched separately
         };
       });
       setPeople(transformedPeople);
       setMovieRatings(transformedRatings);
     } catch (error) {
       console.error('Error loading session data:', error);
+    }
+  };
+
+  const fetchMovieDetails = async (movieTitle: string): Promise<MovieDetails | undefined> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('search-movie', {
+        body: { title: movieTitle }
+      });
+      
+      if (error) {
+        console.error('Error fetching movie details:', error);
+        return undefined;
+      }
+      
+      return {
+        poster: data.poster,
+        genre: data.genre,
+        runtime: data.runtime,
+        year: data.year,
+        director: data.director,
+        plot: data.plot,
+        imdbRating: data.imdbRating
+      };
+    } catch (error) {
+      console.error('Error fetching movie details:', error);
+      return undefined;
+    }
+  };
+
+  const fetchAllMovieDetails = async () => {
+    if (movieRatings.length === 0) return;
+    
+    setFetchingDetails(true);
+    try {
+      const updatedMovies = await Promise.all(
+        movieRatings.map(async (movie) => {
+          if (movie.details) return movie; // Already has details
+          
+          const details = await fetchMovieDetails(movie.movieTitle);
+          return { ...movie, details };
+        })
+      );
+      
+      setMovieRatings(updatedMovies);
+      toast({
+        title: "Success",
+        description: "Movie details updated successfully!"
+      });
+    } catch (error) {
+      console.error('Error fetching movie details:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to fetch some movie details.",
+        variant: "destructive"
+      });
+    } finally {
+      setFetchingDetails(false);
     }
   };
   const addPerson = async () => {
@@ -369,16 +428,32 @@ export const MovieSelector = () => {
         <TabsContent value="rate" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Rate All Movies
-                <Badge variant="secondary">
-                  {presentPeople.length} present
-                </Badge>
+              <CardTitle className="flex items-center justify-between flex-wrap gap-2">
+                <span>Rate All Movies</span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchAllMovieDetails}
+                    disabled={fetchingDetails || movieRatings.length === 0}
+                    className="text-xs"
+                  >
+                    {fetchingDetails ? (
+                      <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                    )}
+                    Update Details
+                  </Button>
+                  <Badge variant="secondary">
+                    {presentPeople.length} present
+                  </Badge>
+                </div>
               </CardTitle>
             </CardHeader>
           </Card>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2">
             {movieRatings.map(movie =>
               <MovieCard
                 key={movie.movieTitle}
@@ -411,25 +486,51 @@ export const MovieSelector = () => {
           </Card>
 
           <div className="space-y-4">
-            {rankedMovies.map((movie, index) => <Card key={movie.movieTitle} className="relative overflow-hidden">
-              <div className="absolute left-0 top-0 h-full w-1 bg-gradient-cinema" />
-              <CardContent className="flex items-center justify-between p-6">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-full">
-                    <span className="font-bold text-primary">#{index + 1}</span>
+            {rankedMovies.map((movie, index) => (
+              <Card key={movie.movieTitle} className="relative overflow-hidden">
+                <div className="absolute left-0 top-0 h-full w-1 bg-gradient-cinema" />
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-full flex-shrink-0">
+                      <span className="font-bold text-primary text-sm">#{index + 1}</span>
+                    </div>
+                    
+                    {movie.details?.poster && movie.details.poster !== 'N/A' ? (
+                      <img 
+                        src={movie.details.poster} 
+                        alt={`${movie.movieTitle} poster`}
+                        className="w-12 h-18 sm:w-16 sm:h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-18 sm:w-16 sm:h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Film className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
+                      </div>
+                    )}
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h3 className="font-semibold text-base sm:text-lg truncate">{movie.movieTitle}</h3>
+                        <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 text-sm sm:text-lg px-2 py-1 sm:px-3 flex-shrink-0">
+                          ★ {movie.averageRating.toFixed(1)}
+                        </Badge>
+                      </div>
+                      
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-2">
+                        Proposed by {movie.proposedBy} • {movie.totalRatings}/{presentPeople.length} ratings
+                      </p>
+                      
+                      {movie.details && (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 text-xs text-muted-foreground">
+                          {movie.details.year && <p>Year: {movie.details.year}</p>}
+                          {movie.details.runtime && <p>Runtime: {movie.details.runtime}</p>}
+                          {movie.details.genre && <p className="sm:col-span-1 truncate">Genre: {movie.details.genre}</p>}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">{movie.movieTitle}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Proposed by {movie.proposedBy} • {movie.totalRatings}/{presentPeople.length} ratings
-                    </p>
-                  </div>
-                </div>
-                <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 text-lg px-3 py-1">
-                  ★ {movie.averageRating.toFixed(1)}
-                </Badge>
-              </CardContent>
-            </Card>)}
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           {rankedMovies.length === 0 && <Card className="text-center py-8">
