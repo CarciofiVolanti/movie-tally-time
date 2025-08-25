@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { StarRating } from "./StarRating";
 import { Film } from "lucide-react";
 
@@ -11,6 +12,7 @@ export interface MovieDetails {
   director?: string;
   plot?: string;
   imdbRating?: string;
+  imdbId?: string;
 }
 
 export interface MovieRating {
@@ -25,6 +27,7 @@ interface MovieCardProps {
   people: Array<{ id: string; name: string; isPresent: boolean }>;
   currentPersonId?: string;
   onRatingChange?: (movieTitle: string, personId: string, rating: number) => void;
+  onSearchAgain?: (movieTitle: string) => void;
   showAllRatings?: boolean;
 }
 
@@ -33,6 +36,7 @@ export const MovieCard = ({
   people,
   currentPersonId,
   onRatingChange,
+  onSearchAgain,
   showAllRatings = false
 }: MovieCardProps) => {
   const presentPeople = people.filter(p => p.isPresent);
@@ -58,12 +62,35 @@ export const MovieCard = ({
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-lg group-hover:text-primary transition-colors truncate">
-                {movie.movieTitle}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-1">
-                Proposed by {movie.proposedBy}
-              </p>
+              {movie.details?.imdbId ? (
+                <a 
+                  href={`https://www.imdb.com/title/${movie.details.imdbId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-lg group-hover:text-primary transition-colors truncate hover:underline"
+                >
+                  {movie.movieTitle}
+                </a>
+              ) : (
+                <h3 className="font-semibold text-lg group-hover:text-primary transition-colors truncate">
+                  {movie.movieTitle}
+                </h3>
+              )}
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground mb-1">
+                  Proposed by {movie.proposedBy}
+                </p>
+                {onSearchAgain && (!movie.details || !movie.details.poster || movie.details.poster === 'N/A') && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onSearchAgain(movie.movieTitle)}
+                    className="text-xs h-6 px-2"
+                  >
+                    🔍 Search
+                  </Button>
+                )}
+              </div>
               {movie.details && (
                 <div className="space-y-1 text-xs text-muted-foreground">
                   {movie.details.year && <p>Year: {movie.details.year}</p>}

@@ -120,11 +120,24 @@ export const MovieSelector = () => {
         ratingsData.filter(r => r.proposal_id === proposal.id).forEach(rating => {
           ratings[rating.person_id] = rating.rating;
         });
+        
+        // Load movie details from database if available
+        const details: MovieDetails | undefined = (proposal.poster || proposal.genre || proposal.runtime) ? {
+          poster: proposal.poster,
+          genre: proposal.genre,
+          runtime: proposal.runtime,
+          year: proposal.year,
+          director: proposal.director,
+          plot: proposal.plot,
+          imdbRating: proposal.imdb_rating,
+          imdbId: proposal.imdb_id
+        } : undefined;
+        
         return {
           movieTitle: proposal.movie_title,
           proposedBy: proposer?.name || 'Unknown',
           ratings,
-          details: undefined // Will be fetched separately
+          details
         };
       });
       setPeople(transformedPeople);
@@ -152,11 +165,36 @@ export const MovieSelector = () => {
         year: data.year,
         director: data.director,
         plot: data.plot,
-        imdbRating: data.imdbRating
+        imdbRating: data.imdbRating,
+        imdbId: data.imdbId
       };
     } catch (error) {
       console.error('Error fetching movie details:', error);
       return undefined;
+    }
+  };
+
+  const saveMovieDetailsToDatabase = async (movieTitle: string, details: MovieDetails) => {
+    if (!sessionId) return;
+    
+    try {
+      // Update all proposals for this movie title in this session
+      await supabase
+        .from('movie_proposals')
+        .update({
+          poster: details.poster,
+          genre: details.genre,
+          runtime: details.runtime,
+          year: details.year,
+          director: details.director,
+          plot: details.plot,
+          imdb_rating: details.imdbRating,
+          imdb_id: details.imdbId
+        })
+        .eq('session_id', sessionId)
+        .eq('movie_title', movieTitle);
+    } catch (error) {
+      console.error('Error saving movie details to database:', error);
     }
   };
 
@@ -167,9 +205,14 @@ export const MovieSelector = () => {
     try {
       const updatedMovies = await Promise.all(
         movieRatings.map(async (movie) => {
-          if (movie.details) return movie; // Already has details
+          if (movie.details && movie.details.poster && movie.details.poster !== 'N/A') {
+            return movie; // Already has valid details
+          }
           
           const details = await fetchMovieDetails(movie.movieTitle);
+          if (details) {
+            await saveMovieDetailsToDatabase(movie.movieTitle, details);
+          }
           return { ...movie, details };
         })
       );
@@ -184,6 +227,41 @@ export const MovieSelector = () => {
       toast({
         title: "Error", 
         description: "Failed to fetch some movie details.",
+        variant: "destructive"
+      });
+    } finally {
+      setFetchingDetails(false);
+    }
+  };
+
+  const searchMovieAgain = async (movieTitle: string) => {
+    setFetchingDetails(true);
+    try {
+      const details = await fetchMovieDetails(movieTitle);
+      if (details) {
+        await saveMovieDetailsToDatabase(movieTitle, details);
+        
+        // Update local state
+        setMovieRatings(prev => prev.map(movie => 
+          movie.movieTitle === movieTitle ? { ...movie, details } : movie
+        ));
+        
+        toast({
+          title: "Success",
+          description: `Updated details for "${movieTitle}"`
+        });
+      } else {
+        toast({
+          title: "Not Found",
+          description: `Could not find details for "${movieTitle}"`,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error searching movie again:', error);
+      toast({
+        title: "Error",
+        description: "Failed to search for movie details",
         variant: "destructive"
       });
     } finally {
@@ -460,6 +538,7 @@ export const MovieSelector = () => {
                 movie={movie}
                 people={presentPeople}
                 onRatingChange={updateRating}
+                onSearchAgain={searchMovieAgain}
                 showAllRatings
               />
             )}
@@ -509,7 +588,18 @@ export const MovieSelector = () => {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="font-semibold text-base sm:text-lg truncate">{movie.movieTitle}</h3>
+                       {movie.details?.imdbId ? (
+                         <a 
+                           href={`https://www.imdb.com/title/${movie.details.imdbId}`}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="font-semibold text-base sm:text-lg truncate hover:underline"
+                         >
+                           {movie.movieTitle}
+                         </a>
+                       ) : (
+                         <h3 className="font-semibold text-base sm:text-lg truncate">{movie.movieTitle}</h3>
+                       )}
                         <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 text-sm sm:text-lg px-2 py-1 sm:px-3 flex-shrink-0">
                           ★ {movie.averageRating.toFixed(1)}
                         </Badge>

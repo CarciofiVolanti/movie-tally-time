@@ -64,7 +64,8 @@ serve(async (req) => {
       plot: movieData.Plot,
       poster: movieData.Poster,
       imdbRating: movieData.imdbRating,
-      runtime: movieData.Runtime
+      runtime: movieData.Runtime,
+      imdbId: movieData.imdbID
     };
 
     return new Response(

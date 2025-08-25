@@ -17,24 +17,48 @@ export type Database = {
       movie_proposals: {
         Row: {
           created_at: string
+          director: string | null
+          genre: string | null
           id: string
+          imdb_id: string | null
+          imdb_rating: string | null
           movie_title: string
           person_id: string
+          plot: string | null
+          poster: string | null
+          runtime: string | null
           session_id: string
+          year: string | null
         }
         Insert: {
           created_at?: string
+          director?: string | null
+          genre?: string | null
           id?: string
+          imdb_id?: string | null
+          imdb_rating?: string | null
           movie_title: string
           person_id: string
+          plot?: string | null
+          poster?: string | null
+          runtime?: string | null
           session_id: string
+          year?: string | null
         }
         Update: {
           created_at?: string
+          director?: string | null
+          genre?: string | null
           id?: string
+          imdb_id?: string | null
+          imdb_rating?: string | null
           movie_title?: string
           person_id?: string
+          plot?: string | null
+          poster?: string | null
+          runtime?: string | null
           session_id?: string
+          year?: string | null
         }
         Relationships: [
           {
