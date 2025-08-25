@@ -1,8 +1,10 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { StarRating } from "./StarRating";
-import { Film } from "lucide-react";
+import { Film, Search } from "lucide-react";
+import { useState } from "react";
 
 export interface MovieDetails {
   poster?: string;
@@ -39,11 +41,22 @@ export const MovieCard = ({
   onSearchAgain,
   showAllRatings = false
 }: MovieCardProps) => {
+  const [searchTitle, setSearchTitle] = useState("");
+  const [showSearchInput, setShowSearchInput] = useState(false);
+  
   const presentPeople = people.filter(p => p.isPresent);
   const totalRatings = presentPeople.filter(p => movie.ratings[p.id] !== undefined).length;
   const averageRating = presentPeople.length > 0
     ? presentPeople.reduce((sum, p) => sum + (movie.ratings[p.id] || 0), 0) / presentPeople.length
     : 0;
+
+  const handleSearch = () => {
+    if (searchTitle.trim() && onSearchAgain) {
+      onSearchAgain(searchTitle.trim());
+      setSearchTitle("");
+      setShowSearchInput(false);
+    }
+  };
 
   return (
     <Card className="transition-all duration-300 hover:shadow-glow group">
@@ -84,13 +97,34 @@ export const MovieCard = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onSearchAgain(movie.movieTitle)}
+                    onClick={() => setShowSearchInput(!showSearchInput)}
                     className="text-xs h-6 px-2"
                   >
-                    🔍 Search
+                    <Search className="w-3 h-3 mr-1" />
+                    Search
                   </Button>
                 )}
               </div>
+              {showSearchInput && onSearchAgain && (
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    placeholder="Enter movie title..."
+                    value={searchTitle}
+                    onChange={(e) => setSearchTitle(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                    className="flex-1 h-7 text-xs"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSearch}
+                    disabled={!searchTitle.trim()}
+                    className="h-7 px-2 text-xs"
+                  >
+                    Search
+                  </Button>
+                </div>
+              )}
               {movie.details && (
                 <div className="space-y-1 text-xs text-muted-foreground">
                   {movie.details.year && <p>Year: {movie.details.year}</p>}
