@@ -45,9 +45,10 @@ export const MovieCard = ({
   const [showSearchInput, setShowSearchInput] = useState(false);
   
   const presentPeople = people.filter(p => p.isPresent);
-  const totalRatings = presentPeople.filter(p => movie.ratings[p.id] !== undefined).length;
-  const averageRating = presentPeople.length > 0
-    ? presentPeople.reduce((sum, p) => sum + (movie.ratings[p.id] || 0), 0) / presentPeople.length
+  const ratedPeople = presentPeople.filter(p => movie.ratings[p.id] && movie.ratings[p.id] > 0);
+  const totalRatings = ratedPeople.length;
+  const averageRating = totalRatings > 0
+    ? ratedPeople.reduce((sum, p) => sum + movie.ratings[p.id], 0) / totalRatings
     : 0;
 
   const handleSearch = () => {

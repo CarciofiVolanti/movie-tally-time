@@ -151,7 +151,8 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
   const presentPeople = people;
 
   const getMovieRatings = (movieId: string) => {
-    return detailedRatings.filter(r => r.watched_movie_id === movieId);
+    // Only include ratings > 0
+    return detailedRatings.filter(r => r.watched_movie_id === movieId && r.rating > 0);
   };
 
   const getAverageRating = (movieId: string) => {
