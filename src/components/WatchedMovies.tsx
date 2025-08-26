@@ -281,7 +281,7 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                               )}
                             </div>
                             <select
-                              className="w-full p-2 border rounded"
+                              className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition"
                               value={getRatingForPerson(movie.id, person.id)}
                               onChange={e => updateDetailedRating(movie.id, person.id, Number(e.target.value))}
                             >
@@ -347,20 +347,30 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                             <p className="text-sm text-muted-foreground mb-1">
                               Proposed by {movie.proposed_by}
                             </p>
-                            <div className="space-y-1 text-xs text-muted-foreground">
-                              <p>Ratings: {getMovieRatings(movie.id).length}/{presentPeople.length}</p>
-                              {movie.year && <p>Year: {movie.year}</p>}
-                            </div>
+                            {(movie.year || movie.runtime || movie.genre) && (
+                              <div className="space-y-1 text-xs text-muted-foreground">
+                                {movie.year && <p>Year: {movie.year}</p>}
+                                {movie.runtime && <p>Runtime: {movie.runtime}</p>}
+                                {movie.genre && <p className="truncate">Genre: {movie.genre}</p>}
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 mb-2">
-                            ★ {getAverageRating(movie.id).toFixed(1)}/10
-                          </Badge>
-                          <DetailedRating rating={getAverageRating(movie.id)} readonly size="sm" />
-                        </div>
+                        <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0">
+                          ★ {getAverageRating(movie.id).toFixed(1)}
+                        </Badge>
                       </div>
                     </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          {getMovieRatings(movie.id).length}/{presentPeople.length} rated
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          Avg: {getAverageRating(movie.id).toFixed(2)}/10
+                        </span>
+                      </div>
+                    </CardContent>
                   </Card>
                 ))
             )}
