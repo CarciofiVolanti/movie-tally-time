@@ -147,7 +147,7 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
     }
   };
 
-  const presentPeople = people.filter(p => p.is_present);
+  const presentPeople = people;
 
   const getMovieRatings = (movieId: string) => {
     return detailedRatings.filter(r => r.watched_movie_id === movieId);
@@ -280,12 +280,15 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                                 </Badge>
                               )}
                             </div>
-                            <DetailedRating
-                              rating={getRatingForPerson(movie.id, person.id)}
-                              onRatingChange={(rating) => updateDetailedRating(movie.id, person.id, rating)}
-                              readonly={false}
-                              size="md"
-                            />
+                            <select
+                              className="w-full p-2 border rounded"
+                              value={getRatingForPerson(movie.id, person.id)}
+                              onChange={e => updateDetailedRating(movie.id, person.id, Number(e.target.value))}
+                            >
+                              {Array.from({ length: 11 }, (_, i) => (
+                                <option key={i} value={i}>{i}</option>
+                              ))}
+                            </select>
                           </div>
                         ))}
                       </div>
