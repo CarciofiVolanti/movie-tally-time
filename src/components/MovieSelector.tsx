@@ -644,7 +644,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
 
           <div className="flex flex-col gap-4 w-full max-w-xl mx-auto">
             {[...movieRatings]
-              .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) // latest first
               .map(movie =>
                 <Card key={movie.movieTitle} className="w-full max-w-full">
                   <CardHeader className="flex flex-row items-center justify-between p-4">
