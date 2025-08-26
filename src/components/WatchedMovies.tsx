@@ -313,11 +313,15 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                 .map((movie, index) => (
                   <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow">
                     <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
-                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm flex-shrink-0">
-                            {index + 1}
-                          </div>
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+                        <div className="flex flex-row sm:flex-row gap-3 flex-1 min-w-0">
+                          {/* Ranking number for Rankings tab */}
+                          {typeof index !== "undefined" && (
+                            <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm flex-shrink-0">
+                              {index + 1}
+                            </div>
+                          )}
+                          {/* Poster */}
                           {movie.poster && movie.poster !== 'N/A' ? (
                             <img 
                               src={movie.poster} 
@@ -329,6 +333,7 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                               <Film className="w-6 h-6 text-primary" />
                             </div>
                           )}
+                          {/* Movie Info */}
                           <div className="flex-1 min-w-0">
                             {movie.imdb_id ? (
                               <a 
@@ -356,9 +361,12 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                             )}
                           </div>
                         </div>
-                        <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0">
-                          ★ {getAverageRating(movie.id).toFixed(1)}
-                        </Badge>
+                        {/* Badge */}
+                        <div className="flex sm:block justify-end mt-2 sm:mt-0">
+                          <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0">
+                            ★ {getAverageRating(movie.id).toFixed(1)}
+                          </Badge>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-2">
