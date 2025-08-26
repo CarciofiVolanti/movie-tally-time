@@ -25,9 +25,30 @@ export const DetailedRating = ({
     onRatingChange(rating === value ? 0 : value);
   };
 
-  // Generate buttons for 0.5, 1, 1.5, 2, ... up to 10
+  // Generate buttons for 0, 0.5, 1, 1.5, 2, ... up to 10
   const ratingButtons = [];
+  
+  // Add 0 rating button first
+  ratingButtons.push(
+    <button
+      key={0}
+      type="button"
+      disabled={readonly}
+      onClick={() => handleClick(0)}
+      className={cn(
+        "px-2 py-1 text-sm rounded-md border transition-all duration-200 min-w-[40px]",
+        readonly ? "cursor-default" : "cursor-pointer hover:scale-105",
+        rating === 0 ? "bg-destructive text-destructive-foreground border-destructive shadow-md" : "bg-background text-muted-foreground border-border hover:border-accent hover:text-foreground"
+      )}
+      title="No rating (0/10)"
+    >
+      0
+    </button>
+  );
+
+  // Generate rating buttons from 0.5 to 10
   for (let i = 0.5; i <= 10; i += 0.5) {
+    const isFullNumber = i % 1 === 0;
     ratingButtons.push(
       <button
         key={i}
@@ -35,11 +56,12 @@ export const DetailedRating = ({
         disabled={readonly}
         onClick={() => handleClick(i)}
         className={cn(
-          "px-1 py-0.5 text-xs rounded transition-colors",
-          readonly ? "cursor-default" : "cursor-pointer hover:bg-accent/20",
-          rating === i ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground hover:text-foreground",
-          size === "sm" && "text-xs px-0.5",
-          size === "lg" && "text-sm px-2"
+          "px-2 py-1 text-sm rounded-md border transition-all duration-200 min-w-[40px]",
+          readonly ? "cursor-default" : "cursor-pointer hover:scale-105",
+          rating === i 
+            ? "bg-primary text-primary-foreground border-primary shadow-md" 
+            : "bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground",
+          isFullNumber && "font-medium"
         )}
         title={`Rate ${i}/10`}
       >
@@ -49,8 +71,8 @@ export const DetailedRating = ({
   }
 
   return (
-    <div className="flex items-center gap-1 flex-wrap">
-      <div className="flex items-center gap-0.5 flex-wrap">
+    <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-1 flex-wrap max-w-full">
         {ratingButtons}
       </div>
       {rating > 0 && (
@@ -63,7 +85,7 @@ export const DetailedRating = ({
                   sizeClasses[size],
                   "transition-colors duration-200",
                   star <= rating / 2
-                    ? "fill-accent text-accent"
+                    ? "fill-primary text-primary"
                     : "fill-transparent text-muted-foreground"
                 )}
               />

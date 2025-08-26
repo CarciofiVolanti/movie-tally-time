@@ -262,12 +262,24 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                   </CardHeader>
 
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium">Rate this movie (0-10)</h4>
-                      <div className="grid gap-2 sm:grid-cols-1">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">Rate this movie (0-10)</h4>
+                        <Badge variant="outline" className="text-xs">
+                          {getMovieRatings(movie.id).length}/{presentPeople.length} rated
+                        </Badge>
+                      </div>
+                      <div className="space-y-3">
                         {presentPeople.map((person) => (
-                          <div key={person.id} className="flex items-center justify-between p-2 bg-secondary/50 rounded-md">
-                            <span className="text-sm truncate mr-2">{person.name}</span>
+                          <div key={person.id} className="p-3 bg-card/50 rounded-lg border border-border/50">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium">{person.name}</span>
+                              {getRatingForPerson(movie.id, person.id) > 0 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  ★ {getRatingForPerson(movie.id, person.id)}/10
+                                </Badge>
+                              )}
+                            </div>
                             <DetailedRating
                               rating={getRatingForPerson(movie.id, person.id)}
                               onRatingChange={(rating) => updateDetailedRating(movie.id, person.id, rating)}
