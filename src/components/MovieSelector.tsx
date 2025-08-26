@@ -629,11 +629,11 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
             </CardHeader>
           </Card>
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="flex flex-col gap-4 w-full max-w-xl mx-auto">
             {movieRatings.map(movie =>
-              <Card key={movie.movieTitle}>
+              <Card key={movie.movieTitle} className="w-full max-w-full">
                 <CardHeader className="flex flex-row items-center justify-between p-4">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0 w-full">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -647,9 +647,8 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                         <ChevronDown className="w-5 h-5" />
                       )}
                     </Button>
-                    <span className="font-semibold text-base sm:text-lg truncate">{movie.movieTitle}</span>
+                    <span className="font-semibold text-base sm:text-lg truncate min-w-0">{movie.movieTitle}</span>
                   </div>
-                  {/* You can add more header content here if needed */}
                 </CardHeader>
                 {!collapsedMovies[movie.movieTitle] && (
                   <CardContent>
