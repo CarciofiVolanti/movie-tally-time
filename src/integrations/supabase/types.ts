@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      detailed_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          person_id: string
+          rating: number
+          updated_at: string
+          watched_movie_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          person_id: string
+          rating: number
+          updated_at?: string
+          watched_movie_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          person_id?: string
+          rating?: number
+          updated_at?: string
+          watched_movie_id?: string
+        }
+        Relationships: []
+      }
       movie_proposals: {
         Row: {
           created_at: string
@@ -171,6 +198,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      watched_movies: {
+        Row: {
+          created_at: string
+          director: string | null
+          genre: string | null
+          id: string
+          imdb_id: string | null
+          imdb_rating: string | null
+          movie_title: string
+          plot: string | null
+          poster: string | null
+          proposed_by: string
+          runtime: string | null
+          session_id: string
+          updated_at: string
+          watched_at: string
+          year: string | null
+        }
+        Insert: {
+          created_at?: string
+          director?: string | null
+          genre?: string | null
+          id?: string
+          imdb_id?: string | null
+          imdb_rating?: string | null
+          movie_title: string
+          plot?: string | null
+          poster?: string | null
+          proposed_by: string
+          runtime?: string | null
+          session_id: string
+          updated_at?: string
+          watched_at?: string
+          year?: string | null
+        }
+        Update: {
+          created_at?: string
+          director?: string | null
+          genre?: string | null
+          id?: string
+          imdb_id?: string | null
+          imdb_rating?: string | null
+          movie_title?: string
+          plot?: string | null
+          poster?: string | null
+          proposed_by?: string
+          runtime?: string | null
+          session_id?: string
+          updated_at?: string
+          watched_at?: string
+          year?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {

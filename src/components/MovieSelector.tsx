@@ -6,10 +6,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PersonCard, Person } from "./PersonCard";
 import { MovieCard, MovieRating, MovieDetails } from "./MovieCard";
-import { Users, Film, Trophy, Plus, RefreshCw } from "lucide-react";
+import { Users, Film, Trophy, Plus, RefreshCw, Award, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-export const MovieSelector = () => {
+interface MovieSelectorProps {
+  onNavigateToWatched?: () => void;
+  onSessionLoad?: (sessionId: string) => void;
+}
+
+export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelectorProps) => {
   const [people, setPeople] = useState<Person[]>([]);
   const [newPersonName, setNewPersonName] = useState("");
   const [movieRatings, setMovieRatings] = useState<MovieRating[]>([]);
@@ -43,6 +48,7 @@ export const MovieSelector = () => {
       if (error) throw error;
       if (session) {
         setSessionId(session.id);
+        onSessionLoad?.(session.id);
         await loadSessionData(session.id);
       } else {
         setShowNewSession(true);
@@ -66,6 +72,7 @@ export const MovieSelector = () => {
       }]).select().single();
       if (error) throw error;
       setSessionId(session.id);
+      onSessionLoad?.(session.id);
       setShowNewSession(false);
 
       // Update URL
@@ -413,6 +420,76 @@ export const MovieSelector = () => {
       });
     }
   };
+  const markMovieAsWatched = async (movieTitle: string) => {
+    if (!sessionId) return;
+    
+    try {
+      // Find the movie proposal
+      const { data: proposals, error: proposalsError } = await supabase
+        .from('movie_proposals')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('movie_title', movieTitle)
+        .single();
+        
+      if (proposalsError) throw proposalsError;
+      if (!proposals) return;
+
+      // Find proposer name
+      const { data: proposer } = await supabase
+        .from('session_people')
+        .select('name')
+        .eq('id', proposals.person_id)
+        .single();
+
+      // Move to watched_movies table
+      const { error: insertError } = await supabase
+        .from('watched_movies')
+        .insert({
+          session_id: sessionId,
+          movie_title: movieTitle,
+          proposed_by: proposer?.name || 'Unknown',
+          poster: proposals.poster,
+          genre: proposals.genre,
+          runtime: proposals.runtime,
+          year: proposals.year,
+          director: proposals.director,
+          plot: proposals.plot,
+          imdb_rating: proposals.imdb_rating,
+          imdb_id: proposals.imdb_id
+        });
+
+      if (insertError) throw insertError;
+
+      // Remove from movie_proposals and movie_ratings
+      await supabase
+        .from('movie_ratings')
+        .delete()
+        .eq('proposal_id', proposals.id);
+        
+      await supabase
+        .from('movie_proposals')
+        .delete()
+        .eq('id', proposals.id);
+
+      // Update local state
+      setMovieRatings(prev => prev.filter(movie => movie.movieTitle !== movieTitle));
+      
+      toast({
+        title: "Movie marked as watched",
+        description: `"${movieTitle}" has been moved to watched movies section`,
+      });
+      
+    } catch (error) {
+      console.error('Error marking movie as watched:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark movie as watched",
+        variant: "destructive",
+      });
+    }
+  };
+
   const presentPeople = people.filter(p => p.isPresent);
   const rankedMovies = movieRatings.map(movie => ({
     ...movie,
@@ -450,13 +527,26 @@ export const MovieSelector = () => {
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold bg-gradient-cinema bg-clip-text text-transparent mb-4">CarciOscar</h1>
 
-        <Button variant="outline" size="sm" onClick={() => {
-          setShowNewSession(true);
-          setSessionId(null);
-          window.history.pushState({}, '', window.location.pathname);
-        }} className="mt-2">
-          Start New Session
-        </Button>
+        <div className="flex items-center justify-center gap-3">
+          <Button variant="outline" size="sm" onClick={() => {
+            setShowNewSession(true);
+            setSessionId(null);
+            window.history.pushState({}, '', window.location.pathname);
+          }}>
+            Start New Session
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onNavigateToWatched}
+            disabled={!sessionId}
+            className="bg-gradient-to-r from-accent/20 to-primary/20 border-accent/40 hover:from-accent/30 hover:to-primary/30"
+          >
+            <Award className="w-4 h-4 mr-2" />
+            Watched Movies
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="people" className="space-y-6">
@@ -600,9 +690,20 @@ export const MovieSelector = () => {
                        ) : (
                          <h3 className="font-semibold text-base sm:text-lg truncate">{movie.movieTitle}</h3>
                        )}
-                        <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 text-sm sm:text-lg px-2 py-1 sm:px-3 flex-shrink-0">
-                          ★ {movie.averageRating.toFixed(1)}
-                        </Badge>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 text-sm sm:text-lg px-2 py-1 sm:px-3">
+                            ★ {movie.averageRating.toFixed(1)}
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => markMovieAsWatched(movie.movieTitle)}
+                            className="h-8 w-8 p-0 bg-green-50 border-green-200 hover:bg-green-100 text-green-600"
+                            title="Mark as watched"
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                       
                       <p className="text-xs sm:text-sm text-muted-foreground mb-2">
