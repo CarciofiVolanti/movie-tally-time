@@ -643,39 +643,41 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
           </Card>
 
           <div className="flex flex-col gap-4 w-full max-w-xl mx-auto">
-            {movieRatings.map(movie =>
-              <Card key={movie.movieTitle} className="w-full max-w-full">
-                <CardHeader className="flex flex-row items-center justify-between p-4">
-                  <div className="flex items-center gap-2 min-w-0 w-full">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => toggleCollapse(movie.movieTitle)}
-                      aria-label={collapsedMovies[movie.movieTitle] ? "Expand" : "Collapse"}
-                      className="p-1"
-                    >
-                      {collapsedMovies[movie.movieTitle] ? (
-                        <ChevronRight className="w-5 h-5" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5" />
-                      )}
-                    </Button>
-                    <span className="font-semibold text-base sm:text-lg truncate min-w-0">{movie.movieTitle}</span>
-                  </div>
-                </CardHeader>
-                {!collapsedMovies[movie.movieTitle] && (
-                  <CardContent>
-                    <MovieCard
-                      movie={movie}
-                      people={presentPeople}
-                      onRatingChange={updateRating}
-                      onSearchAgain={searchMovieAgain}
-                      showAllRatings
-                    />
-                  </CardContent>
-                )}
-              </Card>
-            )}
+            {[...movieRatings]
+              .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+              .map(movie =>
+                <Card key={movie.movieTitle} className="w-full max-w-full">
+                  <CardHeader className="flex flex-row items-center justify-between p-4">
+                    <div className="flex items-center gap-2 min-w-0 w-full">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleCollapse(movie.movieTitle)}
+                        aria-label={collapsedMovies[movie.movieTitle] ? "Expand" : "Collapse"}
+                        className="p-1"
+                      >
+                        {collapsedMovies[movie.movieTitle] ? (
+                          <ChevronRight className="w-5 h-5" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5" />
+                        )}
+                      </Button>
+                      <span className="font-semibold text-base sm:text-lg truncate min-w-0">{movie.movieTitle}</span>
+                    </div>
+                  </CardHeader>
+                  {!collapsedMovies[movie.movieTitle] && (
+                    <CardContent>
+                      <MovieCard
+                        movie={movie}
+                        people={presentPeople}
+                        onRatingChange={updateRating}
+                        onSearchAgain={searchMovieAgain}
+                        showAllRatings
+                      />
+                    </CardContent>
+                  )}
+                </Card>
+              )}
           </div>
 
           {movieRatings.length === 0 && <Card className="text-center py-8">
