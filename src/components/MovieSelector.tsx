@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PersonCard, Person } from "./PersonCard";
 import { MovieCard, MovieRating, MovieDetails } from "./MovieCard";
-import { Users, Film, Trophy, Plus, RefreshCw, Award, Check } from "lucide-react";
+import { Users, Film, Trophy, Plus, RefreshCw, Award, Check, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 interface MovieSelectorProps {
@@ -23,6 +23,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
   const [showNewSession, setShowNewSession] = useState(false);
   const [newSessionName, setNewSessionName] = useState("");
   const [fetchingDetails, setFetchingDetails] = useState(false);
+  const [collapsedMovies, setCollapsedMovies] = useState<Record<string, boolean>>({});
   const {
     toast
   } = useToast();
@@ -623,14 +624,38 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
 
           <div className="grid gap-4 lg:grid-cols-2">
             {movieRatings.map(movie =>
-              <MovieCard
-                key={movie.movieTitle}
-                movie={movie}
-                people={presentPeople}
-                onRatingChange={updateRating}
-                onSearchAgain={searchMovieAgain}
-                showAllRatings
-              />
+              <Card key={movie.movieTitle}>
+                <CardHeader className="flex flex-row items-center justify-between p-4">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleCollapse(movie.movieTitle)}
+                      aria-label={collapsedMovies[movie.movieTitle] ? "Expand" : "Collapse"}
+                      className="p-1"
+                    >
+                      {collapsedMovies[movie.movieTitle] ? (
+                        <ChevronRight className="w-5 h-5" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5" />
+                      )}
+                    </Button>
+                    <span className="font-semibold text-base sm:text-lg truncate">{movie.movieTitle}</span>
+                  </div>
+                  {/* You can add more header content here if needed */}
+                </CardHeader>
+                {!collapsedMovies[movie.movieTitle] && (
+                  <CardContent>
+                    <MovieCard
+                      movie={movie}
+                      people={presentPeople}
+                      onRatingChange={updateRating}
+                      onSearchAgain={searchMovieAgain}
+                      showAllRatings
+                    />
+                  </CardContent>
+                )}
+              </Card>
             )}
           </div>
 
