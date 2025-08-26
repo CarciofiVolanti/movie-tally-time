@@ -491,6 +491,13 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
     }
   };
 
+  const toggleCollapse = (movieTitle: string) => {
+    setCollapsedMovies(prev => ({
+      ...prev,
+      [movieTitle]: !prev[movieTitle]
+    }));
+  };
+
   const presentPeople = people.filter(p => p.isPresent);
   const rankedMovies = movieRatings.map(movie => ({
     ...movie,
