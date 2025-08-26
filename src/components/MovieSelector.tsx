@@ -499,11 +499,24 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
   };
 
   const presentPeople = people.filter(p => p.isPresent);
-  const rankedMovies = movieRatings.map(movie => ({
-    ...movie,
-    averageRating: presentPeople.length > 0 ? presentPeople.reduce((sum, p) => sum + (movie.ratings[p.id] || 0), 0) / presentPeople.length : 0,
-    totalRatings: presentPeople.filter(p => movie.ratings[p.id] !== undefined).length
-  })).filter(movie => presentPeople.some(p => p.movies.includes(movie.movieTitle))).sort((a, b) => b.averageRating - a.averageRating);
+  const rankedMovies = movieRatings.map(movie => {
+    // Only count ratings > 0 and from present people
+    const validRatings = presentPeople
+      .map(p => movie.ratings[p.id])
+      .filter(r => typeof r === "number" && r > 0);
+
+    const averageRating = validRatings.length > 0
+      ? validRatings.reduce((sum, r) => sum + r, 0) / validRatings.length
+      : 0;
+
+    return {
+      ...movie,
+      averageRating,
+      totalRatings: validRatings.length
+    };
+  })
+  .filter(movie => presentPeople.some(p => p.movies.includes(movie.movieTitle)))
+  .sort((a, b) => b.averageRating - a.averageRating);
   if (loading) {
     return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
       <div className="text-center">
