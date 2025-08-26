@@ -128,8 +128,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
         ratingsData.filter(r => r.proposal_id === proposal.id).forEach(rating => {
           ratings[rating.person_id] = rating.rating;
         });
-        
-        // Load movie details from database if available
+
         const details: MovieDetails | undefined = (proposal.poster || proposal.genre || proposal.runtime) ? {
           poster: proposal.poster,
           genre: proposal.genre,
@@ -140,12 +139,13 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
           imdbRating: proposal.imdb_rating,
           imdbId: proposal.imdb_id
         } : undefined;
-        
+
         return {
           movieTitle: proposal.movie_title,
           proposedBy: proposer?.name || 'Unknown',
           ratings,
-          details
+          details,
+          created_at: proposal.created_at // <-- add this line
         };
       });
       setPeople(transformedPeople);
@@ -515,7 +515,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       totalRatings: validRatings.length
     };
   })
-  .filter(movie => presentPeople.some(p => p.movies.includes(movie.movieTitle)))
+  .filter(movie => presentPeople.some p => p.movies.includes(movie.movieTitle)))
   .sort((a, b) => b.averageRating - a.averageRating);
   if (loading) {
     return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
