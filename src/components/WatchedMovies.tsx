@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Star, Film } from "lucide-react";
+import { ArrowLeft, Star, Film, ChevronDown, ChevronRight } from "lucide-react";
 import { StarRating } from "./StarRating";
 import { DetailedRating } from "./DetailedRating";
 import { PersonCard } from "./PersonCard";
@@ -48,6 +48,7 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
   const [detailedRatings, setDetailedRatings] = useState<DetailedRating[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
+  const [collapsedMovies, setCollapsedMovies] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   const loadData = async () => {
@@ -164,6 +165,13 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
     return rating?.rating || 0;
   };
 
+  const toggleCollapse = (movieId: string) => {
+    setCollapsedMovies(prev => ({
+      ...prev,
+      [movieId]: !prev[movieId]
+    }));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 p-4">
@@ -214,8 +222,20 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
             ) : (
               watchedMovies.map((movie) => (
                 <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-4">
+                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleCollapse(movie.id)}
+                        aria-label={collapsedMovies[movie.id] ? "Expand" : "Collapse"}
+                        className="p-1 rounded hover:bg-accent/20 transition"
+                        type="button"
+                      >
+                        {collapsedMovies[movie.id] ? (
+                          <ChevronRight className="w-5 h-5" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5" />
+                        )}
+                      </button>
                       <div className="flex items-start gap-3 flex-1 min-w-0">
                         {movie.poster && movie.poster !== 'N/A' ? (
                           <img 
@@ -255,45 +275,46 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                           )}
                         </div>
                       </div>
-                      <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0">
-                        ★ {getAverageRating(movie.id).toFixed(1)}
-                      </Badge>
                     </div>
+                    <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0">
+                      ★ {getAverageRating(movie.id).toFixed(1)}
+                    </Badge>
                   </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium">Rate this movie (0-10)</h4>
-                        <Badge variant="outline" className="text-xs">
-                          {getMovieRatings(movie.id).length}/{presentPeople.length} rated
-                        </Badge>
-                      </div>
-                      <div className="space-y-3">
-                        {presentPeople.map((person) => (
-                          <div key={person.id} className="p-3 bg-card/50 rounded-lg border border-border/50">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium">{person.name}</span>
-                              {getRatingForPerson(movie.id, person.id) > 0 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  ★ {getRatingForPerson(movie.id, person.id)}/10
-                                </Badge>
-                              )}
+                  {!collapsedMovies[movie.id] && (
+                    <CardContent className="space-y-4">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium">Rate this movie (0-10)</h4>
+                          <Badge variant="outline" className="text-xs">
+                            {getMovieRatings(movie.id).length}/{presentPeople.length} rated
+                          </Badge>
+                        </div>
+                        <div className="space-y-3">
+                          {presentPeople.map((person) => (
+                            <div key={person.id} className="p-3 bg-card/50 rounded-lg border border-border/50">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium">{person.name}</span>
+                                {getRatingForPerson(movie.id, person.id) > 0 && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    ★ {getRatingForPerson(movie.id, person.id)}/10
+                                  </Badge>
+                                )}
+                              </div>
+                              <select
+                                className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition"
+                                value={getRatingForPerson(movie.id, person.id)}
+                                onChange={e => updateDetailedRating(movie.id, person.id, Number(e.target.value))}
+                              >
+                                {Array.from({ length: 11 }, (_, i) => (
+                                  <option key={i} value={i}>{i}</option>
+                                ))}
+                              </select>
                             </div>
-                            <select
-                              className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition"
-                              value={getRatingForPerson(movie.id, person.id)}
-                              onChange={e => updateDetailedRating(movie.id, person.id, Number(e.target.value))}
-                            >
-                              {Array.from({ length: 11 }, (_, i) => (
-                                <option key={i} value={i}>{i}</option>
-                              ))}
-                            </select>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
+                    </CardContent>
+                  )}
                 </Card>
               ))
             )}
