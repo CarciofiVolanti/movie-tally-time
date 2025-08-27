@@ -313,6 +313,11 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                               <div key={person.id} className="p-3 bg-card/50 rounded-lg border border-border/50">
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                                   <span className="text-sm font-medium flex-1 min-w-0 truncate">{person.name}</span>
+                                  {getRatingForPerson(movie.id, person.id) > 0 && (
+                                    <Badge variant="secondary" className="text-xs self-start sm:self-auto">
+                                      ★ {getRatingForPerson(movie.id, person.id)}/10
+                                    </Badge>
+                                  )}
                                   <label className="flex items-center gap-1 text-xs text-muted-foreground">
                                     <input
                                       type="checkbox"
@@ -329,11 +334,6 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                                     />
                                     present
                                   </label>
-                                  {getRatingForPerson(movie.id, person.id) > 0 && (
-                                    <Badge variant="secondary" className="text-xs self-start sm:self-auto">
-                                      ★ {getRatingForPerson(movie.id, person.id)}/10
-                                    </Badge>
-                                  )}
                                 </div>
                                 <select
                                   className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
