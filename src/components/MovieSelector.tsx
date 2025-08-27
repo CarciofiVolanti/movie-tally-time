@@ -799,6 +799,21 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                       )}
                     </div>
                   </div>
+                  {movie.averageRating > 4 && (
+                    (() => {
+                      // Find people not present who rated this movie 1
+                      const absentPeople = people
+                        .filter(p => !p.isPresent && movie.ratings && movie.ratings[p.id] === 1)
+                        .map(p => p.name);
+
+                      return absentPeople.length > 0 ? (
+                        <div className="mt-2 text-xs text-red-500">
+                          <span>Rated 1 by absent: </span>
+                          {absentPeople.join(", ")}
+                        </div>
+                      ) : null;
+                    })()
+                  )}
                 </CardContent>
               </Card>
             ))}
