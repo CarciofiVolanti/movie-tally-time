@@ -372,6 +372,8 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
   const deletePerson = async (id: string) => {
     const person = people.find(p => p.id === id);
     if (!person) return;
+    // Confirmation dialog
+    if (!window.confirm(`Are you sure you want to remove ${person.name}? This cannot be undone.`)) return;
     try {
       await supabase.from('session_people').delete().eq('id', id);
       setPeople(prev => prev.filter(p => p.id !== id));
@@ -445,7 +447,8 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
   };
   const markMovieAsWatched = async (movieTitle: string) => {
     if (!sessionId) return;
-    
+    // Confirmation dialog
+    if (!window.confirm(`Are you sure you want to mark "${movieTitle}" as watched? This will move it to the watched movies section.`)) return;
     try {
       // Find the movie proposal
       const { data: proposals, error: proposalsError } = await supabase
@@ -625,7 +628,17 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
           </Card>
 
           <div className="grid gap-4 md:grid-cols-2">
-            {people.map(person => <PersonCard key={person.id} person={person} onUpdatePerson={updatePerson} onDeletePerson={deletePerson} />)}
+            {people
+              .slice() // create a shallow copy to avoid mutating state
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map(person => (
+                <PersonCard
+                  key={person.id}
+                  person={person}
+                  onUpdatePerson={updatePerson}
+                  onDeletePerson={deletePerson}
+                />
+              ))}
           </div>
 
           {people.length === 0 && <Card className="text-center py-8">
