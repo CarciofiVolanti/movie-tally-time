@@ -377,57 +377,24 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                 .map((movie, index) => (
                   <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow">
                     <CardHeader className="pb-3 p-4">
-                      {/* Mobile-first layout with responsive adjustments */}
-                      <div className="space-y-3 sm:space-y-0">
-                        {/* Header with title and rating - always on top */}
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-start gap-2 flex-1 min-w-0">
-                            {/* Ranking number - visible on mobile as inline badge */}
-                            <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground font-bold text-xs sm:text-sm flex-shrink-0 mt-1">
-                              {index + 1}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              {movie.imdb_id ? (
-                                <a 
-                                  href={`https://www.imdb.com/title/${movie.imdb_id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="font-semibold text-base sm:text-lg hover:text-primary transition-colors block hover:underline leading-tight"
-                                >
-                                  {movie.movie_title}
-                                </a>
-                              ) : (
-                                <h3 className="font-semibold text-base sm:text-lg leading-tight">
-                                  {movie.movie_title}
-                                </h3>
-                              )}
-                              <p className="text-sm text-muted-foreground mt-1">
-                                Proposed by {movie.proposed_by}
-                              </p>
-                            </div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 flex-1 min-w-0">
+                          <button
+                            onClick={() => toggleCollapse(movie.id)}
+                            aria-label={collapsedMovies[movie.id] ? "Expand" : "Collapse"}
+                            className="p-1 rounded hover:bg-accent/20 transition flex-shrink-0 mt-1"
+                            type="button"
+                          >
+                            {collapsedMovies[movie.id] ? (
+                              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
+                            )}
+                          </button>
+                          <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground font-bold text-xs sm:text-sm flex-shrink-0 mt-1">
+                            {index + 1}
                           </div>
-                          <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0 ml-2">
-                            ★ {getAverageRating(movie.id).toFixed(1)}
-                          </Badge>
-                        </div>
-
-                        {/* Content area with poster and details */}
-                        <div className="flex gap-3">
-                          {/* Poster - smaller on mobile */}
-                          {movie.poster && movie.poster !== 'N/A' ? (
-                            <img 
-                              src={movie.poster} 
-                              alt={`${movie.movie_title} poster`}
-                              className="w-12 h-18 sm:w-16 sm:h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
-                            />
-                          ) : (
-                            <div className="w-12 h-18 sm:w-16 sm:h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <Film className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
-                            </div>
-                          )}
-                          
-                          {/* Movie details */}
-                          <div className="flex-1 min-w-0 space-y-2">
+                          <div className="flex-1 min-w-0">
                             {movie.imdb_id ? (
                               <a 
                                 href={`https://www.imdb.com/title/${movie.imdb_id}`}
@@ -442,6 +409,28 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                                 {movie.movie_title}
                               </h3>
                             )}
+                          </div>
+                        </div>
+                        <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0 ml-2">
+                          ★ {getAverageRating(movie.id).toFixed(1)}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    {!collapsedMovies[movie.id] && (
+                      <CardContent className="space-y-2 p-4 pt-0">
+                        <div className="flex gap-3">
+                          {movie.poster && movie.poster !== 'N/A' ? (
+                            <img 
+                              src={movie.poster} 
+                              alt={`${movie.movie_title} poster`}
+                              className="w-12 h-18 sm:w-16 sm:h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-12 h-18 sm:w-16 sm:h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Film className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0 space-y-2">
                             <div className="space-y-1 text-xs text-muted-foreground">
                               <p>Proposed by {movie.proposed_by}</p>
                               {movie.year && <p>Year: {movie.year}</p>}
@@ -450,18 +439,16 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-2 p-4 pt-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                        <span className="text-sm text-muted-foreground">
-                          {getMovieRatings(movie.id).length}/{presentPeople.length} rated
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          Avg: {getAverageRating(movie.id).toFixed(2)}/10
-                        </span>
-                      </div>
-                    </CardContent>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                          <span className="text-sm text-muted-foreground">
+                            {getMovieRatings(movie.id).length}/{presentPeople.length} rated
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            Avg: {getAverageRating(movie.id).toFixed(2)}/10
+                          </span>
+                        </div>
+                      </CardContent>
+                    )}
                   </Card>
                 ))
             )}
