@@ -322,13 +322,36 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       const moviesToAdd = updatedPerson.movies.filter(m => !currentMovies.includes(m));
       const moviesToRemove = currentMovies.filter(m => !updatedPerson.movies.includes(m));
 
-      // Add new movies
+      // Add new movies with automatic detail fetching
       if (moviesToAdd.length > 0) {
-        await supabase.from('movie_proposals').insert(moviesToAdd.map(movie => ({
-          session_id: sessionId,
-          person_id: updatedPerson.id,
-          movie_title: movie
-        })));
+        for (const movie of moviesToAdd) {
+          try {
+            const { error } = await supabase.functions.invoke('propose-movie-with-details', {
+              body: {
+                sessionId,
+                personId: updatedPerson.id,
+                movieTitle: movie
+              }
+            });
+            if (error) {
+              console.error('Error proposing movie with details:', error);
+              // Fallback to basic proposal without details
+              await supabase.from('movie_proposals').insert({
+                session_id: sessionId,
+                person_id: updatedPerson.id,
+                movie_title: movie
+              });
+            }
+          } catch (error) {
+            console.error('Error calling propose-movie-with-details function:', error);
+            // Fallback to basic proposal without details
+            await supabase.from('movie_proposals').insert({
+              session_id: sessionId,
+              person_id: updatedPerson.id,
+              movie_title: movie
+            });
+          }
+        }
       }
 
       // Remove movies
