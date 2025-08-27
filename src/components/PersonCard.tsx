@@ -63,6 +63,8 @@ export const PersonCard = ({ person, onUpdatePerson, onDeletePerson }: PersonCar
   };
 
   const removeMovie = (index: number) => {
+    const movieTitle = person.movies[index];
+    if (!window.confirm(`Are you sure you want to remove the proposal for "${movieTitle}"? This cannot be undone.`)) return;
     onUpdatePerson({
       ...person,
       movies: person.movies.filter((_, i) => i !== index)

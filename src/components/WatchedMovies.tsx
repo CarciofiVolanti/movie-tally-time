@@ -256,9 +256,12 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                                 {movie.movie_title}
                               </h3>
                             )}
-                            <p className="text-sm text-muted-foreground mt-1">
-                              Proposed by {movie.proposed_by}
-                            </p>
+                            <div className="space-y-1 text-xs text-muted-foreground">
+                              <p>Proposed by {movie.proposed_by}</p>
+                              {movie.year && <p>Year: {movie.year}</p>}
+                              {movie.runtime && <p>Runtime: {movie.runtime}</p>}
+                              {movie.genre && <p className="break-words">Genre: {movie.genre}</p>}
+                            </div>
                           </div>
                         </div>
                         <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0 ml-2">
@@ -283,13 +286,26 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                         
                         {/* Movie details */}
                         <div className="flex-1 min-w-0 space-y-2">
-                          {(movie.year || movie.runtime || movie.genre) && (
-                            <div className="space-y-1 text-xs text-muted-foreground">
-                              {movie.year && <p>Year: {movie.year}</p>}
-                              {movie.runtime && <p>Runtime: {movie.runtime}</p>}
-                              {movie.genre && <p className="break-words">Genre: {movie.genre}</p>}
-                            </div>
+                          {movie.imdb_id ? (
+                            <a 
+                              href={`https://www.imdb.com/title/${movie.imdb_id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-semibold text-base sm:text-lg hover:text-primary transition-colors block hover:underline leading-tight"
+                            >
+                              {movie.movie_title}
+                            </a>
+                          ) : (
+                            <h3 className="font-semibold text-base sm:text-lg leading-tight">
+                              {movie.movie_title}
+                            </h3>
                           )}
+                          <div className="space-y-1 text-xs text-muted-foreground">
+                            <p>Proposed by {movie.proposed_by}</p>
+                            {movie.year && <p>Year: {movie.year}</p>}
+                            {movie.runtime && <p>Runtime: {movie.runtime}</p>}
+                            {movie.genre && <p className="break-words">Genre: {movie.genre}</p>}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -399,13 +415,26 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                           
                           {/* Movie details */}
                           <div className="flex-1 min-w-0 space-y-2">
-                            {(movie.year || movie.runtime || movie.genre) && (
-                              <div className="space-y-1 text-xs text-muted-foreground">
-                                {movie.year && <p>Year: {movie.year}</p>}
-                                {movie.runtime && <p>Runtime: {movie.runtime}</p>}
-                                {movie.genre && <p className="break-words">Genre: {movie.genre}</p>}
-                              </div>
+                            {movie.imdb_id ? (
+                              <a 
+                                href={`https://www.imdb.com/title/${movie.imdb_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-semibold text-base sm:text-lg hover:text-primary transition-colors block hover:underline leading-tight"
+                              >
+                                {movie.movie_title}
+                              </a>
+                            ) : (
+                              <h3 className="font-semibold text-base sm:text-lg leading-tight">
+                                {movie.movie_title}
+                              </h3>
                             )}
+                            <div className="space-y-1 text-xs text-muted-foreground">
+                              <p>Proposed by {movie.proposed_by}</p>
+                              {movie.year && <p>Year: {movie.year}</p>}
+                              {movie.runtime && <p>Runtime: {movie.runtime}</p>}
+                              {movie.genre && <p className="break-words">Genre: {movie.genre}</p>}
+                            </div>
                           </div>
                         </div>
                       </div>
