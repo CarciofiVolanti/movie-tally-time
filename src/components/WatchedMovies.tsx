@@ -30,6 +30,7 @@ interface DetailedRating {
   watched_movie_id: string;
   person_id: string;
   rating: number;
+  present?: boolean;
 }
 
 interface Person {
@@ -101,14 +102,20 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
     }
   }, [sessionId]);
 
-  const updateDetailedRating = async (watchedMovieId: string, personId: string, rating: number) => {
+  const updateDetailedRating = async (
+    watchedMovieId: string,
+    personId: string,
+    rating: number,
+    present?: boolean
+  ) => {
     try {
       const { error } = await supabase
         .from("detailed_ratings")
         .upsert({
           watched_movie_id: watchedMovieId,
           person_id: personId,
-          rating: rating
+          rating,
+          present // save present value
         }, {
           onConflict: "watched_movie_id,person_id"
         });
@@ -119,9 +126,9 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
       setDetailedRatings(prev => {
         const existing = prev.find(r => r.watched_movie_id === watchedMovieId && r.person_id === personId);
         if (existing) {
-          return prev.map(r => 
-            r.watched_movie_id === watchedMovieId && r.person_id === personId 
-              ? { ...r, rating } 
+          return prev.map(r =>
+            r.watched_movie_id === watchedMovieId && r.person_id === personId
+              ? { ...r, rating, present }
               : r
           );
         } else {
@@ -129,7 +136,8 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
             id: `temp-${Date.now()}`,
             watched_movie_id: watchedMovieId,
             person_id: personId,
-            rating
+            rating,
+            present
           }];
         }
       });
@@ -295,27 +303,57 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                           </Badge>
                         </div>
                         <div className="space-y-3">
-                          {presentPeople.map((person) => (
-                            <div key={person.id} className="p-3 bg-card/50 rounded-lg border border-border/50">
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                                <span className="text-sm font-medium flex-1 min-w-0 truncate">{person.name}</span>
-                                {getRatingForPerson(movie.id, person.id) > 0 && (
-                                  <Badge variant="secondary" className="text-xs self-start sm:self-auto">
-                                    ★ {getRatingForPerson(movie.id, person.id)}/10
-                                  </Badge>
-                                )}
+                          {presentPeople.map((person) => {
+                            const detailed = detailedRatings.find(
+                              r => r.watched_movie_id === movie.id && r.person_id === person.id
+                            );
+                            const isPresent = detailed?.present ?? true; // default to true if not set
+
+                            return (
+                              <div key={person.id} className="p-3 bg-card/50 rounded-lg border border-border/50">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                                  <span className="text-sm font-medium flex-1 min-w-0 truncate">{person.name}</span>
+                                  <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <input
+                                      type="checkbox"
+                                      checked={isPresent}
+                                      onChange={e =>
+                                        updateDetailedRating(
+                                          movie.id,
+                                          person.id,
+                                          getRatingForPerson(movie.id, person.id),
+                                          e.target.checked
+                                        )
+                                      }
+                                      className="accent-primary bg-card border-border rounded"
+                                    />
+                                    present
+                                  </label>
+                                  {getRatingForPerson(movie.id, person.id) > 0 && (
+                                    <Badge variant="secondary" className="text-xs self-start sm:self-auto">
+                                      ★ {getRatingForPerson(movie.id, person.id)}/10
+                                    </Badge>
+                                  )}
+                                </div>
+                                <select
+                                  className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
+                                  value={getRatingForPerson(movie.id, person.id)}
+                                  onChange={e =>
+                                    updateDetailedRating(
+                                      movie.id,
+                                      person.id,
+                                      Number(e.target.value),
+                                      isPresent
+                                    )
+                                  }
+                                >
+                                  {Array.from({ length: 21 }, (_, i) => (
+                                    <option key={i} value={i * 0.5}>{(i * 0.5).toFixed(1)}</option>
+                                  ))}
+                                </select>
                               </div>
-                              <select
-                                className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
-                                value={getRatingForPerson(movie.id, person.id)}
-                                onChange={e => updateDetailedRating(movie.id, person.id, Number(e.target.value))}
-                              >
-                                {Array.from({ length: 11 }, (_, i) => (
-                                  <option key={i} value={i}>{i}</option>
-                                ))}
-                              </select>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     </CardContent>
