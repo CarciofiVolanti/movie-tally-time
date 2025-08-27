@@ -223,68 +223,81 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
             ) : (
               watchedMovies.map((movie) => (
                 <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow">
-                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => toggleCollapse(movie.id)}
-                        aria-label={collapsedMovies[movie.id] ? "Expand" : "Collapse"}
-                        className="p-1 rounded hover:bg-accent/20 transition"
-                        type="button"
-                      >
-                        {collapsedMovies[movie.id] ? (
-                          <ChevronRight className="w-5 h-5" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5" />
-                        )}
-                      </button>
-                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <CardHeader className="pb-3 p-4">
+                    {/* Mobile-first layout with responsive adjustments */}
+                    <div className="space-y-3 sm:space-y-0">
+                      {/* Header with title, toggle, and rating */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 flex-1 min-w-0">
+                          <button
+                            onClick={() => toggleCollapse(movie.id)}
+                            aria-label={collapsedMovies[movie.id] ? "Expand" : "Collapse"}
+                            className="p-1 rounded hover:bg-accent/20 transition flex-shrink-0 mt-1"
+                            type="button"
+                          >
+                            {collapsedMovies[movie.id] ? (
+                              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
+                            )}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            {movie.imdb_id ? (
+                              <a 
+                                href={`https://www.imdb.com/title/${movie.imdb_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-semibold text-base sm:text-lg hover:text-primary transition-colors block hover:underline leading-tight"
+                              >
+                                {movie.movie_title}
+                              </a>
+                            ) : (
+                              <h3 className="font-semibold text-base sm:text-lg leading-tight">
+                                {movie.movie_title}
+                              </h3>
+                            )}
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Proposed by {movie.proposed_by}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0 ml-2">
+                          ★ {getAverageRating(movie.id).toFixed(1)}
+                        </Badge>
+                      </div>
+
+                      {/* Content area with poster and details */}
+                      <div className="flex gap-3">
+                        {/* Poster - smaller on mobile */}
                         {movie.poster && movie.poster !== 'N/A' ? (
                           <img 
                             src={movie.poster} 
                             alt={`${movie.movie_title} poster`}
-                            className="w-16 h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
+                            className="w-12 h-18 sm:w-16 sm:h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
                           />
                         ) : (
-                          <div className="w-16 h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Film className="w-6 h-6 text-primary" />
+                          <div className="w-12 h-18 sm:w-16 sm:h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Film className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
-                          {movie.imdb_id ? (
-                            <a 
-                              href={`https://www.imdb.com/title/${movie.imdb_id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-semibold text-lg hover:text-primary transition-colors truncate hover:underline"
-                            >
-                              {movie.movie_title}
-                            </a>
-                          ) : (
-                            <h3 className="font-semibold text-lg truncate">
-                              {movie.movie_title}
-                            </h3>
-                          )}
-                          <p className="text-sm text-muted-foreground mb-1">
-                            Proposed by {movie.proposed_by}
-                          </p>
+                        
+                        {/* Movie details */}
+                        <div className="flex-1 min-w-0 space-y-2">
                           {(movie.year || movie.runtime || movie.genre) && (
                             <div className="space-y-1 text-xs text-muted-foreground">
                               {movie.year && <p>Year: {movie.year}</p>}
                               {movie.runtime && <p>Runtime: {movie.runtime}</p>}
-                              {movie.genre && <p className="truncate">Genre: {movie.genre}</p>}
+                              {movie.genre && <p className="break-words">Genre: {movie.genre}</p>}
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
-                    <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0">
-                      ★ {getAverageRating(movie.id).toFixed(1)}
-                    </Badge>
                   </CardHeader>
                   {!collapsedMovies[movie.id] && (
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-4 p-4 pt-0">
                       <div className="space-y-4">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                           <h4 className="text-sm font-medium">Rate this movie (0-10)</h4>
                           <Badge variant="outline" className="text-xs">
                             {getMovieRatings(movie.id).length}/{presentPeople.length} rated
@@ -293,16 +306,16 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                         <div className="space-y-3">
                           {presentPeople.map((person) => (
                             <div key={person.id} className="p-3 bg-card/50 rounded-lg border border-border/50">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium">{person.name}</span>
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                                <span className="text-sm font-medium flex-1 min-w-0 truncate">{person.name}</span>
                                 {getRatingForPerson(movie.id, person.id) > 0 && (
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge variant="secondary" className="text-xs self-start sm:self-auto">
                                     ★ {getRatingForPerson(movie.id, person.id)}/10
                                   </Badge>
                                 )}
                               </div>
                               <select
-                                className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition"
+                                className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
                                 value={getRatingForPerson(movie.id, person.id)}
                                 onChange={e => updateDetailedRating(movie.id, person.id, Number(e.target.value))}
                               >
@@ -334,65 +347,71 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                 .sort((a, b) => getAverageRating(b.id) - getAverageRating(a.id))
                 .map((movie, index) => (
                   <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow">
-                    <CardHeader className="pb-3">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
-                        <div className="flex flex-row sm:flex-row gap-3 flex-1 min-w-0">
-                          {/* Ranking number for Rankings tab */}
-                          {typeof index !== "undefined" && (
-                            <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm flex-shrink-0">
+                    <CardHeader className="pb-3 p-4">
+                      {/* Mobile-first layout with responsive adjustments */}
+                      <div className="space-y-3 sm:space-y-0">
+                        {/* Header with title and rating - always on top */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-2 flex-1 min-w-0">
+                            {/* Ranking number - visible on mobile as inline badge */}
+                            <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground font-bold text-xs sm:text-sm flex-shrink-0 mt-1">
                               {index + 1}
                             </div>
-                          )}
-                          {/* Poster */}
+                            <div className="flex-1 min-w-0">
+                              {movie.imdb_id ? (
+                                <a 
+                                  href={`https://www.imdb.com/title/${movie.imdb_id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-semibold text-base sm:text-lg hover:text-primary transition-colors block hover:underline leading-tight"
+                                >
+                                  {movie.movie_title}
+                                </a>
+                              ) : (
+                                <h3 className="font-semibold text-base sm:text-lg leading-tight">
+                                  {movie.movie_title}
+                                </h3>
+                              )}
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Proposed by {movie.proposed_by}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0 ml-2">
+                            ★ {getAverageRating(movie.id).toFixed(1)}
+                          </Badge>
+                        </div>
+
+                        {/* Content area with poster and details */}
+                        <div className="flex gap-3">
+                          {/* Poster - smaller on mobile */}
                           {movie.poster && movie.poster !== 'N/A' ? (
                             <img 
                               src={movie.poster} 
                               alt={`${movie.movie_title} poster`}
-                              className="w-16 h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
+                              className="w-12 h-18 sm:w-16 sm:h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
                             />
                           ) : (
-                            <div className="w-16 h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                              <Film className="w-6 h-6 text-primary" />
+                            <div className="w-12 h-18 sm:w-16 sm:h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Film className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
                             </div>
                           )}
-                          {/* Movie Info */}
-                          <div className="flex-1 min-w-0">
-                            {movie.imdb_id ? (
-                              <a 
-                                href={`https://www.imdb.com/title/${movie.imdb_id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-semibold text-lg hover:text-primary transition-colors truncate hover:underline"
-                              >
-                                {movie.movie_title}
-                              </a>
-                            ) : (
-                              <h3 className="font-semibold text-lg truncate">
-                                {movie.movie_title}
-                              </h3>
-                            )}
-                            <p className="text-sm text-muted-foreground mb-1">
-                              Proposed by {movie.proposed_by}
-                            </p>
+                          
+                          {/* Movie details */}
+                          <div className="flex-1 min-w-0 space-y-2">
                             {(movie.year || movie.runtime || movie.genre) && (
                               <div className="space-y-1 text-xs text-muted-foreground">
                                 {movie.year && <p>Year: {movie.year}</p>}
                                 {movie.runtime && <p>Runtime: {movie.runtime}</p>}
-                                {movie.genre && <p className="truncate">Genre: {movie.genre}</p>}
+                                {movie.genre && <p className="break-words">Genre: {movie.genre}</p>}
                               </div>
                             )}
                           </div>
                         </div>
-                        {/* Badge */}
-                        <div className="flex sm:block justify-end mt-2 sm:mt-0">
-                          <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0">
-                            ★ {getAverageRating(movie.id).toFixed(1)}
-                          </Badge>
-                        </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="flex items-center justify-between">
+                    <CardContent className="space-y-2 p-4 pt-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                         <span className="text-sm text-muted-foreground">
                           {getMovieRatings(movie.id).length}/{presentPeople.length} rated
                         </span>
