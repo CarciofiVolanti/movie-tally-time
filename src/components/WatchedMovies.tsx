@@ -50,6 +50,7 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [collapsedMovies, setCollapsedMovies] = useState<Record<string, boolean>>({});
+  const [localPresentStates, setLocalPresentStates] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   const loadData = async () => {
@@ -307,7 +308,9 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                             const detailed = detailedRatings.find(
                               r => r.watched_movie_id === movie.id && r.person_id === person.id
                             );
-                            const isPresent = detailed?.present ?? true; // default to true if not set
+                            const isPresent = detailed?.present ?? true;
+                            const localKey = `${movie.id}-${person.id}`;
+                            const localPresent = localPresentStates[localKey] ?? isPresent;
 
                             return (
                               <div key={person.id} className="p-3 bg-card/50 rounded-lg border border-border/50">
@@ -321,14 +324,12 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                                   <label className="flex items-center gap-1 text-xs text-muted-foreground">
                                     <input
                                       type="checkbox"
-                                      checked={isPresent}
-                                      onChange={e =>
-                                        updateDetailedRating(
-                                          movie.id,
-                                          person.id,
-                                          getRatingForPerson(movie.id, person.id),
-                                          e.target.checked
-                                        )
+                                      checked={localPresent}
+                                      onChange={e => 
+                                        setLocalPresentStates(prev => ({
+                                          ...prev,
+                                          [localKey]: e.target.checked
+                                        }))
                                       }
                                       className="accent-primary bg-card border-border rounded"
                                     />
@@ -343,7 +344,7 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                                       movie.id,
                                       person.id,
                                       Number(e.target.value),
-                                      isPresent
+                                      localPresent
                                     )
                                   }
                                 >
