@@ -862,41 +862,91 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
             <TabsContent value="results" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Results</CardTitle>
+                  <CardTitle>Movie Rankings</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground text-sm">Here are the top movies based on the ratings!</p>
+                  <p className="text-muted-foreground text-sm">Movies ranked by average rating from present participants</p>
                 </CardContent>
               </Card>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                {rankedMovies.map(movie => (
+              <div className="flex flex-col gap-4">
+                {rankedMovies.map((movie, index) => (
                   <Card key={movie.movieTitle} className="w-full max-w-full">
-                    <CardHeader className="flex flex-row items-center justify-between p-4">
-                      <div className="flex items-center gap-2 min-w-0 w-full">
-                        <span className="font-semibold text-base sm:text-lg truncate min-w-0">{movie.movieTitle}</span>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm flex-shrink-0">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-lg leading-tight truncate">{movie.movieTitle}</h3>
+                          <p className="text-sm text-muted-foreground">Proposed by {movie.proposedBy}</p>
+                        </div>
+                        <Badge variant="secondary" className="text-lg">
+                          ★ {movie.averageRating.toFixed(1)}
+                        </Badge>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <MovieCard
-                        movie={movie}
-                        people={presentPeople}  // Missing prop
-                        currentPersonId={selectedPersonId}  // Fixed prop name
-                        onRatingChange={updateRating}  // Fixed prop name
-                        onSearchAgain={searchMovieAgain}
-                        showAllRatings={true}  // Fixed prop name
-                      />
+                    <CardContent className="pt-0">
+                      {/* Movie details */}
+                      <div className="flex gap-3 mb-3">
+                        {movie.details?.poster && movie.details.poster !== 'N/A' ? (
+                          <img 
+                            src={movie.details.poster} 
+                            alt={`${movie.movieTitle} poster`}
+                            className="w-16 h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-16 h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Film className="w-6 h-6 text-primary" />
+                          </div>
+                        )}
+                        <div className="space-y-1 text-xs text-muted-foreground flex-1">
+                          {movie.details?.year && <p>Year: {movie.details.year}</p>}
+                          {movie.details?.runtime && <p>Runtime: {movie.details.runtime}</p>}
+                          {movie.details?.genre && <p className="break-words">Genre: {movie.details.genre}</p>}
+                          <p>{movie.totalRatings}/{presentPeople.length} people rated</p>
+                          
+                          {/* Show absent people who rated 1 */}
+                          {(() => {
+                            const absentVoters = people
+                              .filter(p => !p.isPresent && movie.ratings[p.id] === 1)
+                              .map(p => p.name);
+                              
+                            if (absentVoters.length > 0) {
+                              return (
+                                <p className="text-red-500 font-medium mt-1">
+                                  Rated 1 by absent: {absentVoters.join(", ")}
+                                </p>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      </div>
+                      
+                      {movie.details?.imdbId && (
+                        <a 
+                          href={`https://www.imdb.com/title/${movie.details.imdbId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary hover:underline block mt-2"
+                        >
+                          View on IMDb
+                        </a>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
               </div>
 
-              {rankedMovies.length === 0 && <Card className="text-center py-8">
-                <CardContent>
-                  <Trophy className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No results found. Make sure people have rated the movies!</p>
-                </CardContent>
-              </Card>}
+              {rankedMovies.length === 0 && (
+                <Card className="text-center py-8">
+                  <CardContent>
+                    <Trophy className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">No results found. Make sure people have rated the movies!</p>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
           </Tabs>
         </div>
