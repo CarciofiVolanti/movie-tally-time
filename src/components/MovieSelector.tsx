@@ -785,4 +785,126 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                       {!collapsedMovies[movie.movieTitle] && (
                         <CardContent>
                           <MovieCard
-       
+                            movie={movie}
+                            personId={selectedPersonId}
+                            onUpdateRating={updateRating}
+                            onSearchAgain={searchMovieAgain}
+                            fetchingDetails={fetchingDetails}
+                            showDetails={true}
+                          />
+                        </CardContent>
+                      )}
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {movieRatings.length === 0 && <Card className="text-center py-8">
+                <CardContent>
+                  <Film className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No movies found in this session. Add some movies to get started!</p>
+                </CardContent>
+              </Card>}
+            </TabsContent>
+
+            <TabsContent value="results" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Results</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground text-sm">Here are the top movies based on the ratings!</p>
+                </CardContent>
+              </Card>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                {rankedMovies.map(movie => (
+                  <Card key={movie.movieTitle} className="w-full max-w-full">
+                    <CardHeader className="flex flex-row items-center justify-between p-4">
+                      <div className="flex items-center gap-2 min-w-0 w-full">
+                        <span className="font-semibold text-base sm:text-lg truncate min-w-0">{movie.movieTitle}</span>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <MovieCard
+                        movie={movie}
+                        personId={selectedPersonId}
+                        onUpdateRating={updateRating}
+                        onSearchAgain={searchMovieAgain}
+                        fetchingDetails={fetchingDetails}
+                        showDetails={true}
+                      />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {rankedMovies.length === 0 && <Card className="text-center py-8">
+                <CardContent>
+                  <Trophy className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No results found. Make sure people have rated the movies!</p>
+                </CardContent>
+              </Card>}
+            </TabsContent>
+          </Tabs>
+        </div>
+      ) : (
+        <WatchedMovies sessionId={sessionId!} onNavigateBack={() => setCurrentView('session')} />
+      )}
+    </div>
+  );
+};
+
+// New background function for fetching movie details
+const fetchMovieDetailsInBackground = async (movieTitles: string[], proposals: any[]) => {
+  for (const movieTitle of movieTitles) {
+    try {
+      // Try the edge function first
+      const { data, error } = await supabase.functions.invoke('propose-movie-with-details', {
+        body: { sessionId, movieTitle }
+      });
+      
+      if (!error && data) {
+        // Update the proposal with fetched details
+        const proposal = proposals.find(p => p.movie_title === movieTitle);
+        if (proposal) {
+          await supabase
+            .from('movie_proposals')
+            .update({
+              poster: data.poster,
+              genre: data.genre,
+              runtime: data.runtime,
+              year: data.year,
+              director: data.director,
+              plot: data.plot,
+              imdb_rating: data.imdbRating,
+              imdb_id: data.imdbId
+            })
+            .eq('id', proposal.id);
+
+          // Update local state with new details
+          setMovieRatings(prev => prev.map(movie => 
+            movie.movieTitle === movieTitle 
+              ? { 
+                  ...movie, 
+                  details: {
+                    poster: data.poster,
+                    genre: data.genre,
+                    runtime: data.runtime,
+                    year: data.year,
+                    director: data.director,
+                    plot: data.plot,
+                    imdbRating: data.imdbRating,
+                    imdbId: data.imdbId
+                  }
+                } 
+              : movie
+          ));
+        }
+      }
+    } catch (error) {
+      console.error(`Error fetching details for ${movieTitle}:`, error);
+      // Silently fail for background operations
+    }
+  }
+};
