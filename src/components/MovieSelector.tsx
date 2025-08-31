@@ -899,3 +899,14 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
     </div>
   );
 };
+
+useEffect(() => {
+  if (activeTab === "rate" && movieRatings.length > 0) {
+    setCollapsedMovies(
+      movieRatings.reduce((acc, movie) => {
+        acc[movie.movieTitle] = true;
+        return acc;
+      }, {} as Record<string, boolean>)
+    );
+  }
+}, [activeTab, movieRatings]);
