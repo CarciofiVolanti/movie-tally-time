@@ -501,6 +501,12 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       // Update local state
       setMovieRatings(prev => prev.filter(movie => movie.movieTitle !== movieTitle));
       
+      // Also update people state to remove the movie from their proposals
+      setPeople(prev => prev.map(person => ({
+        ...person,
+        movies: person.movies.filter(movie => movie !== movieTitle)
+      })));
+      
       toast({
         title: "Movie marked as watched",
         description: `"${movieTitle}" has been moved to watched movies section`,
@@ -540,7 +546,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       totalRatings: validRatings.length
     };
   })
-  .filter(movie => presentPeople.some(p => p.movies.includes(movie.movieTitle)))
+  .filter(movie => presentPeople.some p => p.movies.includes(movie.movieTitle)))
   .sort((a, b) => b.averageRating - a.averageRating);
   if (loading) {
     return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
