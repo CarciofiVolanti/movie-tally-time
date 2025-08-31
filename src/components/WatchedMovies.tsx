@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Star, Film, ChevronDown, ChevronRight, Plus, Search, X } from "lucide-react";
+import { ArrowLeft, Star, Film, ChevronDown, ChevronRight, Plus, Search, X, RefreshCw } from "lucide-react";
 import { StarRating } from "./StarRating";
 import { DetailedRating } from "./DetailedRating";
 import { PersonCard } from "./PersonCard";
