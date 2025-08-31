@@ -277,25 +277,25 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 p-4">
       <div className="container mx-auto max-w-4xl">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
           <Button 
             onClick={onBack} 
             variant="ghost" 
-            className="hover:bg-secondary/80"
+            className="hover:bg-secondary/80 self-start"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Session
           </Button>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold flex items-center">
-              <Star className="w-6 h-6 mr-2 text-primary" />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center">
+              <Star className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-primary" />
               Watched Movies
             </h1>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowAddMovie(true)}
-              className="ml-4"
+              className="w-full sm:w-auto"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Movie
@@ -377,6 +377,7 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                         <div className="flex-1 min-w-0 space-y-2">
                           <div className="space-y-1 text-xs text-muted-foreground">
                             <p>Proposed by {movie.proposed_by}</p>
+                            <p>Watched on {new Date(movie.watched_at).toLocaleDateString()}</p>
                             {movie.year && <p>Year: {movie.year}</p>}
                             {movie.runtime && <p>Runtime: {movie.runtime}</p>}
                             {movie.genre && <p className="break-words">Genre: {movie.genre}</p>}
@@ -522,6 +523,7 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="space-y-1 text-xs text-muted-foreground">
                               <p>Proposed by {movie.proposed_by}</p>
+                              <p>Watched on {new Date(movie.watched_at).toLocaleDateString()}</p>
                               {movie.year && <p>Year: {movie.year}</p>}
                               {movie.runtime && <p>Runtime: {movie.runtime}</p>}
                               {movie.genre && <p className="break-words">Genre: {movie.genre}</p>}
@@ -545,10 +547,10 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
         </Tabs>
 
         {showAddMovie && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Add Watched Movie</CardTitle>
+          <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 p-2 sm:p-4">
+            <Card className="w-full max-w-sm sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto mt-2 sm:mt-0">
+              <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">Add Watched Movie</CardTitle>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -557,64 +559,48 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                     setNewMovieTitle("");
                     setSearchResults([]);
                   }}
+                  className="flex-shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-4 sm:p-6">
                 <div className="space-y-2">
-                  <Label htmlFor="movie-title">Movie Title</Label>
-                  <div className="flex gap-2">
+                  <Label htmlFor="movie-title" className="text-sm font-medium">Movie Title</Label>
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Input
                       id="movie-title"
                       placeholder="Enter movie title..."
                       value={newMovieTitle}
                       onChange={e => setNewMovieTitle(e.target.value)}
                       onKeyPress={e => e.key === "Enter" && searchMovies()}
+                      className="flex-1"
                     />
                     <Button
                       variant="outline"
-                      size="icon"
                       onClick={searchMovies}
                       disabled={isSearching || !newMovieTitle.trim()}
+                      className="w-full sm:w-auto"
                     >
                       {isSearching ? (
-                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                          Searching...
+                        </>
                       ) : (
-                        <Search className="w-4 h-4" />
+                        <>
+                          <Search className="w-4 h-4 mr-2" />
+                          Search
+                        </>
                       )}
                     </Button>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="proposer">Proposed By</Label>
-                  <select
-                    id="proposer"
-                    value={selectedProposer}
-                    onChange={e => setSelectedProposer(e.target.value)}
-                    className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
-                  >
-                    <option value="">Select proposer...</option>
-                    {people.map(person => (
-                      <option key={person.id} value={person.name}>{person.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="watch-date">Watch Date</Label>
-                  <Input
-                    id="watch-date"
-                    type="date"
-                    value={selectedDate}
-                    onChange={e => setSelectedDate(e.target.value)}
-                  />
-                </div>
-
+                {/* Move search results right here, under the search field */}
                 {searchResults.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Search Results</Label>
+                  <div className="space-y-2 mt-3">
+                    <Label className="text-sm font-medium">Search Results</Label>
                     {searchResults.map((result, index) => (
                       <Card key={index} className="p-3 cursor-pointer hover:bg-accent/50 transition-colors">
                         <div className="flex gap-3" onClick={() => addWatchedMovie(result)}>
@@ -622,16 +608,16 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                             <img
                               src={result.poster}
                               alt={`${result.title} poster`}
-                              className="w-12 h-18 object-cover rounded"
+                              className="w-10 h-15 sm:w-12 sm:h-18 object-cover rounded"
                             />
                           ) : (
-                            <div className="w-12 h-18 bg-primary/10 rounded flex items-center justify-center">
-                              <Film className="w-4 h-4 text-primary" />
+                            <div className="w-10 h-15 sm:w-12 sm:h-18 bg-primary/10 rounded flex items-center justify-center">
+                              <Film className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium truncate">{result.title}</h4>
-                            <p className="text-sm text-muted-foreground">{result.year}</p>
+                            <h4 className="font-medium truncate text-sm sm:text-base">{result.title}</h4>
+                            <p className="text-xs sm:text-sm text-muted-foreground">{result.year}</p>
                             {result.genre && (
                               <p className="text-xs text-muted-foreground truncate">{result.genre}</p>
                             )}
@@ -642,7 +628,33 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                   </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className="space-y-2">
+                  <Label htmlFor="proposer" className="text-sm font-medium">Proposed By</Label>
+                  <select
+                    id="proposer"
+                    value={selectedProposer}
+                    onChange={e => setSelectedProposer(e.target.value)}
+                    className="w-full p-3 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
+                  >
+                    <option value="">Select proposer...</option>
+                    {people.map(person => (
+                      <option key={person.id} value={person.name}>{person.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="watch-date" className="text-sm font-medium">Watch Date</Label>
+                  <Input
+                    id="watch-date"
+                    type="date"
+                    value={selectedDate}
+                    onChange={e => setSelectedDate(e.target.value)}
+                    className="w-full p-3"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     variant="outline"
                     className="flex-1"
