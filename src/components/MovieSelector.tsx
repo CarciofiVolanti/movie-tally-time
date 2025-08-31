@@ -849,7 +849,11 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
           </Tabs>
         </div>
       ) : (
-        <WatchedMovies sessionId={sessionId!} onNavigateBack={() => setCurrentView('session')} />
+        <WatchedMovies
+          sessionId={sessionId!}
+          onBack={() => setCurrentView('session')} // Make sure this sets currentView to 'session'
+          selectedPersonId={selectedPersonId}
+        />
       )}
     </div>
   );
