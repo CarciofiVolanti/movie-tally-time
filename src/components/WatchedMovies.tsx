@@ -375,7 +375,9 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                         {selectedPersonId && (
                           (() => {
                             const hasVoted = detailedRatings.find(
-                              r => r.watched_movie_id === movie.id && r.person_id === selectedPersonId
+                              r => r.watched_movie_id === movie.id && 
+                              r.person_id === selectedPersonId && 
+                              r.rating !== null // Check that rating is not null
                             ) !== undefined;
                             return (
                               <Badge
