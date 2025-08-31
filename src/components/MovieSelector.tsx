@@ -28,9 +28,19 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
   const [selectedPersonId, setSelectedPersonId] = useState<string>("");
   const [activeTab, setActiveTab] = useState("people");
   const [currentView, setCurrentView] = useState<'session' | 'watched'>('session');
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+
+  // Move this useEffect INSIDE the component, after the state declarations
+  useEffect(() => {
+    if (activeTab === "rate" && movieRatings.length > 0) {
+      setCollapsedMovies(
+        movieRatings.reduce((acc, movie) => {
+          acc[movie.movieTitle] = true;
+          return acc;
+        }, {} as Record<string, boolean>)
+      );
+    }
+  }, [activeTab, movieRatings]);
 
   // Initialize session and load data
   useEffect(() => {
@@ -899,14 +909,3 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
     </div>
   );
 };
-
-useEffect(() => {
-  if (activeTab === "rate" && movieRatings.length > 0) {
-    setCollapsedMovies(
-      movieRatings.reduce((acc, movie) => {
-        acc[movie.movieTitle] = true;
-        return acc;
-      }, {} as Record<string, boolean>)
-    );
-  }
-}, [activeTab, movieRatings]);
