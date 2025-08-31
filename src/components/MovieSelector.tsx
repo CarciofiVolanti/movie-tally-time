@@ -27,6 +27,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
   const [collapsedMovies, setCollapsedMovies] = useState<Record<string, boolean>>({});
   const [selectedPersonId, setSelectedPersonId] = useState<string>("");
   const [activeTab, setActiveTab] = useState("people");
+  const [currentView, setCurrentView] = useState<'session' | 'watched'>('session');
   const {
     toast
   } = useToast();
@@ -591,309 +592,310 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       </Card>
     </div>;
   }
-  return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-    <div className="container mx-auto py-8 px-4">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-cinema bg-clip-text text-transparent mb-4">CarciOscar</h1>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      {currentView === 'session' ? (
+        <div className="container mx-auto py-8 px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold bg-gradient-cinema bg-clip-text text-transparent mb-4">CarciOscar</h1>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
-          <Button variant="outline" size="sm" onClick={() => {
-            setShowNewSession(true);
-            setSessionId(null);
-            window.history.pushState({}, '', window.location.pathname);
-          }}>
-            Start New Session
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onNavigateToWatched}
-            disabled={!sessionId}
-            className="bg-gradient-to-r from-accent/20 to-primary/20 border-accent/40 hover:from-accent/30 hover:to-primary/30"
-          >
-            <Award className="w-4 h-4 mr-2" />
-            Watched Movies
-          </Button>
-        </div>
-
-        {/* Person selection dropdown */}
-        <div className="max-w-xs mx-auto mb-4">
-          <select
-            value={selectedPersonId}
-            onChange={e => setSelectedPersonId(e.target.value)}
-            className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
-          >
-            <option value="">Select who you are (optional)</option>
-            {people.map(person => (
-              <option key={person.id} value={person.id}>{person.name}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <Tabs
-        defaultValue="people"
-        className="space-y-6"
-        value={activeTab}
-        onValueChange={setActiveTab}
-      >
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="people" className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            People ({people.length})
-          </TabsTrigger>
-          <TabsTrigger value="rate" className="flex items-center gap-2">
-            <Film className="w-4 h-4" />
-            Rate Movies ({movieRatings.length})
-          </TabsTrigger>
-          <TabsTrigger value="results" className="flex items-center gap-2">
-            <Trophy className="w-4 h-4" />
-            Results
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="people" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Add People</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <Input placeholder="Enter person's name..." value={newPersonName} onChange={e => setNewPersonName(e.target.value)} onKeyPress={e => e.key === "Enter" && addPerson()} className="flex-1" />
-                <Button onClick={addPerson} disabled={!newPersonName.trim()}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Person
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {people
-              .slice() // create a shallow copy to avoid mutating state
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map(person => (
-                <PersonCard
-                  key={person.id}
-                  person={person}
-                  onUpdatePerson={updatePerson}
-                  onDeletePerson={deletePerson}
-                />
-              ))}
-          </div>
-
-          {people.length === 0 && <Card className="text-center py-8">
-            <CardContent>
-              <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No people added yet. Add some people to get started!</p>
-            </CardContent>
-          </Card>}
-        </TabsContent>
-
-        <TabsContent value="rate" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between flex-wrap gap-2">
-                <span>Rate All Movies</span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={fetchAllMovieDetails}
-                    disabled={fetchingDetails || movieRatings.length === 0}
-                    className="text-xs"
-                  >
-                    {fetchingDetails ? (
-                      <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-3 h-3 mr-1" />
-                    )}
-                    Update Details
-                  </Button>
-                  <Badge variant="secondary">
-                    {presentPeople.length} present
-                  </Badge>
-                </div>
-              </CardTitle>
-            </CardHeader>
-          </Card>
-
-          <div className="flex flex-col gap-4 w-full max-w-xl mx-auto">
-            {getSortedMovies().map(movie => {
-              const hasVoted = selectedPersonId && movie.ratings[selectedPersonId] !== undefined && movie.ratings[selectedPersonId] > 0;
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
+              <Button variant="outline" size="sm" onClick={() => {
+                setShowNewSession(true);
+                setSessionId(null);
+                window.history.pushState({}, '', window.location.pathname);
+              }}>
+                Start New Session
+              </Button>
               
-              return (
-                <Card key={movie.movieTitle} className="w-full max-w-full relative">
-                  {/* Voting status indicator */}
-                  {selectedPersonId && (
-                    <div className="absolute top-2 right-2 z-10">
-                      <Badge 
-                        variant={hasVoted ? "default" : "outline"} 
-                        className={hasVoted ? "bg-green-100 text-green-800 border-green-300" : "bg-orange-100 text-orange-800 border-orange-300"}
-                      >
-                        {hasVoted ? "✓ Voted" : "Not Voted"}
-                      </Badge>
-                    </div>
-                  )}
-                  
-                  <CardHeader className="flex flex-row items-center justify-between p-4">
-                    <div className="flex items-center gap-2 min-w-0 w-full pr-20"> {/* Add right padding for the badge */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => toggleCollapse(movie.movieTitle)}
-                        aria-label={collapsedMovies[movie.movieTitle] ? "Expand" : "Collapse"}
-                        className="p-1"
-                      >
-                        {collapsedMovies[movie.movieTitle] ? (
-                          <ChevronRight className="w-5 h-5" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5" />
-                        )}
-                      </Button>
-                      <span className="font-semibold text-base sm:text-lg truncate min-w-0">{movie.movieTitle}</span>
-                    </div>
-                  </CardHeader>
-                  {!collapsedMovies[movie.movieTitle] && (
-                    <CardContent>
-                      <MovieCard
-                        movie={movie}
-                        people={presentPeople}
-                        currentPersonId={selectedPersonId} // Pass selected person to MovieCard
-                        onRatingChange={updateRating}
-                        onSearchAgain={searchMovieAgain}
-                        showAllRatings
-                      />
-                    </CardContent>
-                  )}
-                </Card>
-              );
-            })}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentView('watched')}
+                disabled={!sessionId}
+                className="bg-gradient-to-r from-accent/20 to-primary/20 border-accent/40 hover:from-accent/30 hover:to-primary/30"
+              >
+                <Award className="w-4 h-4 mr-2" />
+                Watched Movies
+              </Button>
+            </div>
+
+            {/* Person selection dropdown */}
+            <div className="max-w-xs mx-auto mb-4">
+              <select
+                value={selectedPersonId}
+                onChange={e => setSelectedPersonId(e.target.value)}
+                className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
+              >
+                <option value="">Select who you are (optional)</option>
+                {people.map(person => (
+                  <option key={person.id} value={person.id}>{person.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {movieRatings.length === 0 && <Card className="text-center py-8">
-            <CardContent>
-              <Film className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No movies suggested yet. Add people and their movie suggestions first!</p>
-            </CardContent>
-          </Card>}
-        </TabsContent>
+          <Tabs
+            defaultValue="people"
+            className="space-y-6"
+            value={activeTab}
+            onValueChange={setActiveTab}
+          >
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="people" className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                People ({people.length})
+              </TabsTrigger>
+              <TabsTrigger value="rate" className="flex items-center gap-2">
+                <Film className="w-4 h-4" />
+                Rate Movies ({movieRatings.length})
+              </TabsTrigger>
+              <TabsTrigger value="results" className="flex items-center gap-2">
+                <Trophy className="w-4 h-4" />
+                Results
+              </TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="results" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Top Rated Movies
-                <Badge variant="secondary">
-                  Based on {presentPeople.length} present people
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-          </Card>
-
-          <div className="space-y-4">
-            {rankedMovies.map((movie, index) => (
-              <Card key={movie.movieTitle} className="relative overflow-hidden">
-                <div className="absolute left-0 top-0 h-full w-1 bg-gradient-cinema" />
-                <CardContent className="p-4 sm:p-6">
-                  <div className="flex items-start gap-3 sm:gap-4">
-                    <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-full flex-shrink-0">
-                      <span className="font-bold text-primary text-sm">#{index + 1}</span>
-                    </div>
-                    
-                    {movie.details?.poster && movie.details.poster !== 'N/A' ? (
-                      <img 
-                        src={movie.details.poster} 
-                        alt={`${movie.movieTitle} poster`}
-                        className="w-12 h-18 sm:w-16 sm:h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-12 h-18 sm:w-16 sm:h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Film className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
-                      </div>
-                    )}
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                       {movie.details?.imdbId ? (
-                         <a 
-                           href={`https://www.imdb.com/title/${movie.details.imdbId}`}
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           className="font-semibold text-base sm:text-lg truncate hover:underline"
-                         >
-                           {movie.movieTitle}
-                         </a>
-                       ) : (
-                         <h3 className="font-semibold text-base sm:text-lg truncate">{movie.movieTitle}</h3>
-                       )}
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 text-sm sm:text-lg px-2 py-1 sm:px-3">
-                            ★ {movie.averageRating.toFixed(1)}
-                          </Badge>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => markMovieAsWatched(movie.movieTitle)}
-                            className="h-8 w-8 p-0 bg-green-50 border-green-200 hover:bg-green-100 text-green-600"
-                            title="Mark as watched"
-                          >
-                            <Check className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <p className="text-xs sm:text-sm text-muted-foreground mb-2">
-                        Proposed by {movie.proposedBy} • {movie.totalRatings}/{presentPeople.length} ratings
-                      </p>
-                      
-                      {movie.details && (
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 text-xs text-muted-foreground">
-                          {movie.details.year && <p>Year: {movie.details.year}</p>}
-                          {movie.details.runtime && <p>Runtime: {movie.details.runtime}</p>}
-                          {movie.details.genre && <p className="sm:col-span-1 truncate">Genre: {movie.details.genre}</p>}
-                        </div>
-                      )}
-                    </div>
+            <TabsContent value="people" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Add People</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-2">
+                    <Input placeholder="Enter person's name..." value={newPersonName} onChange={e => setNewPersonName(e.target.value)} onKeyPress={e => e.key === "Enter" && addPerson()} className="flex-1" />
+                    <Button onClick={addPerson} disabled={!newPersonName.trim()}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Person
+                    </Button>
                   </div>
-                  {movie.averageRating > 4 && (
-                    (() => {
-                      // Find people not present who rated this movie 1
-                      const absentPeople = people
-                        .filter(p => !p.isPresent && movie.ratings && movie.ratings[p.id] === 1)
-                        .map(p => p.name);
-
-                      return absentPeople.length > 0 ? (
-                        <div className="mt-2 text-xs text-red-500">
-                          <span>Rated 1 by absent: </span>
-                          {absentPeople.join(", ")}
-                        </div>
-                      ) : null;
-                    })()
-                  )}
                 </CardContent>
               </Card>
-            ))}
-          </div>
 
-          {rankedMovies.length === 0 && <Card className="text-center py-8">
-            <CardContent>
-              <Trophy className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No ratings yet. Start rating movies to see results!</p>
-            </CardContent>
-          </Card>}
-        </TabsContent>
-      </Tabs>
+              <div className="grid gap-4 md:grid-cols-2">
+                {people
+                  .slice() // create a shallow copy to avoid mutating state
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(person => (
+                    <PersonCard
+                      key={person.id}
+                      person={person}
+                      onUpdatePerson={updatePerson}
+                      onDeletePerson={deletePerson}
+                    />
+                  ))}
+              </div>
 
-      {/* Watched Movies section - always show this component */}
-      <div className="mt-12">
+              {people.length === 0 && <Card className="text-center py-8">
+                <CardContent>
+                  <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No people added yet. Add some people to get started!</p>
+                </CardContent>
+              </Card>}
+            </TabsContent>
+
+            <TabsContent value="rate" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between flex-wrap gap-2">
+                    <span>Rate All Movies</span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={fetchAllMovieDetails}
+                        disabled={fetchingDetails || movieRatings.length === 0}
+                        className="text-xs"
+                      >
+                        {fetchingDetails ? (
+                          <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-3 h-3 mr-1" />
+                        )}
+                        Update Details
+                      </Button>
+                      <Badge variant="secondary">
+                        {presentPeople.length} present
+                      </Badge>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+
+              <div className="flex flex-col gap-4 w-full max-w-xl mx-auto">
+                {getSortedMovies().map(movie => {
+                  const hasVoted = selectedPersonId && movie.ratings[selectedPersonId] !== undefined && movie.ratings[selectedPersonId] > 0;
+                  
+                  return (
+                    <Card key={movie.movieTitle} className="w-full max-w-full relative">
+                      {/* Voting status indicator */}
+                      {selectedPersonId && (
+                        <div className="absolute top-2 right-2 z-10">
+                          <Badge 
+                            variant={hasVoted ? "default" : "outline"} 
+                            className={hasVoted ? "bg-green-100 text-green-800 border-green-300" : "bg-orange-100 text-orange-800 border-orange-300"}
+                          >
+                            {hasVoted ? "✓ Voted" : "Not Voted"}
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      <CardHeader className="flex flex-row items-center justify-between p-4">
+                        <div className="flex items-center gap-2 min-w-0 w-full pr-20"> {/* Add right padding for the badge */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleCollapse(movie.movieTitle)}
+                            aria-label={collapsedMovies[movie.movieTitle] ? "Expand" : "Collapse"}
+                            className="p-1"
+                          >
+                            {collapsedMovies[movie.movieTitle] ? (
+                              <ChevronRight className="w-5 h-5" />
+                            ) : (
+                              <ChevronDown className="w-5 h-5" />
+                            )}
+                          </Button>
+                          <span className="font-semibold text-base sm:text-lg truncate min-w-0">{movie.movieTitle}</span>
+                        </div>
+                      </CardHeader>
+                      {!collapsedMovies[movie.movieTitle] && (
+                        <CardContent>
+                          <MovieCard
+                            movie={movie}
+                            people={presentPeople}
+                            currentPersonId={selectedPersonId} // Pass selected person to MovieCard
+                            onRatingChange={updateRating}
+                            onSearchAgain={searchMovieAgain}
+                            showAllRatings
+                          />
+                        </CardContent>
+                      )}
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {movieRatings.length === 0 && <Card className="text-center py-8">
+                <CardContent>
+                  <Film className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No movies suggested yet. Add people and their movie suggestions first!</p>
+                </CardContent>
+              </Card>}
+            </TabsContent>
+
+            <TabsContent value="results" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    Top Rated Movies
+                    <Badge variant="secondary">
+                      Based on {presentPeople.length} present people
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+
+              <div className="space-y-4">
+                {rankedMovies.map((movie, index) => (
+                  <Card key={movie.movieTitle} className="relative overflow-hidden">
+                    <div className="absolute left-0 top-0 h-full w-1 bg-gradient-cinema" />
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex items-start gap-3 sm:gap-4">
+                        <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-full flex-shrink-0">
+                          <span className="font-bold text-primary text-sm">#{index + 1}</span>
+                        </div>
+                        
+                        {movie.details?.poster && movie.details.poster !== 'N/A' ? (
+                          <img 
+                            src={movie.details.poster} 
+                            alt={`${movie.movieTitle} poster`}
+                            className="w-12 h-18 sm:w-16 sm:h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-12 h-18 sm:w-16 sm:h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Film className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
+                          </div>
+                        )}
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                           {movie.details?.imdbId ? (
+                             <a 
+                               href={`https://www.imdb.com/title/${movie.details.imdbId}`}
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               className="font-semibold text-base sm:text-lg truncate hover:underline"
+                             >
+                               {movie.movieTitle}
+                             </a>
+                           ) : (
+                             <h3 className="font-semibold text-base sm:text-lg truncate">{movie.movieTitle}</h3>
+                           )}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 text-sm sm:text-lg px-2 py-1 sm:px-3">
+                                ★ {movie.averageRating.toFixed(1)}
+                              </Badge>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => markMovieAsWatched(movie.movieTitle)}
+                                className="h-8 w-8 p-0 bg-green-50 border-green-200 hover:bg-green-100 text-green-600"
+                                title="Mark as watched"
+                              >
+                                <Check className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          <p className="text-xs sm:text-sm text-muted-foreground mb-2">
+                            Proposed by {movie.proposedBy} • {movie.totalRatings}/{presentPeople.length} ratings
+                          </p>
+                          
+                          {movie.details && (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 text-xs text-muted-foreground">
+                              {movie.details.year && <p>Year: {movie.details.year}</p>}
+                              {movie.details.runtime && <p>Runtime: {movie.details.runtime}</p>}
+                              {movie.details.genre && <p className="sm:col-span-1 truncate">Genre: {movie.details.genre}</p>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {movie.averageRating > 4 && (
+                        (() => {
+                          // Find people not present who rated this movie 1
+                          const absentPeople = people
+                            .filter(p => !p.isPresent && movie.ratings && movie.ratings[p.id] === 1)
+                            .map(p => p.name);
+
+                          return absentPeople.length > 0 ? (
+                            <div className="mt-2 text-xs text-red-500">
+                              <span>Rated 1 by absent: </span>
+                              {absentPeople.join(", ")}
+                            </div>
+                          ) : null;
+                        })()
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {rankedMovies.length === 0 && <Card className="text-center py-8">
+                <CardContent>
+                  <Trophy className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No ratings yet. Start rating movies to see results!</p>
+                </CardContent>
+              </Card>}
+            </TabsContent>
+          </Tabs>
+        </div>
+      ) : (
         <WatchedMovies
-          sessionId={sessionId}
-          onBack={() => setSessionId(null)} // Go back to main session view
+          sessionId={sessionId!}
+          onBack={() => setCurrentView('session')}
           selectedPersonId={selectedPersonId}
         />
-      </div>
+      )}
     </div>
-  </div>;
+  );
 };
