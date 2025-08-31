@@ -340,13 +340,11 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                 <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow relative">
                   {/* Move this voting status badge INSIDE the Card */}
                   {selectedPersonId && (
-                    <div className="absolute top-2 right-2 z-10">
+                    <div className="absolute top-2 right-16 z-10"> {/* Changed from right-2 to right-16 */}
                       {(() => {
-                        const hasVoted = !!detailedRatings.find(
-                          r => r.watched_movie_id === movie.id &&
-                          r.person_id === selectedPersonId &&
-                          r.rating > 0
-                        );
+                        const hasVoted = detailedRatings.find(
+                          r => r.watched_movie_id === movie.id && r.person_id === selectedPersonId
+                        ) !== undefined; // Just check if rating exists, regardless of value
                         return (
                           <Badge
                             variant={hasVoted ? "default" : "outline"}
@@ -493,27 +491,6 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                       </div>
                     </CardContent>
                   )}
-                  {selectedPersonId && (
-                    <div className="absolute top-2 right-2 z-10">
-                      {(() => {
-                        const hasVoted = !!detailedRatings.find(
-                          r => r.watched_movie_id === movie.id &&
-                          r.person_id === selectedPersonId &&
-                          r.rating > 0
-                        );
-                        return (
-                          <Badge
-                            variant={hasVoted ? "default" : "outline"}
-                            className={hasVoted
-                              ? "bg-green-100 text-green-800 border-green-300"
-                              : "bg-orange-100 text-orange-800 border-orange-300"}
-                          >
-                            {hasVoted ? "✓ Voted" : "Not Voted"}
-                          </Badge>
-                        );
-                      })()}
-                    </div>
-                  )}
                 </Card>
               ))
             )}
@@ -536,11 +513,9 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                     {selectedPersonId && (
                       <div className="absolute top-2 right-2 z-10">
                         {(() => {
-                          const hasVoted = !!detailedRatings.find(
-                            r => r.watched_movie_id === movie.id &&
-                            r.person_id === selectedPersonId &&
-                            r.rating > 0
-                          );
+                          const hasVoted = detailedRatings.find(
+                            r => r.watched_movie_id === movie.id && r.person_id === selectedPersonId
+                          ) !== undefined; // Just check if rating exists, regardless of value
                           return (
                             <Badge
                               variant={hasVoted ? "default" : "outline"}
