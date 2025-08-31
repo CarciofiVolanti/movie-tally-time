@@ -880,11 +880,11 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                     <CardContent>
                       <MovieCard
                         movie={movie}
-                        personId={selectedPersonId}
-                        onUpdateRating={updateRating}
+                        people={presentPeople}  // Missing prop
+                        currentPersonId={selectedPersonId}  // Fixed prop name
+                        onRatingChange={updateRating}  // Fixed prop name
                         onSearchAgain={searchMovieAgain}
-                        fetchingDetails={fetchingDetails}
-                        showDetails={true}
+                        showAllRatings={true}  // Fixed prop name
                       />
                     </CardContent>
                   </Card>
