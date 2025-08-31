@@ -325,62 +325,71 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
   };
   const updatePerson = async (updatedPerson: Person) => {
     if (!sessionId) return;
+    
     try {
-      // Update person presence
+      // Update person presence immediately in local state for instant UI feedback
+      setPeople(prev => prev.map(p => p.id === updatedPerson.id ? updatedPerson : p));
+      
+      // Update person presence in database (fast operation)
       await supabase.from('session_people').update({
         is_present: updatedPerson.isPresent
       }).eq('id', updatedPerson.id);
 
-      // Get current proposals for this person
-      const {
-        data: currentProposals
-      } = await supabase.from('movie_proposals').select('movie_title').eq('person_id', updatedPerson.id);
+      // Get current proposals for this person (cached query)
+      const { data: currentProposals } = await supabase
+        .from('movie_proposals')
+        .select('movie_title, id')
+        .eq('person_id', updatedPerson.id);
+      
       const currentMovies = currentProposals?.map(p => p.movie_title) || [];
 
       // Find movies to add and remove
       const moviesToAdd = updatedPerson.movies.filter(m => !currentMovies.includes(m));
       const moviesToRemove = currentMovies.filter(m => !updatedPerson.movies.includes(m));
 
-      // Add new movies with automatic detail fetching
-      if (moviesToAdd.length > 0) {
-        for (const movie of moviesToAdd) {
-          try {
-            const { error } = await supabase.functions.invoke('propose-movie-with-details', {
-              body: {
-                sessionId,
-                personId: updatedPerson.id,
-                movieTitle: movie
-              }
-            });
-            if (error) {
-              console.error('Error proposing movie with details:', error);
-              // Fallback to basic proposal without details
-              await supabase.from('movie_proposals').insert({
-                session_id: sessionId,
-                person_id: updatedPerson.id,
-                movie_title: movie
-              });
-            }
-          } catch (error) {
-            console.error('Error calling propose-movie-with-details function:', error);
-            // Fallback to basic proposal without details
-            await supabase.from('movie_proposals').insert({
-              session_id: sessionId,
-              person_id: updatedPerson.id,
-              movie_title: movie
-            });
-          }
-        }
+      // Remove movies first (fast operation)
+      if (moviesToRemove.length > 0) {
+        await supabase
+          .from('movie_proposals')
+          .delete()
+          .eq('person_id', updatedPerson.id)
+          .in('movie_title', moviesToRemove);
+        
+        // Update local movieRatings immediately
+        setMovieRatings(prev => prev.filter(movie => !moviesToRemove.includes(movie.movieTitle)));
       }
 
-      // Remove movies
-      if (moviesToRemove.length > 0) {
-        await supabase.from('movie_proposals').delete().eq('person_id', updatedPerson.id).in('movie_title', moviesToRemove);
+      // Add new movies with optimized detail fetching
+      if (moviesToAdd.length > 0) {
+        // Add movies to database first without details for instant feedback
+        const basicProposals = moviesToAdd.map(movie => ({
+          session_id: sessionId,
+          person_id: updatedPerson.id,
+          movie_title: movie
+        }));
+        
+        const { data: insertedProposals } = await supabase
+          .from('movie_proposals')
+          .insert(basicProposals)
+          .select('id, movie_title');
+
+        // Update local movieRatings immediately with basic data
+        const newMovieRatings = moviesToAdd.map(movieTitle => ({
+          movieTitle,
+          proposedBy: updatedPerson.name,
+          ratings: {}
+        }));
+        setMovieRatings(prev => [...prev, ...newMovieRatings]);
+
+        // Fetch movie details in background (slow operation)
+        // Don't await this - let it update asynchronously
+        fetchMovieDetailsInBackground(moviesToAdd, insertedProposals || []);
       }
-      setPeople(prev => prev.map(p => p.id === updatedPerson.id ? updatedPerson : p));
-      await loadSessionData(sessionId); // Reload to update movie ratings
+
     } catch (error) {
       console.error('Error updating person:', error);
+      // Revert local state on error
+      await loadSessionData(sessionId);
       toast({
         title: "Error",
         description: "Failed to update person. Please try again.",
@@ -776,141 +785,4 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                       {!collapsedMovies[movie.movieTitle] && (
                         <CardContent>
                           <MovieCard
-                            movie={movie}
-                            people={presentPeople}
-                            currentPersonId={selectedPersonId} // Pass selected person to MovieCard
-                            onRatingChange={updateRating}
-                            onSearchAgain={searchMovieAgain}
-                            showAllRatings
-                          />
-                        </CardContent>
-                      )}
-                    </Card>
-                  );
-                })}
-              </div>
-
-              {movieRatings.length === 0 && <Card className="text-center py-8">
-                <CardContent>
-                  <Film className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No movies suggested yet. Add people and their movie suggestions first!</p>
-                </CardContent>
-              </Card>}
-            </TabsContent>
-
-            <TabsContent value="results" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    Top Rated Movies
-                    <Badge variant="secondary">
-                      Based on {presentPeople.length} present people
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-
-              <div className="space-y-4">
-                {rankedMovies.map((movie, index) => (
-                  <Card key={movie.movieTitle} className="relative overflow-hidden">
-                    <div className="absolute left-0 top-0 h-full w-1 bg-gradient-cinema" />
-                    <CardContent className="p-4 sm:p-6">
-                      <div className="flex items-start gap-3 sm:gap-4">
-                        <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-full flex-shrink-0">
-                          <span className="font-bold text-primary text-sm">#{index + 1}</span>
-                        </div>
-                        
-                        {movie.details?.poster && movie.details.poster !== 'N/A' ? (
-                          <img 
-                            src={movie.details.poster} 
-                            alt={`${movie.movieTitle} poster`}
-                            className="w-12 h-18 sm:w-16 sm:h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="w-12 h-18 sm:w-16 sm:h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Film className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
-                          </div>
-                        )}
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                           {movie.details?.imdbId ? (
-                             <a 
-                               href={`https://www.imdb.com/title/${movie.details.imdbId}`}
-                               target="_blank"
-                               rel="noopener noreferrer"
-                               className="font-semibold text-base sm:text-lg truncate hover:underline"
-                             >
-                               {movie.movieTitle}
-                             </a>
-                           ) : (
-                             <h3 className="font-semibold text-base sm:text-lg truncate">{movie.movieTitle}</h3>
-                           )}
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 text-sm sm:text-lg px-2 py-1 sm:px-3">
-                                ★ {movie.averageRating.toFixed(1)}
-                              </Badge>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => markMovieAsWatched(movie.movieTitle)}
-                                className="h-8 w-8 p-0 bg-green-50 border-green-200 hover:bg-green-100 text-green-600"
-                                title="Mark as watched"
-                              >
-                                <Check className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <p className="text-xs sm:text-sm text-muted-foreground mb-2">
-                            Proposed by {movie.proposedBy} • {movie.totalRatings}/{presentPeople.length} ratings
-                          </p>
-                          
-                          {movie.details && (
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 text-xs text-muted-foreground">
-                              {movie.details.year && <p>Year: {movie.details.year}</p>}
-                              {movie.details.runtime && <p>Runtime: {movie.details.runtime}</p>}
-                              {movie.details.genre && <p className="sm:col-span-1 truncate">Genre: {movie.details.genre}</p>}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {movie.averageRating > 4 && (
-                        (() => {
-                          // Find people not present who rated this movie 1
-                          const absentPeople = people
-                            .filter(p => !p.isPresent && movie.ratings && movie.ratings[p.id] === 1)
-                            .map(p => p.name);
-
-                          return absentPeople.length > 0 ? (
-                            <div className="mt-2 text-xs text-red-500">
-                              <span>Rated 1 by absent: </span>
-                              {absentPeople.join(", ")}
-                            </div>
-                          ) : null;
-                        })()
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {rankedMovies.length === 0 && <Card className="text-center py-8">
-                <CardContent>
-                  <Trophy className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No ratings yet. Start rating movies to see results!</p>
-                </CardContent>
-              </Card>}
-            </TabsContent>
-          </Tabs>
-        </div>
-      ) : (
-        <WatchedMovies
-          sessionId={sessionId!}
-          onBack={() => setCurrentView('session')}
-          selectedPersonId={selectedPersonId}
-        />
-      )}
-    </div>
-  );
-};
+       
