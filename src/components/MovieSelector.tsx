@@ -571,6 +571,56 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
     });
   };
 
+  // Move this function HERE, before the return statement
+  const fetchMovieDetailsInBackground = async (movieTitles: string[], proposals: any[]) => {
+    for (const movieTitle of movieTitles) {
+      try {
+        const { data, error } = await supabase.functions.invoke('propose-movie-with-details', {
+          body: { sessionId, movieTitle }
+        });
+        
+        if (!error && data) {
+          const proposal = proposals.find(p => p.movie_title === movieTitle);
+          if (proposal) {
+            await supabase
+              .from('movie_proposals')
+              .update({
+                poster: data.poster,
+                genre: data.genre,
+                runtime: data.runtime,
+                year: data.year,
+                director: data.director,
+                plot: data.plot,
+                imdb_rating: data.imdbRating,
+                imdb_id: data.imdbId
+              })
+              .eq('id', proposal.id);
+
+            setMovieRatings(prev => prev.map(movie => 
+              movie.movieTitle === movieTitle 
+                ? { 
+                    ...movie, 
+                    details: {
+                      poster: data.poster,
+                      genre: data.genre,
+                      runtime: data.runtime,
+                      year: data.year,
+                      director: data.director,
+                      plot: data.plot,
+                      imdbRating: data.imdbRating,
+                      imdbId: data.imdbId
+                    }
+                  } 
+                : movie
+            ));
+          }
+        }
+      } catch (error) {
+        console.error(`Error fetching details for ${movieTitle}:`, error);
+      }
+    }
+  };
+
   const presentPeople = people.filter(p => p.isPresent);
   const rankedMovies = movieRatings.map(movie => {
     // Only count ratings > 0 and from present people
@@ -857,58 +907,4 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       )}
     </div>
   );
-  
-  // New background function for fetching movie details
-  const fetchMovieDetailsInBackground = async (movieTitles: string[], proposals: any[]) => {
-    for (const movieTitle of movieTitles) {
-      try {
-        // Try the edge function first
-        const { data, error } = await supabase.functions.invoke('propose-movie-with-details', {
-          body: { sessionId, movieTitle }
-        });
-        
-        if (!error && data) {
-          // Update the proposal with fetched details
-          const proposal = proposals.find(p => p.movie_title === movieTitle);
-          if (proposal) {
-            await supabase
-              .from('movie_proposals')
-              .update({
-                poster: data.poster,
-                genre: data.genre,
-                runtime: data.runtime,
-                year: data.year,
-                director: data.director,
-                plot: data.plot,
-                imdb_rating: data.imdbRating,
-                imdb_id: data.imdbId
-              })
-              .eq('id', proposal.id);
-
-            // Update local state with new details
-            setMovieRatings(prev => prev.map(movie => 
-              movie.movieTitle === movieTitle 
-                ? { 
-                    ...movie, 
-                    details: {
-                      poster: data.poster,
-                      genre: data.genre,
-                      runtime: data.runtime,
-                      year: data.year,
-                      director: data.director,
-                      plot: data.plot,
-                      imdbRating: data.imdbRating,
-                      imdbId: data.imdbId
-                    }
-                  } 
-                : movie
-            ));
-          }
-        }
-      } catch (error) {
-        console.error(`Error fetching details for ${movieTitle}:`, error);
-        // Silently fail for background operations
-      }
-    }
-  };
 };
