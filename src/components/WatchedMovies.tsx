@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Star, Film, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Star, Film, ChevronDown, ChevronRight, Plus, Search, X } from "lucide-react";
 import { StarRating } from "./StarRating";
 import { DetailedRating } from "./DetailedRating";
 import { PersonCard } from "./PersonCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface WatchedMovie {
   id: string;
@@ -51,6 +53,12 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
   const [loading, setLoading] = useState(true);
   const [collapsedMovies, setCollapsedMovies] = useState<Record<string, boolean>>({});
   const [localPresentStates, setLocalPresentStates] = useState<Record<string, boolean>>({});
+  const [showAddMovie, setShowAddMovie] = useState(false);
+  const [newMovieTitle, setNewMovieTitle] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedProposer, setSelectedProposer] = useState("");
   const { toast } = useToast();
 
   const loadData = async () => {
@@ -157,6 +165,75 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
     }
   };
 
+  const searchMovies = async () => {
+    if (!newMovieTitle.trim()) return;
+    
+    setIsSearching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('search-movie', {
+        body: { title: newMovieTitle.trim() }
+      });
+      
+      if (error) throw error;
+      setSearchResults([data]);
+    } catch (error) {
+      console.error('Error searching movies:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const addWatchedMovie = async (movieData?: any) => {
+    if (!sessionId || !selectedProposer) return;
+    
+    const movieTitle = movieData?.title || newMovieTitle.trim();
+    if (!movieTitle) return;
+
+    try {
+      const { error } = await supabase
+        .from("watched_movies")
+        .insert({
+          session_id: sessionId,
+          movie_title: movieTitle,
+          proposed_by: selectedProposer,
+          watched_at: selectedDate + 'T00:00:00Z',
+          poster: movieData?.poster,
+          genre: movieData?.genre,
+          runtime: movieData?.runtime,
+          year: movieData?.year,
+          director: movieData?.director,
+          plot: movieData?.plot,
+          imdb_rating: movieData?.imdbRating,
+          imdb_id: movieData?.imdbId
+        });
+
+      if (error) throw error;
+
+      // Reload data
+      await loadData();
+      
+      // Reset form
+      setShowAddMovie(false);
+      setNewMovieTitle("");
+      setSearchResults([]);
+      setSelectedProposer("");
+      setSelectedDate(new Date().toISOString().split('T')[0]);
+      
+      toast({
+        title: "Movie added",
+        description: `"${movieTitle}" has been added to watched movies`,
+      });
+    } catch (error) {
+      console.error('Error adding watched movie:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add watched movie",
+        variant: "destructive",
+      });
+    }
+  };
+
   const presentPeople = people;
 
   const getMovieRatings = (movieId: string) => {
@@ -209,10 +286,21 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Session
           </Button>
-          <h1 className="text-2xl font-bold flex items-center">
-            <Star className="w-6 h-6 mr-2 text-primary" />
-            Watched Movies
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold flex items-center">
+              <Star className="w-6 h-6 mr-2 text-primary" />
+              Watched Movies
+            </h1>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAddMovie(true)}
+              className="ml-4"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Movie
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="rate" className="space-y-6">
@@ -455,6 +543,126 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
             )}
           </TabsContent>
         </Tabs>
+
+        {showAddMovie && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Add Watched Movie</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setShowAddMovie(false);
+                    setNewMovieTitle("");
+                    setSearchResults([]);
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="movie-title">Movie Title</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="movie-title"
+                      placeholder="Enter movie title..."
+                      value={newMovieTitle}
+                      onChange={e => setNewMovieTitle(e.target.value)}
+                      onKeyPress={e => e.key === "Enter" && searchMovies()}
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={searchMovies}
+                      disabled={isSearching || !newMovieTitle.trim()}
+                    >
+                      {isSearching ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Search className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="proposer">Proposed By</Label>
+                  <select
+                    id="proposer"
+                    value={selectedProposer}
+                    onChange={e => setSelectedProposer(e.target.value)}
+                    className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
+                  >
+                    <option value="">Select proposer...</option>
+                    {people.map(person => (
+                      <option key={person.id} value={person.name}>{person.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="watch-date">Watch Date</Label>
+                  <Input
+                    id="watch-date"
+                    type="date"
+                    value={selectedDate}
+                    onChange={e => setSelectedDate(e.target.value)}
+                  />
+                </div>
+
+                {searchResults.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Search Results</Label>
+                    {searchResults.map((result, index) => (
+                      <Card key={index} className="p-3 cursor-pointer hover:bg-accent/50 transition-colors">
+                        <div className="flex gap-3" onClick={() => addWatchedMovie(result)}>
+                          {result.poster && result.poster !== 'N/A' ? (
+                            <img
+                              src={result.poster}
+                              alt={`${result.title} poster`}
+                              className="w-12 h-18 object-cover rounded"
+                            />
+                          ) : (
+                            <div className="w-12 h-18 bg-primary/10 rounded flex items-center justify-center">
+                              <Film className="w-4 h-4 text-primary" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium truncate">{result.title}</h4>
+                            <p className="text-sm text-muted-foreground">{result.year}</p>
+                            {result.genre && (
+                              <p className="text-xs text-muted-foreground truncate">{result.genre}</p>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => addWatchedMovie()}
+                    disabled={!newMovieTitle.trim() || !selectedProposer}
+                  >
+                    Add Without Details
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => addWatchedMovie(searchResults[0])}
+                    disabled={searchResults.length === 0 || !selectedProposer}
+                  >
+                    Add With Details
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
