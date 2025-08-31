@@ -255,8 +255,8 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
   const presentPeople = people;
 
   const getMovieRatings = (movieId: string) => {
-    // Include all ratings, including 0
-    return detailedRatings.filter(r => r.watched_movie_id === movieId && r.rating !== undefined);
+    // Only include non-null ratings
+    return detailedRatings.filter(r => r.watched_movie_id === movieId && r.rating !== null);
   };
 
   const getAverageRating = (movieId: string) => {
@@ -472,12 +472,50 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                                     <input
                                       type="checkbox"
                                       checked={localPresent}
-                                      onChange={e => 
+                                      onChange={async (e) => {
+                                        const newPresent = e.target.checked;
                                         setLocalPresentStates(prev => ({
                                           ...prev,
-                                          [localKey]: e.target.checked
-                                        }))
-                                      }
+                                          [localKey]: newPresent
+                                        }));
+                                        
+                                        // Save to database immediately
+                                        try {
+                                          const currentRating = getRatingForPerson(movie.id, person.id);
+                                          await supabase
+                                            .from("detailed_ratings")
+                                            .upsert({
+                                              watched_movie_id: movie.id,
+                                              person_id: person.id,
+                                              rating: currentRating, // Keep current rating (could be null)
+                                              present: newPresent
+                                            }, {
+                                              onConflict: "watched_movie_id,person_id"
+                                            });
+
+                                          // Update local state
+                                          setDetailedRatings(prev => {
+                                            const existing = prev.find(r => r.watched_movie_id === movie.id && r.person_id === person.id);
+                                            if (existing) {
+                                              return prev.map(r =>
+                                                r.watched_movie_id === movie.id && r.person_id === person.id
+                                                  ? { ...r, present: newPresent }
+                                                  : r
+                                              );
+                                            } else {
+                                              return [...prev, {
+                                                id: `temp-${Date.now()}`,
+                                                watched_movie_id: movie.id,
+                                                person_id: person.id,
+                                                rating: currentRating,
+                                                present: newPresent
+                                              }];
+                                            }
+                                          });
+                                        } catch (error) {
+                                          console.error("Error updating present status:", error);
+                                        }
+                                      }}
                                       className="accent-primary bg-card border-border rounded"
                                     />
                                     present
@@ -485,15 +523,15 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                                 </div>
                                 <select
                                   className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
-                                  value={getRatingForPerson(movie.id, person.id) === 0 ? (
-                                    // Check if person has actually rated 0, or just hasn't rated yet
-                                    detailedRatings.find(r => r.watched_movie_id === movie.id && r.person_id === person.id) ? 0 : ""
-                                  ) : getRatingForPerson(movie.id, person.id)}
+                                  value={(() => {
+                                    const rating = getRatingForPerson(movie.id, person.id);
+                                    return rating === null ? "" : rating;
+                                  })()}
                                   onChange={e =>
                                     updateDetailedRating(
                                       movie.id,
                                       person.id,
-                                      e.target.value === "" ? 0 : Number(e.target.value),
+                                      e.target.value === "" ? null : Number(e.target.value), // Use null instead of 0 for "not rated"
                                       localPresent
                                     )
                                   }
