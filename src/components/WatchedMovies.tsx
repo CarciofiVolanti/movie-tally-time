@@ -115,14 +115,19 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
   // After loading watchedMovies
   useEffect(() => {
     if (watchedMovies.length > 0) {
-      setCollapsedMovies(
-        watchedMovies.reduce((acc, movie) => {
-          acc[movie.id] = true;
-          return acc;
-        }, {} as Record<string, boolean>)
-      );
+      // Only collapse movies that don't already have a collapse state
+      setCollapsedMovies(prev => {
+        const newCollapsedState = { ...prev };
+        watchedMovies.forEach(movie => {
+          // Only set to collapsed if this movie doesn't have a state yet
+          if (!(movie.id in newCollapsedState)) {
+            newCollapsedState[movie.id] = true;
+          }
+        });
+        return newCollapsedState;
+      });
     }
-  }, [watchedMovies]);
+  }, [watchedMovies.length]); // Use watchedMovies.length instead of watchedMovies
 
   const updateDetailedRating = async (
     watchedMovieId: string,

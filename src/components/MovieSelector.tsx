@@ -30,17 +30,22 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
   const [currentView, setCurrentView] = useState<'session' | 'watched'>('session');
   const { toast } = useToast();
 
-  // Move this useEffect INSIDE the component, after the state declarations
+  // Replace the existing useEffect with this one
   useEffect(() => {
     if (activeTab === "rate" && movieRatings.length > 0) {
-      setCollapsedMovies(
-        movieRatings.reduce((acc, movie) => {
-          acc[movie.movieTitle] = true;
-          return acc;
-        }, {} as Record<string, boolean>)
-      );
+      // Only collapse cards that don't already have a collapse state
+      setCollapsedMovies(prev => {
+        const newCollapsedState = { ...prev };
+        movieRatings.forEach(movie => {
+          // Only set to collapsed if this movie doesn't have a state yet
+          if (!(movie.movieTitle in newCollapsedState)) {
+            newCollapsedState[movie.movieTitle] = true;
+          }
+        });
+        return newCollapsedState;
+      });
     }
-  }, [activeTab, movieRatings]);
+  }, [activeTab, movieRatings.length]); // Use movieRatings.length instead of movieRatings
 
   // Initialize session and load data
   useEffect(() => {
