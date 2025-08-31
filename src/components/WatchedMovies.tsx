@@ -337,7 +337,30 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
               </Card>
             ) : (
               watchedMovies.map((movie) => (
-                <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow">
+                <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow relative">
+                  {/* Move this voting status badge INSIDE the Card */}
+                  {selectedPersonId && (
+                    <div className="absolute top-2 right-2 z-10">
+                      {(() => {
+                        const hasVoted = !!detailedRatings.find(
+                          r => r.watched_movie_id === movie.id &&
+                          r.person_id === selectedPersonId &&
+                          r.rating > 0
+                        );
+                        return (
+                          <Badge
+                            variant={hasVoted ? "default" : "outline"}
+                            className={hasVoted
+                              ? "bg-green-100 text-green-800 border-green-300"
+                              : "bg-orange-100 text-orange-800 border-orange-300"}
+                          >
+                            {hasVoted ? "✓ Voted" : "Not Voted"}
+                          </Badge>
+                        );
+                      })()}
+                    </div>
+                  )}
+                  
                   <CardHeader className="pb-3 p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -504,7 +527,30 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
               [...watchedMovies]
                 .sort((a, b) => getAverageRating(b.id) - getAverageRating(a.id))
                 .map((movie, index) => (
-                  <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow">
+                  <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow relative">
+                    {/* Add voting status badge here too */}
+                    {selectedPersonId && (
+                      <div className="absolute top-2 right-2 z-10">
+                        {(() => {
+                          const hasVoted = !!detailedRatings.find(
+                            r => r.watched_movie_id === movie.id &&
+                            r.person_id === selectedPersonId &&
+                            r.rating > 0
+                          );
+                          return (
+                            <Badge
+                              variant={hasVoted ? "default" : "outline"}
+                              className={hasVoted
+                                ? "bg-green-100 text-green-800 border-green-300"
+                                : "bg-orange-100 text-orange-800 border-orange-300"}
+                            >
+                              {hasVoted ? "✓ Voted" : "Not Voted"}
+                            </Badge>
+                          );
+                        })()}
+                      </div>
+                    )}
+                    
                     <CardHeader className="pb-3 p-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2 flex-1 min-w-0">
