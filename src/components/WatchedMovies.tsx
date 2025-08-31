@@ -391,9 +391,28 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                           )}
                         </div>
                       </div>
-                      <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0 ml-2">
-                        ★ {getAverageRating(movie.id).toFixed(1)}
-                      </Badge>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {selectedPersonId && (
+                          (() => {
+                            const hasVoted = detailedRatings.find(
+                              r => r.watched_movie_id === movie.id && r.person_id === selectedPersonId
+                            ) !== undefined;
+                            return (
+                              <Badge
+                                variant={hasVoted ? "default" : "outline"}
+                                className={hasVoted
+                                  ? "bg-green-100 text-green-800 border-green-300"
+                                  : "bg-orange-100 text-orange-800 border-orange-300"}
+                              >
+                                {hasVoted ? "✓ Voted" : "Not Voted"}
+                              </Badge>
+                            );
+                          })()
+                        )}
+                        <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
+                          ★ {getAverageRating(movie.id).toFixed(1)}
+                        </Badge>
+                      </div>
                     </div>
                   </CardHeader>
                   {!collapsedMovies[movie.id] && (
