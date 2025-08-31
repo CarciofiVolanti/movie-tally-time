@@ -338,27 +338,6 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
             ) : (
               watchedMovies.map((movie) => (
                 <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow relative">
-                  {/* Move this voting status badge INSIDE the Card */}
-                  {selectedPersonId && (
-                    <div className="absolute top-2 right-16 z-10"> {/* Changed from right-2 to right-16 */}
-                      {(() => {
-                        const hasVoted = detailedRatings.find(
-                          r => r.watched_movie_id === movie.id && r.person_id === selectedPersonId
-                        ) !== undefined; // Just check if rating exists, regardless of value
-                        return (
-                          <Badge
-                            variant={hasVoted ? "default" : "outline"}
-                            className={hasVoted
-                              ? "bg-green-100 text-green-800 border-green-300"
-                              : "bg-orange-100 text-orange-800 border-orange-300"}
-                          >
-                            {hasVoted ? "✓ Voted" : "Not Voted"}
-                          </Badge>
-                        );
-                      })()}
-                    </div>
-                  )}
-                  
                   <CardHeader className="pb-3 p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -390,28 +369,6 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                             </h3>
                           )}
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {selectedPersonId && (
-                          (() => {
-                            const hasVoted = detailedRatings.find(
-                              r => r.watched_movie_id === movie.id && r.person_id === selectedPersonId
-                            ) !== undefined;
-                            return (
-                              <Badge
-                                variant={hasVoted ? "default" : "outline"}
-                                className={hasVoted
-                                  ? "bg-green-100 text-green-800 border-green-300"
-                                  : "bg-orange-100 text-orange-800 border-orange-300"}
-                              >
-                                {hasVoted ? "✓ Voted" : "Not Voted"}
-                              </Badge>
-                            );
-                          })()
-                        )}
-                        <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
-                          ★ {getAverageRating(movie.id).toFixed(1)}
-                        </Badge>
                       </div>
                     </div>
                   </CardHeader>
@@ -566,27 +523,6 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                 .sort((a, b) => getAverageRating(b.id) - getAverageRating(a.id))
                 .map((movie, index) => (
                   <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow relative">
-                    {/* Add voting status badge here too */}
-                    {selectedPersonId && (
-                      <div className="absolute top-2 right-2 z-10">
-                        {(() => {
-                          const hasVoted = detailedRatings.find(
-                            r => r.watched_movie_id === movie.id && r.person_id === selectedPersonId
-                          ) !== undefined; // Just check if rating exists, regardless of value
-                          return (
-                            <Badge
-                              variant={hasVoted ? "default" : "outline"}
-                              className={hasVoted
-                                ? "bg-green-100 text-green-800 border-green-300"
-                                : "bg-orange-100 text-orange-800 border-orange-300"}
-                            >
-                              {hasVoted ? "✓ Voted" : "Not Voted"}
-                            </Badge>
-                          );
-                        })()}
-                      </div>
-                    )}
-                    
                     <CardHeader className="pb-3 p-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex items-start gap-2 flex-1 min-w-0">
