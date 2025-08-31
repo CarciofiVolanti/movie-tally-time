@@ -551,10 +551,12 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
   };
 
   const toggleCollapse = (movieTitle: string) => {
-    setCollapsedMovies(prev => ({
-      ...prev,
-      [movieTitle]: !prev[movieTitle]
-    }));
+    setTimeout(() => {
+      setCollapsedMovies(prev => ({
+        ...prev,
+        [movieTitle]: !prev[movieTitle]
+      }));
+    }, 0);
   };
 
   const getSortedMovies = () => {
@@ -638,7 +640,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       totalRatings: validRatings.length
     };
   })
-  .filter(movie => presentPeople.some (p => p.movies.includes(movie.movieTitle)))
+  .filter(movie => presentPeople.some(p => p.movies.includes(movie.movieTitle)))
   .sort((a, b) => b.averageRating - a.averageRating);
   if (loading) {
     return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
@@ -836,11 +838,11 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                         <CardContent>
                           <MovieCard
                             movie={movie}
-                            personId={selectedPersonId}
-                            onUpdateRating={updateRating}
+                            people={presentPeople}
+                            currentPersonId={selectedPersonId}  // Changed from personId
+                            onRatingChange={updateRating}       // Changed from onUpdateRating
                             onSearchAgain={searchMovieAgain}
-                            fetchingDetails={fetchingDetails}
-                            showDetails={true}
+                            showAllRatings={true}               // Changed from showDetails
                           />
                         </CardContent>
                       )}
