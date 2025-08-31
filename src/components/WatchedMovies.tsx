@@ -44,9 +44,10 @@ interface Person {
 interface WatchedMoviesProps {
   sessionId: string;
   onBack: () => void;
+  selectedPersonId?: string; // <-- add this
 }
 
-export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
+export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMoviesProps) => {
   const [watchedMovies, setWatchedMovies] = useState<WatchedMovie[]>([]);
   const [detailedRatings, setDetailedRatings] = useState<DetailedRating[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
@@ -110,6 +111,18 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
       loadData();
     }
   }, [sessionId]);
+
+  // After loading watchedMovies
+  useEffect(() => {
+    if (watchedMovies.length > 0) {
+      setCollapsedMovies(
+        watchedMovies.reduce((acc, movie) => {
+          acc[movie.id] = true;
+          return acc;
+        }, {} as Record<string, boolean>)
+      );
+    }
+  }, [watchedMovies]);
 
   const updateDetailedRating = async (
     watchedMovieId: string,
@@ -447,6 +460,27 @@ export const WatchedMovies = ({ sessionId, onBack }: WatchedMoviesProps) => {
                         </div>
                       </div>
                     </CardContent>
+                  )}
+                  {selectedPersonId && (
+                    <div className="absolute top-2 right-2 z-10">
+                      {(() => {
+                        const hasVoted = !!detailedRatings.find(
+                          r => r.watched_movie_id === movie.id &&
+                          r.person_id === selectedPersonId &&
+                          r.rating > 0
+                        );
+                        return (
+                          <Badge
+                            variant={hasVoted ? "default" : "outline"}
+                            className={hasVoted
+                              ? "bg-green-100 text-green-800 border-green-300"
+                              : "bg-orange-100 text-orange-800 border-orange-300"}
+                          >
+                            {hasVoted ? "✓ Voted" : "Not Voted"}
+                          </Badge>
+                        );
+                      })()}
+                    </div>
                   )}
                 </Card>
               ))

@@ -9,6 +9,7 @@ import { MovieCard, MovieRating, MovieDetails } from "./MovieCard";
 import { Users, Film, Trophy, Plus, RefreshCw, Award, Check, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { WatchedMovies } from "./WatchedMovies";
 interface MovieSelectorProps {
   onNavigateToWatched?: () => void;
   onSessionLoad?: (sessionId: string) => void;
@@ -25,6 +26,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
   const [fetchingDetails, setFetchingDetails] = useState(false);
   const [collapsedMovies, setCollapsedMovies] = useState<Record<string, boolean>>({});
   const [selectedPersonId, setSelectedPersonId] = useState<string>("");
+  const [activeTab, setActiveTab] = useState("people");
   const {
     toast
   } = useToast();
@@ -630,7 +632,12 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
         </div>
       </div>
 
-      <Tabs defaultValue="people" className="space-y-6">
+      <Tabs
+        defaultValue="people"
+        className="space-y-6"
+        value={activeTab}
+        onValueChange={setActiveTab}
+      >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="people" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
@@ -878,6 +885,15 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
           </Card>}
         </TabsContent>
       </Tabs>
+
+      {/* Watched Movies section - always show this component */}
+      <div className="mt-12">
+        <WatchedMovies
+          sessionId={sessionId}
+          onBack={() => setSessionId(null)} // Go back to main session view
+          selectedPersonId={selectedPersonId}
+        />
+      </div>
     </div>
   </div>;
 };
