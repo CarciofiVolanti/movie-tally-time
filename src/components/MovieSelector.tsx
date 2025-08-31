@@ -24,6 +24,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
   const [newSessionName, setNewSessionName] = useState("");
   const [fetchingDetails, setFetchingDetails] = useState(false);
   const [collapsedMovies, setCollapsedMovies] = useState<Record<string, boolean>>({});
+  const [selectedPersonId, setSelectedPersonId] = useState<string>("");
   const {
     toast
   } = useToast();
@@ -529,6 +530,20 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
     }));
   };
 
+  const getSortedMovies = () => {
+    if (!selectedPersonId) return movieRatings;
+    
+    return [...movieRatings].sort((a, b) => {
+      const aRated = a.ratings[selectedPersonId] !== undefined && a.ratings[selectedPersonId] > 0;
+      const bRated = b.ratings[selectedPersonId] !== undefined && b.ratings[selectedPersonId] > 0;
+      
+      // Unrated movies first
+      if (!aRated && bRated) return -1;
+      if (aRated && !bRated) return 1;
+      return 0;
+    });
+  };
+
   const presentPeople = people.filter(p => p.isPresent);
   const rankedMovies = movieRatings.map(movie => {
     // Only count ratings > 0 and from present people
@@ -579,7 +594,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold bg-gradient-cinema bg-clip-text text-transparent mb-4">CarciOscar</h1>
 
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
           <Button variant="outline" size="sm" onClick={() => {
             setShowNewSession(true);
             setSessionId(null);
@@ -598,6 +613,20 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
             <Award className="w-4 h-4 mr-2" />
             Watched Movies
           </Button>
+        </div>
+
+        {/* Person selection dropdown */}
+        <div className="max-w-xs mx-auto mb-4">
+          <select
+            value={selectedPersonId}
+            onChange={e => setSelectedPersonId(e.target.value)}
+            className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
+          >
+            <option value="">Select who you are (optional)</option>
+            {people.map(person => (
+              <option key={person.id} value={person.id}>{person.name}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -684,11 +713,25 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
           </Card>
 
           <div className="flex flex-col gap-4 w-full max-w-xl mx-auto">
-            {[...movieRatings]
-              .map(movie =>
-                <Card key={movie.movieTitle} className="w-full max-w-full">
+            {getSortedMovies().map(movie => {
+              const hasVoted = selectedPersonId && movie.ratings[selectedPersonId] !== undefined && movie.ratings[selectedPersonId] > 0;
+              
+              return (
+                <Card key={movie.movieTitle} className="w-full max-w-full relative">
+                  {/* Voting status indicator */}
+                  {selectedPersonId && (
+                    <div className="absolute top-2 right-2 z-10">
+                      <Badge 
+                        variant={hasVoted ? "default" : "outline"} 
+                        className={hasVoted ? "bg-green-100 text-green-800 border-green-300" : "bg-orange-100 text-orange-800 border-orange-300"}
+                      >
+                        {hasVoted ? "✓ Voted" : "Not Voted"}
+                      </Badge>
+                    </div>
+                  )}
+                  
                   <CardHeader className="flex flex-row items-center justify-between p-4">
-                    <div className="flex items-center gap-2 min-w-0 w-full">
+                    <div className="flex items-center gap-2 min-w-0 w-full pr-20"> {/* Add right padding for the badge */}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -710,6 +753,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                       <MovieCard
                         movie={movie}
                         people={presentPeople}
+                        currentPersonId={selectedPersonId} // Pass selected person to MovieCard
                         onRatingChange={updateRating}
                         onSearchAgain={searchMovieAgain}
                         showAllRatings
@@ -717,7 +761,8 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                     </CardContent>
                   )}
                 </Card>
-              )}
+              );
+            })}
           </div>
 
           {movieRatings.length === 0 && <Card className="text-center py-8">
