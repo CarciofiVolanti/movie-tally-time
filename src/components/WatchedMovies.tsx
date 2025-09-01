@@ -129,50 +129,59 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
     }
   }, [watchedMovies.length]); // Use watchedMovies.length instead of watchedMovies
 
+  // Update the present checkbox default and rating logic
   const updateDetailedRating = async (
     watchedMovieId: string,
     personId: string,
-    rating: number,
+    rating: number | null,
     present?: boolean
   ) => {
     try {
-      const { error } = await supabase
-        .from("detailed_ratings")
-        .upsert({
-          watched_movie_id: watchedMovieId,
-          person_id: personId,
-          rating,
-          present // save present value
-        }, {
-          onConflict: "watched_movie_id,person_id"
-        });
-
-      if (error) throw error;
-
-      // Update local state
-      setDetailedRatings(prev => {
-        const existing = prev.find(r => r.watched_movie_id === watchedMovieId && r.person_id === personId);
-        if (existing) {
-          return prev.map(r =>
-            r.watched_movie_id === watchedMovieId && r.person_id === personId
-              ? { ...r, rating, present }
-              : r
-          );
-        } else {
-          return [...prev, {
-            id: `temp-${Date.now()}`,
+      // Only create/update entry if rating is provided or person is marked present
+      if (rating !== null || present) {
+        const { error } = await supabase
+          .from("detailed_ratings")
+          .upsert({
             watched_movie_id: watchedMovieId,
             person_id: personId,
             rating,
             present
-          }];
-        }
-      });
+          }, {
+            onConflict: "watched_movie_id,person_id"
+          });
 
-      toast({
-        title: "Rating saved",
-        description: `Rating of ${rating}/10 saved successfully`,
-      });
+        if (error) throw error;
+
+        // Update local state
+        setDetailedRatings(prev => {
+          const existingIndex = prev.findIndex(r => 
+            r.watched_movie_id === watchedMovieId && r.person_id === personId
+          );
+
+          if (existingIndex >= 0) {
+            // Update existing rating
+            const newRatings = [...prev];
+            newRatings[existingIndex] = { ...newRatings[existingIndex], rating, present };
+            return newRatings;
+          } else {
+            // Add new rating
+            return [...prev, {
+              id: `temp-${Date.now()}`,
+              watched_movie_id: watchedMovieId,
+              person_id: personId,
+              rating,
+              present
+            }];
+          }
+        });
+
+        if (rating !== null) {
+          toast({
+            title: "Rating saved",
+            description: `Rating of ${rating}/10 saved successfully`,
+          });
+        }
+      }
     } catch (error) {
       console.error("Error saving rating:", error);
       toast({
@@ -438,7 +447,8 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                             const detailed = detailedRatings.find(
                               r => r.watched_movie_id === movie.id && r.person_id === person.id
                             );
-                            const isPresent = detailed?.present ?? true;
+                            // Default to absent (false) if no DB entry exists
+                            const isPresent = detailed?.present ?? false; // Changed from true to false
                             const localKey = `${movie.id}-${person.id}`;
                             const localPresent = localPresentStates[localKey] ?? isPresent;
 
@@ -446,7 +456,7 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                               <div key={person.id} className="p-3 bg-card/50 rounded-lg border border-border/50">
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                                   <span className="text-sm font-medium flex-1 min-w-0 truncate">{person.name}</span>
-                                  {getRatingForPerson(movie.id, person.id) > 0 && (
+                                  {getRatingForPerson(movie.id, person.id) !== null && getRatingForPerson(movie.id, person.id) >= 0 && (
                                     <Badge variant="secondary" className="text-xs self-start sm:self-auto">
                                       ★ {getRatingForPerson(movie.id, person.id)}/10
                                     </Badge>
@@ -462,42 +472,56 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                                           [localKey]: newPresent
                                         }));
                                         
-                                        // Save to database immediately
-                                        try {
-                                          const currentRating = getRatingForPerson(movie.id, person.id);
-                                          await supabase
-                                            .from("detailed_ratings")
-                                            .upsert({
-                                              watched_movie_id: movie.id,
-                                              person_id: person.id,
-                                              rating: currentRating, // Keep current rating (could be null)
-                                              present: newPresent
-                                            }, {
-                                              onConflict: "watched_movie_id,person_id"
-                                            });
-
-                                          // Update local state
-                                          setDetailedRatings(prev => {
-                                            const existing = prev.find(r => r.watched_movie_id === movie.id && r.person_id === person.id);
-                                            if (existing) {
-                                              return prev.map(r =>
-                                                r.watched_movie_id === movie.id && r.person_id === person.id
-                                                  ? { ...r, present: newPresent }
-                                                  : r
-                                              );
-                                            } else {
-                                              return [...prev, {
-                                                id: `temp-${Date.now()}`,
+                                        // Only save to DB if checking present OR if entry already exists
+                                        const currentRating = getRatingForPerson(movie.id, person.id);
+                                        const entryExists = detailed !== undefined;
+                                        
+                                        if (newPresent || entryExists) {
+                                          try {
+                                            await supabase
+                                              .from("detailed_ratings")
+                                              .upsert({
                                                 watched_movie_id: movie.id,
                                                 person_id: person.id,
                                                 rating: currentRating,
                                                 present: newPresent
-                                              }];
-                                            }
-                                          });
-                                        } catch (error) {
-                                          console.error("Error updating present status:", error);
+                                              }, {
+                                                onConflict: "watched_movie_id,person_id"
+                                              });
+
+                                            // Update local state
+                                            setDetailedRatings(prev => {
+                                              const existingIndex = prev.findIndex(r => 
+                                                r.watched_movie_id === movie.id && r.person_id === person.id
+                                              );
+                                              
+                                              if (existingIndex >= 0) {
+                                                // Update existing entry
+                                                const newRatings = [...prev];
+                                                newRatings[existingIndex] = { ...newRatings[existingIndex], present: newPresent };
+                                                return newRatings;
+                                              } else if (newPresent) {
+                                                // Create new entry only if marking as present
+                                                return [...prev, {
+                                                  id: `temp-${Date.now()}`,
+                                                  watched_movie_id: movie.id,
+                                                  person_id: person.id,
+                                                  rating: currentRating,
+                                                  present: newPresent
+                                                }];
+                                              }
+                                              return prev;
+                                            });
+                                          } catch (error) {
+                                            console.error("Error updating present status:", error);
+                                            // Revert local state on error
+                                            setLocalPresentStates(prev => ({
+                                              ...prev,
+                                              [localKey]: !newPresent
+                                            }));
+                                          }
                                         }
+                                        // If unchecking and no entry exists, do nothing (no DB operation needed)
                                       }}
                                       className="accent-primary bg-card border-border rounded"
                                     />
@@ -510,14 +534,17 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                                     const rating = getRatingForPerson(movie.id, person.id);
                                     return rating === null ? "" : rating;
                                   })()}
-                                  onChange={e =>
+                                  onChange={e => {
+                                    const rating = e.target.value === "" ? null : Number(e.target.value);
+                                    
+                                    // Always create/update DB entry when rating is given
                                     updateDetailedRating(
                                       movie.id,
                                       person.id,
-                                      e.target.value === "" ? null : Number(e.target.value), // Use null instead of 0 for "not rated"
-                                      localPresent
-                                    )
-                                  }
+                                      rating,
+                                      localPresent // Use current present status
+                                    );
+                                  }}
                                 >
                                   <option value="">- Not yet rated -</option>
                                   {Array.from({ length: 21 }, (_, i) => (
