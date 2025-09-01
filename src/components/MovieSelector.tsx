@@ -925,16 +925,28 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                         </div>
                       </div>
                       
-                      {movie.details?.imdbId && (
-                        <a 
-                          href={`https://www.imdb.com/title/${movie.details.imdbId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-primary hover:underline block mt-2"
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-3">
+                        {movie.details?.imdbId && (
+                          <a 
+                            href={`https://www.imdb.com/title/${movie.details.imdbId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline"
+                          >
+                            View on IMDb
+                          </a>
+                        )}
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => markMovieAsWatched(movie.movieTitle)}
+                          className="text-xs self-start sm:self-end"
                         >
-                          View on IMDb
-                        </a>
-                      )}
+                          <Check className="w-3 h-3 mr-1" />
+                          Watched
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
