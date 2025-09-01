@@ -842,6 +842,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                             currentPersonId={selectedPersonId}  // Changed from personId
                             onRatingChange={updateRating}       // Changed from onUpdateRating
                             onSearchAgain={searchMovieAgain}
+                            onMarkAsWatched={markMovieAsWatched}  // Add this line
                             showAllRatings={true}               // Changed from showDetails
                           />
                         </CardContent>
@@ -872,16 +873,16 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
               <div className="flex flex-col gap-4">
                 {rankedMovies.map((movie, index) => (
                   <Card key={movie.movieTitle} className="w-full max-w-full">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm flex-shrink-0">
+                    <CardHeader className="pb-3 p-3 sm:p-6"> {/* Smaller padding on mobile */}
+                      <div className="flex items-center gap-2 sm:gap-3"> {/* Smaller gap on mobile */}
+                        <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground font-bold text-xs sm:text-sm flex-shrink-0">
                           {index + 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-lg leading-tight truncate">{movie.movieTitle}</h3>
-                          <p className="text-sm text-muted-foreground">Proposed by {movie.proposedBy}</p>
+                          <h3 className="font-semibold text-base sm:text-lg leading-tight truncate">{movie.movieTitle}</h3>
+                          <p className="text-xs sm:text-sm text-muted-foreground">Proposed by {movie.proposedBy}</p>
                         </div>
-                        <Badge variant="secondary" className="text-lg">
+                        <Badge variant="secondary" className="text-base sm:text-lg">
                           ★ {movie.averageRating.toFixed(1)}
                         </Badge>
                       </div>
