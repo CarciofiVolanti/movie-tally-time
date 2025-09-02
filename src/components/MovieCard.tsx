@@ -24,13 +24,20 @@ export interface MovieRating {
   details?: MovieDetails;
 }
 
+interface Person {
+  id: string;
+  name: string;
+  isPresent: boolean;
+}
+
 interface MovieCardProps {
   movie: MovieRating;
-  people: Array<{ id: string; name: string; isPresent: boolean }>;
+  people: Person[];
   currentPersonId?: string;
-  onRatingChange?: (movieTitle: string, personId: string, rating: number) => void;
-  onSearchAgain?: (movieTitle: string) => void;
-  showAllRatings?: boolean;
+  onRatingChange: (movieTitle: string, personId: string, rating: number) => Promise<void>;
+  onSearchAgain: (movieTitle: string) => Promise<void>;
+  onMarkAsWatched: (movieTitle: string) => Promise<void>; // Add this line
+  showAllRatings: boolean;
 }
 
 export const MovieCard = ({
@@ -110,6 +117,7 @@ export const MovieCard = ({
               {movie.details && (
                 <div className="space-y-1 text-xs text-muted-foreground">
                   {movie.details.year && <p>Year: {movie.details.year}</p>}
+                  {movie.details.director && <p>Director: {movie.details.director}</p>}  {/* Add this line */}
                   {movie.details.runtime && <p>Runtime: {movie.details.runtime}</p>}
                   {movie.details.genre && <p className="break-words">Genre: {movie.details.genre}</p>}
                 </div>

@@ -640,7 +640,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       totalRatings: validRatings.length
     };
   })
-  .filter(movie => presentPeople.some(p => p.movies.includes(movie.movieTitle)))
+  .filter(movie => presentPeople.some p => p.movies.includes(movie.movieTitle)))
   .sort((a, b) => b.averageRating - a.averageRating);
   if (loading) {
     return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
@@ -903,6 +903,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                         )}
                         <div className="space-y-1 text-xs text-muted-foreground flex-1">
                           {movie.details?.year && <p>Year: {movie.details.year}</p>}
+                          {movie.details?.director && <p>Director: {movie.details.director}</p>}  {/* Add this line */}
                           {movie.details?.runtime && <p>Runtime: {movie.details.runtime}</p>}
                           {movie.details?.genre && <p className="break-words">Genre: {movie.details.genre}</p>}
                           <p>{movie.totalRatings}/{presentPeople.length} people rated</p>
