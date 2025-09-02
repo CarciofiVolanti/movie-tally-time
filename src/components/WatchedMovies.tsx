@@ -60,6 +60,8 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
   const [isSearching, setIsSearching] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedProposer, setSelectedProposer] = useState("");
+  const [rateSortMode, setRateSortMode] = useState<"date-desc" | "date-asc" | "voted" | "not-voted" | "not-fully-rated">("date-desc");
+  const [rateSortAsc, setRateSortAsc] = useState(false);
   const { toast } = useToast();
 
   const loadData = async () => {
@@ -286,6 +288,78 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
     }));
   };
 
+  // Helper: Check if selected person has voted for a movie
+  const hasSelectedPersonVoted = (movieId: string) => {
+    if (!selectedPersonId) return false;
+    return detailedRatings.some(
+      r => r.watched_movie_id === movieId && r.person_id === selectedPersonId && r.rating !== null
+    );
+  };
+
+  // Helper: Check if all present people (checkbox checked) have rated a movie
+  const isFullyRated = (movieId: string) => {
+    // Find all people marked present for this movie (from detailedRatings or localPresentStates)
+    const presentPersonIds = people
+      .filter(person => {
+        const localKey = `${movieId}-${person.id}`;
+        // Prefer localPresentStates if set, else use DB
+        if (localPresentStates.hasOwnProperty(localKey)) {
+          return localPresentStates[localKey];
+        }
+        const detailed = detailedRatings.find(
+          r => r.watched_movie_id === movieId && r.person_id === person.id
+        );
+        return detailed?.present ?? false;
+      })
+      .map(person => person.id);
+
+    if (presentPersonIds.length === 0) return false;
+
+    // For all present people, check if they have a non-null rating
+    return presentPersonIds.every(pid =>
+      detailedRatings.some(
+        r => r.watched_movie_id === movieId && r.person_id === pid && r.rating !== null
+      )
+    );
+  };
+
+  // Sorting/filtering for Rate tab
+  const getSortedFilteredMovies = () => {
+    let movies = [...watchedMovies];
+
+    if (rateSortMode === "voted" && selectedPersonId) {
+      movies = movies.filter(m => hasSelectedPersonVoted(m.id));
+    } else if (rateSortMode === "not-voted" && selectedPersonId) {
+      movies = movies.filter(m => !hasSelectedPersonVoted(m.id));
+    } else if (rateSortMode === "not-fully-rated") {
+      movies = movies.filter(m => !isFullyRated(m.id));
+    }
+
+    // Sorting
+    if (rateSortMode === "date-desc" || rateSortMode === "date-asc") {
+      movies.sort((a, b) => {
+        const aDate = new Date(a.watched_at).getTime();
+        const bDate = new Date(b.watched_at).getTime();
+        return rateSortMode === "date-desc"
+          ? bDate - aDate
+          : aDate - bDate;
+      });
+    } else if (rateSortMode === "voted" || rateSortMode === "not-voted" || rateSortMode === "not-fully-rated") {
+      // Secondary sort by date desc/asc
+      movies.sort((a, b) => {
+        const aDate = new Date(a.watched_at).getTime();
+        const bDate = new Date(b.watched_at).getTime();
+        return rateSortAsc ? aDate - bDate : bDate - aDate;
+      });
+    }
+
+    if (rateSortAsc && (rateSortMode === "date-desc" || rateSortMode === "date-asc")) {
+      movies.reverse();
+    }
+
+    return movies;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 p-4">
@@ -337,7 +411,44 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
           </TabsList>
 
           <TabsContent value="rate" className="space-y-4">
-            {watchedMovies.length === 0 ? (
+            {/* --- Sorting/Filtering Controls --- */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+              <div className="flex gap-2 items-center">
+                <Label htmlFor="sort-mode" className="text-xs">Sort/Filter:</Label>
+                <select
+                  id="sort-mode"
+                  value={rateSortMode}
+                  onChange={e => setRateSortMode(e.target.value as any)}
+                  className="p-1 rounded border border-border bg-card text-xs"
+                >
+                  <option value="date-desc">Date (Newest)</option>
+                  <option value="date-asc">Date (Oldest)</option>
+                  {selectedPersonId && <option value="voted">Voted (Selected Person)</option>}
+                  {selectedPersonId && <option value="not-voted">Not Voted (Selected Person)</option>}
+                  <option value="not-fully-rated">Not Fully Rated</option>
+                </select>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="ml-1"
+                  onClick={() => setRateSortAsc(v => !v)}
+                  aria-label="Toggle ascending/descending"
+                >
+                  {rateSortAsc ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 rotate-90" />
+                  )}
+                </Button>
+              </div>
+              {rateSortMode === "not-fully-rated" && (
+                <span className="text-xs text-muted-foreground">Showing movies not yet rated by all present people</span>
+              )}
+            </div>
+            {/* --- End Sorting/Filtering Controls --- */}
+
+            {getSortedFilteredMovies().length === 0 ? (
               <Card className="text-center py-12">
                 <CardContent>
                   <Film className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -345,7 +456,7 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                 </CardContent>
               </Card>
             ) : (
-              watchedMovies.map((movie) => (
+              getSortedFilteredMovies().map((movie) => (
                 <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow relative">
                   <CardHeader className="pb-3 p-4">
                     <div className="flex items-start justify-between gap-2">
@@ -444,7 +555,7 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                       <div className="space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                           <h4 className="text-sm font-medium">Rate this movie (0-10)</h4>
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs self-start sm:self-auto">
                             {getMovieRatings(movie.id).length}/{presentPeople.length} rated
                           </Badge>
                         </div>
