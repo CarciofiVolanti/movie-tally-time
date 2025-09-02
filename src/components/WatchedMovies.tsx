@@ -298,11 +298,20 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
 
   // Helper: Check if all present people (checkbox checked) have rated a movie
   const isFullyRated = (movieId: string) => {
-    // Find all people marked present for this movie (from detailedRatings or localPresentStates)
-    const presentPersonIds = people
+    const presentPersonIds = getPresentPersonIds(movieId);
+    if (presentPersonIds.length === 0) return false;
+    return presentPersonIds.every(pid =>
+      detailedRatings.some(
+        r => r.watched_movie_id === movieId && r.person_id === pid && r.rating !== null
+      )
+    );
+  };
+
+  // Helper: Get present people (checkbox checked) for a movie
+  const getPresentPersonIds = (movieId: string) => {
+    return people
       .filter(person => {
         const localKey = `${movieId}-${person.id}`;
-        // Prefer localPresentStates if set, else use DB
         if (localPresentStates.hasOwnProperty(localKey)) {
           return localPresentStates[localKey];
         }
@@ -312,13 +321,15 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
         return detailed?.present ?? false;
       })
       .map(person => person.id);
+  };
 
-    if (presentPersonIds.length === 0) return false;
-
-    // For all present people, check if they have a non-null rating
-    return presentPersonIds.every(pid =>
-      detailedRatings.some(
-        r => r.watched_movie_id === movieId && r.person_id === pid && r.rating !== null
+  // Helper: Get present people who have NOT rated for a movie
+  const getPresentPeopleWithoutRating = (movieId: string) => {
+    const presentIds = getPresentPersonIds(movieId);
+    return people.filter(person =>
+      presentIds.includes(person.id) &&
+      !detailedRatings.some(
+        r => r.watched_movie_id === movieId && r.person_id === person.id && r.rating !== null
       )
     );
   };
@@ -456,227 +467,249 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                 </CardContent>
               </Card>
             ) : (
-              getSortedFilteredMovies().map((movie) => (
-                <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow relative">
-                  <CardHeader className="pb-3 p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-2 flex-1 min-w-0">
-                        <button
-                          onClick={() => toggleCollapse(movie.id)}
-                          aria-label={collapsedMovies[movie.id] ? "Expand" : "Collapse"}
-                          className="p-1 rounded hover:bg-accent/20 transition flex-shrink-0 mt-1"
-                          type="button"
-                        >
-                          {collapsedMovies[movie.id] ? (
-                            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
-                          )}
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          {movie.imdb_id ? (
-                            <a 
-                              href={`https://www.imdb.com/title/${movie.imdb_id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-semibold text-base sm:text-lg hover:text-primary transition-colors block hover:underline leading-tight"
-                            >
-                              {movie.movie_title}
-                            </a>
-                          ) : (
-                            <h3 className="font-semibold text-base sm:text-lg leading-tight">
-                              {movie.movie_title}
-                            </h3>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {/* Add voting status badge here */}
-                        {selectedPersonId && (
-                          (() => {
-                            const hasVoted = detailedRatings.find(
-                              r => r.watched_movie_id === movie.id && 
-                              r.person_id === selectedPersonId && 
-                              r.rating !== null // Check that rating is not null
-                            ) !== undefined;
-                            return (
-                              <Badge
-                                variant={hasVoted ? "default" : "outline"}
-                                className={hasVoted
-                                  ? "bg-green-100 text-green-800 border-green-300"
-                                  : "bg-orange-100 text-orange-800 border-orange-300"}
+              getSortedFilteredMovies().map((movie) => {
+                // --- Add this block to get missing raters if needed ---
+                let missingPresentRaters: Person[] = [];
+                if (rateSortMode === "not-fully-rated") {
+                  missingPresentRaters = getPresentPeopleWithoutRating(movie.id);
+                }
+                // ------------------------------------------------------
+
+                return (
+                  <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow relative">
+                    <CardHeader className="pb-3 p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 flex-1 min-w-0">
+                          <button
+                            onClick={() => toggleCollapse(movie.id)}
+                            aria-label={collapsedMovies[movie.id] ? "Expand" : "Collapse"}
+                            className="p-1 rounded hover:bg-accent/20 transition flex-shrink-0 mt-1"
+                            type="button"
+                          >
+                            {collapsedMovies[movie.id] ? (
+                              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
+                            )}
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            {movie.imdb_id ? (
+                              <a 
+                                href={`https://www.imdb.com/title/${movie.imdb_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-semibold text-base sm:text-lg hover:text-primary transition-colors block hover:underline leading-tight"
                               >
-                                {hasVoted ? "✓ Voted" : "Not Voted"}
-                              </Badge>
-                            );
-                          })()
-                        )}
-                        {/* Average rating badge */}
-                        <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
-                          ★ {getAverageRating(movie.id).toFixed(1)}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  {!collapsedMovies[movie.id] && (
-                    <CardContent className="space-y-4 p-4 pt-0">
-                      {/* Movie info and details */}
-                      <div className="flex gap-3">
-                        {/* Poster */}
-                        {movie.poster && movie.poster !== 'N/A' ? (
-                          <img 
-                            src={movie.poster} 
-                            alt={`${movie.movie_title} poster`}
-                            className="w-12 h-18 sm:w-16 sm:h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="w-12 h-18 sm:w-16 sm:h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Film className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
-                          </div>
-                        )}
-                        {/* Details */}
-                        <div className="flex-1 min-w-0 space-y-2">
-                          <div className="space-y-1 text-xs text-muted-foreground">
-                            <p>Proposed by {movie.proposed_by}</p>
-                            <p>Watched on {(() => {
-                              const d = new Date(movie.watched_at);
-                              const day = String(d.getDate()).padStart(2, '0');
-                              const month = String(d.getMonth() + 1).padStart(2, '0');
-                              const year = String(d.getFullYear()).slice(-2);
-                              return `${day}/${month}/${year}`;
-                            })()}</p>
-                            {movie.year && <p>Year: {movie.year}</p>}
-                            {movie.runtime && <p>Runtime: {movie.runtime}</p>}
-                            {movie.genre && <p className="break-words">Genre: {movie.genre}</p>}
+                                {movie.movie_title}
+                              </a>
+                            ) : (
+                              <h3 className="font-semibold text-base sm:text-lg leading-tight">
+                                {movie.movie_title}
+                              </h3>
+                            )}
+                            {/* --- Show missing raters if in not-fully-rated mode and there are any --- */
+                            rateSortMode === "not-fully-rated" && missingPresentRaters.length > 0 && (
+                              <div className="mt-1 text-xs text-orange-700 flex flex-wrap gap-1 items-center">
+                                <span className="font-medium">Missing:</span>
+                                {missingPresentRaters.map((p, idx) => (
+                                  <span key={p.id} className="bg-orange-100 border border-orange-200 rounded px-1 py-0.5">
+                                    {p.name}
+                                    {idx < missingPresentRaters.length - 1 && ","}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {/* --------------------------------------------------------------- */}
                           </div>
                         </div>
-                      </div>
-                      {/* Ratings UI */}
-                      <div className="space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                          <h4 className="text-sm font-medium">Rate this movie (0-10)</h4>
-                          <Badge variant="outline" className="text-xs self-start sm:self-auto">
-                            {getMovieRatings(movie.id).length}/{presentPeople.length} rated
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {/* Add voting status badge here */}
+                          {selectedPersonId && (
+                            (() => {
+                              const hasVoted = detailedRatings.find(
+                                r => r.watched_movie_id === movie.id && 
+                                r.person_id === selectedPersonId && 
+                                r.rating !== null // Check that rating is not null
+                              ) !== undefined;
+                              return (
+                                <Badge
+                                  variant={hasVoted ? "default" : "outline"}
+                                  className={hasVoted
+                                    ? "bg-green-100 text-green-800 border-green-300"
+                                    : "bg-orange-100 text-orange-800 border-orange-300"}
+                                >
+                                  {hasVoted ? "✓ Voted" : "Not Voted"}
+                                </Badge>
+                              );
+                            })()
+                          )}
+                          {/* Average rating badge */}
+                          <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20">
+                            ★ {getAverageRating(movie.id).toFixed(1)}
                           </Badge>
                         </div>
-                        <div className="space-y-3">
-                          {presentPeople.map((person) => {
-                            const detailed = detailedRatings.find(
-                              r => r.watched_movie_id === movie.id && r.person_id === person.id
-                            );
-                            // Default to absent (false) if no DB entry exists
-                            const isPresent = detailed?.present ?? false; // Changed from true to false
-                            const localKey = `${movie.id}-${person.id}`;
-                            const localPresent = localPresentStates[localKey] ?? isPresent;
+                      </div>
+                    </CardHeader>
+                    {!collapsedMovies[movie.id] && (
+                      <CardContent className="space-y-4 p-4 pt-0">
+                        {/* Movie info and details */}
+                        <div className="flex gap-3">
+                          {/* Poster */}
+                          {movie.poster && movie.poster !== 'N/A' ? (
+                            <img 
+                              src={movie.poster} 
+                              alt={`${movie.movie_title} poster`}
+                              className="w-12 h-18 sm:w-16 sm:h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-12 h-18 sm:w-16 sm:h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Film className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
+                            </div>
+                          )}
+                          {/* Details */}
+                          <div className="flex-1 min-w-0 space-y-2">
+                            <div className="space-y-1 text-xs text-muted-foreground">
+                              <p>Proposed by {movie.proposed_by}</p>
+                              <p>Watched on {(() => {
+                                const d = new Date(movie.watched_at);
+                                const day = String(d.getDate()).padStart(2, '0');
+                                const month = String(d.getMonth() + 1).padStart(2, '0');
+                                const year = String(d.getFullYear()).slice(-2);
+                                return `${day}/${month}/${year}`;
+                              })()}</p>
+                              {movie.year && <p>Year: {movie.year}</p>}
+                              {movie.runtime && <p>Runtime: {movie.runtime}</p>}
+                              {movie.genre && <p className="break-words">Genre: {movie.genre}</p>}
+                            </div>
+                          </div>
+                        </div>
+                        {/* Ratings UI */}
+                        <div className="space-y-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <h4 className="text-sm font-medium">Rate this movie (0-10)</h4>
+                            <Badge variant="outline" className="text-xs self-start sm:self-auto">
+                              {getMovieRatings(movie.id).length}/{presentPeople.length} rated
+                            </Badge>
+                          </div>
+                          <div className="space-y-3">
+                            {presentPeople.map((person) => {
+                              const detailed = detailedRatings.find(
+                                r => r.watched_movie_id === movie.id && r.person_id === person.id
+                              );
+                              // Default to absent (false) if no DB entry exists
+                              const isPresent = detailed?.present ?? false; // Changed from true to false
+                              const localKey = `${movie.id}-${person.id}`;
+                              const localPresent = localPresentStates[localKey] ?? isPresent;
 
-                            return (
-                              <div key={person.id} className="p-3 bg-card/50 rounded-lg border border-border/50">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                                  <span className="text-sm font-medium flex-1 min-w-0 truncate">{person.name}</span>
-                                  {getRatingForPerson(movie.id, person.id) !== null && getRatingForPerson(movie.id, person.id) >= 0 && (
-                                    <Badge variant="secondary" className="text-xs self-start sm:self-auto">
-                                      ★ {getRatingForPerson(movie.id, person.id)}/10
-                                    </Badge>
-                                  )}
-                                  <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <input
-                                      type="checkbox"
-                                      checked={localPresent}
-                                      onChange={async (e) => {
-                                        const newPresent = e.target.checked;
-                                        setLocalPresentStates(prev => ({
-                                          ...prev,
-                                          [localKey]: newPresent
-                                        }));
-                                        
-                                        // Only save to DB if checking present OR if entry already exists
-                                        const currentRating = getRatingForPerson(movie.id, person.id);
-                                        const entryExists = detailed !== undefined;
-                                        
-                                        if (newPresent || entryExists) {
-                                          try {
-                                            await supabase
-                                              .from("detailed_ratings")
-                                              .upsert({
-                                                watched_movie_id: movie.id,
-                                                person_id: person.id,
-                                                rating: currentRating,
-                                                present: newPresent
-                                              }, {
-                                                onConflict: "watched_movie_id,person_id"
-                                              });
-
-                                            // Update local state
-                                            setDetailedRatings(prev => {
-                                              const existingIndex = prev.findIndex(r => 
-                                                r.watched_movie_id === movie.id && r.person_id === person.id
-                                              );
-                                              
-                                              if (existingIndex >= 0) {
-                                                // Update existing entry
-                                                const newRatings = [...prev];
-                                                newRatings[existingIndex] = { ...newRatings[existingIndex], present: newPresent };
-                                                return newRatings;
-                                              } else if (newPresent) {
-                                                // Create new entry only if marking as present
-                                                return [...prev, {
-                                                  id: `temp-${Date.now()}`,
+                              return (
+                                <div key={person.id} className="p-3 bg-card/50 rounded-lg border border-border/50">
+                                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                                    <span className="text-sm font-medium flex-1 min-w-0 truncate">{person.name}</span>
+                                    {getRatingForPerson(movie.id, person.id) !== null && getRatingForPerson(movie.id, person.id) >= 0 && (
+                                      <Badge variant="secondary" className="text-xs self-start sm:self-auto">
+                                        ★ {getRatingForPerson(movie.id, person.id)}/10
+                                      </Badge>
+                                    )}
+                                    <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <input
+                                        type="checkbox"
+                                        checked={localPresent}
+                                        onChange={async (e) => {
+                                          const newPresent = e.target.checked;
+                                          setLocalPresentStates(prev => ({
+                                            ...prev,
+                                            [localKey]: newPresent
+                                          }));
+                                          
+                                          // Only save to DB if checking present OR if entry already exists
+                                          const currentRating = getRatingForPerson(movie.id, person.id);
+                                          const entryExists = detailed !== undefined;
+                                          
+                                          if (newPresent || entryExists) {
+                                            try {
+                                              await supabase
+                                                .from("detailed_ratings")
+                                                .upsert({
                                                   watched_movie_id: movie.id,
                                                   person_id: person.id,
                                                   rating: currentRating,
                                                   present: newPresent
-                                                }];
-                                              }
-                                              return prev;
-                                            });
-                                          } catch (error) {
-                                            console.error("Error updating present status:", error);
-                                            // Revert local state on error
-                                            setLocalPresentStates(prev => ({
-                                              ...prev,
-                                              [localKey]: !newPresent
-                                            }));
+                                                }, {
+                                                  onConflict: "watched_movie_id,person_id"
+                                                });
+
+                                              // Update local state
+                                              setDetailedRatings(prev => {
+                                                const existingIndex = prev.findIndex(r => 
+                                                  r.watched_movie_id === movie.id && r.person_id === person.id
+                                                );
+                                                
+                                                if (existingIndex >= 0) {
+                                                  // Update existing entry
+                                                  const newRatings = [...prev];
+                                                  newRatings[existingIndex] = { ...newRatings[existingIndex], present: newPresent };
+                                                  return newRatings;
+                                                } else if (newPresent) {
+                                                  // Create new entry only if marking as present
+                                                  return [...prev, {
+                                                    id: `temp-${Date.now()}`,
+                                                    watched_movie_id: movie.id,
+                                                    person_id: person.id,
+                                                    rating: currentRating,
+                                                    present: newPresent
+                                                  }];
+                                                }
+                                                return prev;
+                                              });
+                                            } catch (error) {
+                                              console.error("Error updating present status:", error);
+                                              // Revert local state on error
+                                              setLocalPresentStates(prev => ({
+                                                ...prev,
+                                                [localKey]: !newPresent
+                                              }));
+                                            }
                                           }
-                                        }
-                                        // If unchecking and no entry exists, do nothing (no DB operation needed)
-                                      }}
-                                      className="accent-primary bg-card border-border rounded"
-                                    />
-                                    present
-                                  </label>
+                                          // If unchecking and no entry exists, do nothing (no DB operation needed)
+                                        }}
+                                        className="accent-primary bg-card border-border rounded"
+                                      />
+                                      present
+                                    </label>
+                                  </div>
+                                  <select
+                                    className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
+                                    value={(() => {
+                                      const rating = getRatingForPerson(movie.id, person.id);
+                                      return rating === null ? "" : rating;
+                                    })()}
+                                    onChange={e => {
+                                      const rating = e.target.value === "" ? null : Number(e.target.value);
+                                      
+                                      // Always create/update DB entry when rating is given
+                                      updateDetailedRating(
+                                        movie.id,
+                                        person.id,
+                                        rating,
+                                        localPresent // Use current present status
+                                      );
+                                    }}
+                                  >
+                                    <option value="">- Not yet rated -</option>
+                                    {Array.from({ length: 21 }, (_, i) => (
+                                      <option key={i} value={i * 0.5}>{(i * 0.5).toFixed(1)}</option>
+                                    ))}
+                                  </select>
                                 </div>
-                                <select
-                                  className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
-                                  value={(() => {
-                                    const rating = getRatingForPerson(movie.id, person.id);
-                                    return rating === null ? "" : rating;
-                                  })()}
-                                  onChange={e => {
-                                    const rating = e.target.value === "" ? null : Number(e.target.value);
-                                    
-                                    // Always create/update DB entry when rating is given
-                                    updateDetailedRating(
-                                      movie.id,
-                                      person.id,
-                                      rating,
-                                      localPresent // Use current present status
-                                    );
-                                  }}
-                                >
-                                  <option value="">- Not yet rated -</option>
-                                  {Array.from({ length: 21 }, (_, i) => (
-                                    <option key={i} value={i * 0.5}>{(i * 0.5).toFixed(1)}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
-                    </CardContent>
-                  )}
-                </Card>
-              ))
+                    )}
+                  </Card>
+                );
+              })
             )}
           </TabsContent>
 
