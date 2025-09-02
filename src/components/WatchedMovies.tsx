@@ -507,8 +507,8 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                                 {movie.movie_title}
                               </h3>
                             )}
-                            {/* --- Show missing raters if in not-fully-rated mode and there are any --- */
-                            rateSortMode === "not-fully-rated" && missingPresentRaters.length > 0 && (
+                            {/* --- Show missing raters if in not-fully-rated mode and there are any --- */}
+                            {rateSortMode === "not-fully-rated" && missingPresentRaters.length > 0 && (
                               <div className="mt-1 text-xs text-orange-700 flex flex-wrap gap-1 items-center">
                                 <span className="font-medium">Missing:</span>
                                 {missingPresentRaters.map((p, idx) => (
@@ -705,7 +705,7 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                             })}
                           </div>
                         </div>
-                      </div>
+                      </CardContent>
                     )}
                   </Card>
                 );
