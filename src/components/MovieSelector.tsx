@@ -10,6 +10,8 @@ import { Users, Film, Trophy, Plus, RefreshCw, Award, Check, ChevronDown, Chevro
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { WatchedMovies } from "./WatchedMovies";
+import Cookies from 'js-cookie';
+
 interface MovieSelectorProps {
   onNavigateToWatched?: () => void;
   onSessionLoad?: (sessionId: string) => void;
@@ -25,7 +27,8 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
   const [newSessionName, setNewSessionName] = useState("");
   const [fetchingDetails, setFetchingDetails] = useState(false);
   const [collapsedMovies, setCollapsedMovies] = useState<Record<string, boolean>>({});
-  const [selectedPersonId, setSelectedPersonId] = useState<string>("");
+  // Initialize empty (waits for session to load)
+  const [selectedPersonId, setSelectedPersonId] = useState<string>('');
   const [activeTab, setActiveTab] = useState("people");
   const [currentView, setCurrentView] = useState<'session' | 'watched'>('session');
   const { toast } = useToast();
@@ -46,6 +49,28 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       });
     }
   }, [activeTab, movieRatings.length]); // Use movieRatings.length instead of movieRatings
+
+  // Load person when session changes
+  useEffect(() => {
+    if (sessionId) {
+      const savedPersonId = Cookies.get(`selectedPerson_${sessionId}`);
+      if (savedPersonId && people.some(p => p.id === savedPersonId)) {
+        setSelectedPersonId(savedPersonId);
+      }
+    }
+  }, [sessionId, people]);
+
+  const handlePersonSelection = (personId: string) => {
+    setSelectedPersonId(personId);
+
+    if (sessionId) {
+      if (personId) {
+        Cookies.set(`selectedPerson_${sessionId}`, personId, { expires: 30 });
+      } else {
+        Cookies.remove(`selectedPerson_${sessionId}`);
+      }
+    }
+  };
 
   // Initialize session and load data
   useEffect(() => {
@@ -178,12 +203,12 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       const { data, error } = await supabase.functions.invoke('search-movie', {
         body: { title: movieTitle }
       });
-      
+
       if (error) {
         console.error('Error fetching movie details:', error);
         return undefined;
       }
-      
+
       return {
         poster: data.poster,
         genre: data.genre,
@@ -202,7 +227,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
 
   const saveMovieDetailsToDatabase = async (movieTitle: string, details: MovieDetails) => {
     if (!sessionId) return;
-    
+
     try {
       // Update all proposals for this movie title in this session
       await supabase
@@ -226,7 +251,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
 
   const fetchAllMovieDetails = async () => {
     if (movieRatings.length === 0) return;
-    
+
     setFetchingDetails(true);
     try {
       const updatedMovies = await Promise.all(
@@ -234,7 +259,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
           if (movie.details && movie.details.poster && movie.details.poster !== 'N/A') {
             return movie; // Already has valid details
           }
-          
+
           const details = await fetchMovieDetails(movie.movieTitle);
           if (details) {
             await saveMovieDetailsToDatabase(movie.movieTitle, details);
@@ -242,7 +267,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
           return { ...movie, details };
         })
       );
-      
+
       setMovieRatings(updatedMovies);
       toast({
         title: "Success",
@@ -251,7 +276,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
     } catch (error) {
       console.error('Error fetching movie details:', error);
       toast({
-        title: "Error", 
+        title: "Error",
         description: "Failed to fetch some movie details.",
         variant: "destructive"
       });
@@ -266,12 +291,12 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       const details = await fetchMovieDetails(movieTitle);
       if (details) {
         await saveMovieDetailsToDatabase(movieTitle, details);
-        
+
         // Update local state
-        setMovieRatings(prev => prev.map(movie => 
+        setMovieRatings(prev => prev.map(movie =>
           movie.movieTitle === movieTitle ? { ...movie, details } : movie
         ));
-        
+
         toast({
           title: "Success",
           description: `Updated details for "${movieTitle}"`
@@ -325,11 +350,11 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
   };
   const updatePerson = async (updatedPerson: Person) => {
     if (!sessionId) return;
-    
+
     try {
       // Update person presence immediately in local state for instant UI feedback
       setPeople(prev => prev.map(p => p.id === updatedPerson.id ? updatedPerson : p));
-      
+
       // Update person presence in database (fast operation)
       await supabase.from('session_people').update({
         is_present: updatedPerson.isPresent
@@ -340,7 +365,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
         .from('movie_proposals')
         .select('movie_title, id')
         .eq('person_id', updatedPerson.id);
-      
+
       const currentMovies = currentProposals?.map(p => p.movie_title) || [];
 
       // Find movies to add and remove
@@ -354,7 +379,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
           .delete()
           .eq('person_id', updatedPerson.id)
           .in('movie_title', moviesToRemove);
-        
+
         // Update local movieRatings immediately
         setMovieRatings(prev => prev.filter(movie => !moviesToRemove.includes(movie.movieTitle)));
       }
@@ -367,7 +392,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
           person_id: updatedPerson.id,
           movie_title: movie
         }));
-        
+
         const { data: insertedProposals } = await supabase
           .from('movie_proposals')
           .insert(basicProposals)
@@ -485,7 +510,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
         .eq('session_id', sessionId)
         .eq('movie_title', movieTitle)
         .single();
-        
+
       if (proposalsError) throw proposalsError;
       if (!proposals) return;
 
@@ -520,7 +545,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
         .from('movie_ratings')
         .delete()
         .eq('proposal_id', proposals.id);
-        
+
       await supabase
         .from('movie_proposals')
         .delete()
@@ -528,18 +553,18 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
 
       // Update local state
       setMovieRatings(prev => prev.filter(movie => movie.movieTitle !== movieTitle));
-      
+
       // Also update people state to remove the movie from their proposals
       setPeople(prev => prev.map(person => ({
         ...person,
         movies: person.movies.filter(movie => movie !== movieTitle)
       })));
-      
+
       toast({
         title: "Movie marked as watched",
         description: `"${movieTitle}" has been moved to watched movies section`,
       });
-      
+
     } catch (error) {
       console.error('Error marking movie as watched:', error);
       toast({
@@ -561,11 +586,11 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
 
   const getSortedMovies = () => {
     if (!selectedPersonId) return movieRatings;
-    
+
     return [...movieRatings].sort((a, b) => {
       const aRated = a.ratings[selectedPersonId] !== undefined && a.ratings[selectedPersonId] > 0;
       const bRated = b.ratings[selectedPersonId] !== undefined && b.ratings[selectedPersonId] > 0;
-      
+
       // Unrated movies first
       if (!aRated && bRated) return -1;
       if (aRated && !bRated) return 1;
@@ -580,7 +605,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
         const { data, error } = await supabase.functions.invoke('propose-movie-with-details', {
           body: { sessionId, movieTitle }
         });
-        
+
         if (!error && data) {
           const proposal = proposals.find(p => p.movie_title === movieTitle);
           if (proposal) {
@@ -598,21 +623,21 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
               })
               .eq('id', proposal.id);
 
-            setMovieRatings(prev => prev.map(movie => 
-              movie.movieTitle === movieTitle 
-                ? { 
-                    ...movie, 
-                    details: {
-                      poster: data.poster,
-                      genre: data.genre,
-                      runtime: data.runtime,
-                      year: data.year,
-                      director: data.director,
-                      plot: data.plot,
-                      imdbRating: data.imdbRating,
-                      imdbId: data.imdbId
-                    }
-                  } 
+            setMovieRatings(prev => prev.map(movie =>
+              movie.movieTitle === movieTitle
+                ? {
+                  ...movie,
+                  details: {
+                    poster: data.poster,
+                    genre: data.genre,
+                    runtime: data.runtime,
+                    year: data.year,
+                    director: data.director,
+                    plot: data.plot,
+                    imdbRating: data.imdbRating,
+                    imdbId: data.imdbId
+                  }
+                }
                 : movie
             ));
           }
@@ -640,8 +665,8 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       totalRatings: validRatings.length
     };
   })
-  .filter(movie => presentPeople.some (p => p.movies.includes(movie.movieTitle)))
-  .sort((a, b) => b.averageRating - a.averageRating);
+    .filter(movie => presentPeople.some(p => p.movies.includes(movie.movieTitle)))
+    .sort((a, b) => b.averageRating - a.averageRating);
   if (loading) {
     return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
       <div className="text-center">
@@ -683,10 +708,10 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
               }}>
                 Start New Session
               </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
+
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setCurrentView('watched')}
                 disabled={!sessionId}
                 className="bg-gradient-to-r from-accent/20 to-primary/20 border-accent/40 hover:from-accent/30 hover:to-primary/30"
@@ -700,7 +725,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
             <div className="max-w-xs mx-auto mb-4">
               <select
                 value={selectedPersonId}
-                onChange={e => setSelectedPersonId(e.target.value)}
+                onChange={e => handlePersonSelection(e.target.value)}
                 className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
               >
                 <option value="">Select who you are (optional)</option>
@@ -801,21 +826,21 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
               <div className="flex flex-col gap-4 w-full max-w-xl mx-auto">
                 {getSortedMovies().map(movie => {
                   const hasVoted = selectedPersonId && movie.ratings[selectedPersonId] !== undefined && movie.ratings[selectedPersonId] > 0;
-                  
+
                   return (
                     <Card key={movie.movieTitle} className="w-full max-w-full relative">
                       {/* Voting status indicator */}
                       {selectedPersonId && (
                         <div className="absolute top-2 right-2 z-10">
-                          <Badge 
-                            variant={hasVoted ? "default" : "outline"} 
+                          <Badge
+                            variant={hasVoted ? "default" : "outline"}
                             className={hasVoted ? "bg-green-100 text-green-800 border-green-300" : "bg-orange-100 text-orange-800 border-orange-300"}
                           >
                             {hasVoted ? "✓ Voted" : "Not Voted"}
                           </Badge>
                         </div>
                       )}
-                      
+
                       <CardHeader className="flex flex-row items-center justify-between p-4">
                         <div className="flex items-center gap-2 min-w-0 w-full pr-20"> {/* Add right padding for the badge */}
                           <Button
@@ -891,8 +916,8 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                       {/* Movie details */}
                       <div className="flex gap-3 mb-3">
                         {movie.details?.poster && movie.details.poster !== 'N/A' ? (
-                          <img 
-                            src={movie.details.poster} 
+                          <img
+                            src={movie.details.poster}
                             alt={`${movie.movieTitle} poster`}
                             className="w-16 h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
                           />
@@ -907,13 +932,13 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                           {movie.details?.runtime && <p>Runtime: {movie.details.runtime}</p>}
                           {movie.details?.genre && <p className="break-words">Genre: {movie.details.genre}</p>}
                           <p>{movie.totalRatings}/{presentPeople.length} people rated</p>
-                          
+
                           {/* Show absent people who rated 1 */}
                           {(() => {
                             const absentVoters = people
                               .filter(p => !p.isPresent && movie.ratings[p.id] === 1)
                               .map(p => p.name);
-                              
+
                             if (absentVoters.length > 0) {
                               return (
                                 <p className="text-red-500 font-medium mt-1">
@@ -925,10 +950,10 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                           })()}
                         </div>
                       </div>
-                      
+
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-3">
                         {movie.details?.imdbId && (
-                          <a 
+                          <a
                             href={`https://www.imdb.com/title/${movie.details.imdbId}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -937,7 +962,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
                             View on IMDb
                           </a>
                         )}
-                        
+
                         <Button
                           variant="outline"
                           size="sm"
