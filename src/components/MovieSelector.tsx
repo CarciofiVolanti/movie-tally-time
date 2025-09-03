@@ -500,71 +500,72 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
   };
   const markMovieAsWatched = async (movieTitle: string) => {
     if (!sessionId) return;
-    // Confirmation dialog
     if (!window.confirm(`Are you sure you want to mark "${movieTitle}" as watched? This will move it to the watched movies section.`)) return;
+
     try {
-      // Find the movie proposal
-      const { data: proposals, error: proposalsError } = await supabase
+      // Find the movie proposal (single proposer chosen here)
+      const { data: proposal, error: proposalError } = await supabase
         .from('movie_proposals')
         .select('*')
         .eq('session_id', sessionId)
         .eq('movie_title', movieTitle)
         .single();
-
-      if (proposalsError) throw proposalsError;
-      if (!proposals) return;
+      if (proposalError) throw proposalError;
+      if (!proposal) return;
 
       // Find proposer name
       const { data: proposer } = await supabase
         .from('session_people')
         .select('name')
-        .eq('id', proposals.person_id)
+        .eq('id', proposal.person_id)
         .single();
 
-      // Move to watched_movies table
-      const { error: insertError } = await supabase
+      // Insert into watched_movies and get inserted id
+      const { data: insertedWatched, error: insertError } = await supabase
         .from('watched_movies')
         .insert({
           session_id: sessionId,
           movie_title: movieTitle,
           proposed_by: proposer?.name || 'Unknown',
-          poster: proposals.poster,
-          genre: proposals.genre,
-          runtime: proposals.runtime,
-          year: proposals.year,
-          director: proposals.director,
-          plot: proposals.plot,
-          imdb_rating: proposals.imdb_rating,
-          imdb_id: proposals.imdb_id
-        });
+          poster: proposal.poster,
+          genre: proposal.genre,
+          runtime: proposal.runtime,
+          year: proposal.year,
+          director: proposal.director,
+          plot: proposal.plot,
+          imdb_rating: proposal.imdb_rating,
+          imdb_id: proposal.imdb_id,
+          watched_at: new Date().toISOString()
+        })
+        .select('id')
+        .single();
 
       if (insertError) throw insertError;
+      const watchedId = insertedWatched.id;
 
-      // Remove from movie_proposals and movie_ratings
+      // Link existing "want-to-watch" ratings to the new watched row
       await supabase
         .from('movie_ratings')
-        .delete()
-        .eq('proposal_id', proposals.id);
+        .update({ watched_movie_id: watchedId })
+        .eq('proposal_id', proposal.id);
 
+      // Now remove the proposal row if you still want to delete it
       await supabase
         .from('movie_proposals')
         .delete()
-        .eq('id', proposals.id);
+        .eq('id', proposal.id);
 
-      // Update local state
+      // Update local state: remove proposal from UI list
       setMovieRatings(prev => prev.filter(movie => movie.movieTitle !== movieTitle));
-
-      // Also update people state to remove the movie from their proposals
       setPeople(prev => prev.map(person => ({
         ...person,
-        movies: person.movies.filter(movie => movie !== movieTitle)
+        movies: person.movies.filter(m => m !== movieTitle)
       })));
 
       toast({
         title: "Movie marked as watched",
         description: `"${movieTitle}" has been moved to watched movies section`,
       });
-
     } catch (error) {
       console.error('Error marking movie as watched:', error);
       toast({
@@ -665,7 +666,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       totalRatings: validRatings.length
     };
   })
-    .filter(movie => presentPeople.some(p => p.movies.includes(movie.movieTitle)))
+    .filter(movie => presentPeople.some (p => p.movies.includes(movie.movieTitle)))
     .sort((a, b) => b.averageRating - a.averageRating);
   if (loading) {
     return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
