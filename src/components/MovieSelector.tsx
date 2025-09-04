@@ -599,12 +599,13 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
     });
   };
 
-  // Move this function HERE, before the return statement
   const fetchMovieDetailsInBackground = async (movieTitles: string[], proposals: any[]) => {
     for (const movieTitle of movieTitles) {
+      const proposal = proposals.find((p: any) => p.movie_title === movieTitle);
+      let personId = proposal?.person_id;
       try {
         const { data, error } = await supabase.functions.invoke('propose-movie-with-details', {
-          body: { sessionId, movieTitle }
+          body: { sessionId, personId, movieTitle }
         });
 
         if (!error && data) {
