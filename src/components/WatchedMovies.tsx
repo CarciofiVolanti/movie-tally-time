@@ -559,10 +559,8 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                       </div>
                     </CardHeader>
                     {!collapsedMovies[movie.id] && (
-                      <CardContent className="space-y-4 p-4 pt-0">
-                        {/* Movie info and details */}
+                      <CardContent className="space-y-2 p-4 pt-0">
                         <div className="flex gap-3">
-                          {/* Poster */}
                           {movie.poster && movie.poster !== 'N/A' ? (
                             <img 
                               src={movie.poster} 
@@ -574,48 +572,41 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                               <Film className="w-4 h-4 sm:w-6 sm:h-6 text-primary" />
                             </div>
                           )}
-                          {/* Details */}
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="space-y-1 text-xs text-muted-foreground">
                               <p>Proposed by {movie.proposed_by}</p>
-                              <p>Watched on {(() => {
-                                const d = new Date(movie.watched_at);
-                                const day = String(d.getDate()).padStart(2, '0');
-                                const month = String(d.getMonth() + 1).padStart(2, '0');
-                                const year = String(d.getFullYear()).slice(-2);
-                                return `${day}/${month}/${year}`;
-                              })()}</p>
+                                <p>Watched on {new Date(movie.watched_at).toLocaleDateString('en-GB')}</p>
                               {movie.year && <p>Year: {movie.year}</p>}
                               {movie.runtime && <p>Runtime: {movie.runtime}</p>}
                               {movie.genre && <p className="break-words">Genre: {movie.genre}</p>}
                             </div>
                           </div>
                         </div>
-                        {/* Ratings UI */}
-                        <div className="space-y-4">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                            <h4 className="text-sm font-medium">Rate this movie (0-10)</h4>
-                            <Badge variant="outline" className="text-xs self-start sm:self-auto">
-                              {getMovieRatings(movie.id).length}/{presentPeople.length} rated
-                            </Badge>
-                          </div>
-                          <div className="space-y-3">
-                            {(() => {
-                              // only show people who have an actual rating for this movie
-                              const voters = detailedRatings
-                                .filter(r => r.watched_movie_id === movie.id && r.rating !== null)
-                                .map(r => ({
-                                  person: people.find(p => p.id === r.person_id),
-                                  rating: r.rating
-                                }))
-                                .filter(v => v.person); // drop any orphaned ratings
 
-                              if (voters.length === 0) {
-                                // nothing to show if nobody has voted
-                                return null;
-                              }
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                          <span className="text-sm text-muted-foreground">
+                            {getMovieRatings(movie.id).length}/{presentPeople.length} rated
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            Avg: {getAverageRating(movie.id).toFixed(2)}/10
+                          </span>
+                        </div>
 
-                              return voters.map(({ person, rating }) => (
+                        {/* Per-person votes: only show people who actually have a rating for this movie */}
+                        {(() => {
+                          const voters = detailedRatings
+                            .filter(r => r.watched_movie_id === movie.id && r.rating !== null)
+                            .map(r => ({
+                              person: people.find(p => p.id === r.person_id),
+                              rating: r.rating
+                            }))
+                            .filter(v => v.person);
+
+                          if (voters.length === 0) return null;
+
+                          return (
+                            <div className="space-y-3 pt-2">
+                              {voters.map(({ person, rating }) => (
                                 <div
                                   key={person!.id}
                                   className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
@@ -635,10 +626,10 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                                     </Badge>
                                   </div>
                                 </div>
-                              ));
-                            })()}
-                          </div>
-                        </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </CardContent>
                     )}
                   </Card>
