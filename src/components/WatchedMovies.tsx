@@ -60,7 +60,7 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
   const [isSearching, setIsSearching] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedProposer, setSelectedProposer] = useState("");
-  const [rateSortMode, setRateSortMode] = useState<"date-desc" | "date-asc" | "voted" | "not-voted" | "not-fully-rated">("date-desc");
+  const [rateSortMode, setRateSortMode] = useState<"date-desc" | "date-asc" | "voted" | "not-voted" | "absent" | "not-fully-rated">("date-desc");
   const [rateSortAsc, setRateSortAsc] = useState(false);
   const { toast } = useToast();
 
@@ -361,6 +361,14 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
         const presentIds = getPresentPersonIds(m.id);
         return presentIds.includes(selectedPersonId) && !hasSelectedPersonVoted(m.id);
       });
+    } else if (rateSortMode === "absent" && selectedPersonId) {
+      // Show movies where the selected person was NOT marked present and they have no vote
+      movies = movies.filter(m => {
+        const presentIds = getPresentPersonIds(m.id);
+        const wasPresent = presentIds.includes(selectedPersonId);
+        const voted = hasSelectedPersonVoted(m.id);
+        return !wasPresent && !voted;
+      });
     } else if (rateSortMode === "not-fully-rated") {
       movies = movies.filter(m => !isFullyRated(m.id));
     }
@@ -455,6 +463,7 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                   <option value="date-asc">Date (Oldest)</option>
                   {selectedPersonId && <option value="voted">Voted (Selected Person)</option>}
                   {selectedPersonId && <option value="not-voted">Not Voted (Selected Person)</option>}
+                  {selectedPersonId && <option value="absent">Absent (Selected Person)</option>}
                   <option value="not-fully-rated">Not Fully Rated</option>
                 </select>
                 <Button
@@ -549,19 +558,29 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                           {/* Add voting status badge here */}
                           {selectedPersonId && (
                             (() => {
-                              const hasVoted = detailedRatings.find(
-                                r => r.watched_movie_id === movie.id && 
-                                r.person_id === selectedPersonId && 
-                                r.rating !== null // Check that rating is not null
-                              ) !== undefined;
+                              const rating = getRatingForPerson(movie.id, selectedPersonId);
+                              const presentIds = getPresentPersonIds(movie.id);
+                              const isPresent = presentIds.includes(selectedPersonId);
+
+                              if (rating !== null) {
+                                return (
+                                  <Badge className="bg-green-100 text-green-800 border-green-300">
+                                    ✓ Voted
+                                  </Badge>
+                                );
+                              }
+
+                              if (isPresent) {
+                                return (
+                                  <Badge className="bg-orange-100 text-orange-800 border-orange-300">
+                                    Not Voted
+                                  </Badge>
+                                );
+                              }
+
                               return (
-                                <Badge
-                                  variant={hasVoted ? "default" : "outline"}
-                                  className={hasVoted
-                                    ? "bg-green-100 text-green-800 border-green-300"
-                                    : "bg-orange-100 text-orange-800 border-orange-300"}
-                                >
-                                  {hasVoted ? "✓ Voted" : "Not Voted"}
+                                <Badge variant="outline" className="bg-card/40 text-muted-foreground border-border">
+                                  Absent
                                 </Badge>
                               );
                             })()
