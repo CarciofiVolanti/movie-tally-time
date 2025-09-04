@@ -825,7 +825,7 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                           <div className="flex-1 min-w-0 space-y-2">
                             <div className="space-y-1 text-xs text-muted-foreground">
                               <p>Proposed by {movie.proposed_by}</p>
-                              <p>Watched on {new Date(movie.watched_at).toLocaleDateString()}</p>
+                              <p>Watched on {new Date(movie.watched_at).toLocaleDateString('it-IT')}</p>
                               {movie.year && <p>Year: {movie.year}</p>}
                               {movie.runtime && <p>Runtime: {movie.runtime}</p>}
                               {movie.genre && <p className="break-words">Genre: {movie.genre}</p>}
