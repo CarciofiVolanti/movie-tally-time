@@ -334,6 +334,21 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
     );
   };
 
+  // Helper: Get present people who DID vote (rating != null)
+  const getPresentVoters = (movieId: string) => {
+    return detailedRatings
+      .filter(r => r.watched_movie_id === movieId && r.rating !== null && r.present)
+      .map(r => {
+        const person = people.find(p => p.id === r.person_id);
+        return {
+          id: r.id,
+          person_id: r.person_id,
+          rating: r.rating,
+          name: person?.name ?? "Unknown"
+        };
+      });
+  };
+
   // Sorting/filtering for Rate tab
   const getSortedFilteredMovies = () => {
     let movies = [...watchedMovies];
@@ -805,6 +820,32 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                           <span className="text-sm text-muted-foreground">
                             Avg: {getAverageRating(movie.id).toFixed(2)}/10
                           </span>
+                        </div>
+
+                        {/* Individual votes from present attendees (mobile-friendly) */}
+                        <div className="mt-3">
+                          <h5 className="text-sm font-medium mb-2">Votes</h5>
+                          {(() => {
+                            const voters = getPresentVoters(movie.id);
+                            if (voters.length === 0) {
+                              return <p className="text-xs text-muted-foreground">No votes from present attendees.</p>;
+                            }
+                            return (
+                              <div className="flex flex-wrap gap-2">
+                                {voters.map(v => (
+                                  <div
+                                    key={v.id}
+                                    className="flex items-center gap-2 bg-card/60 border border-border rounded-md px-2 py-1 text-xs max-w-full"
+                                  >
+                                    <span className="font-medium truncate max-w-[10rem]">{v.name}</span>
+                                    <Badge variant="secondary" className="ml-1 shrink-0">
+                                      ★ {Number(v.rating).toFixed(1)}
+                                    </Badge>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </CardContent>
                     )}
