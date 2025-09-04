@@ -386,18 +386,6 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
 
       // Add new movies with optimized detail fetching
       if (moviesToAdd.length > 0) {
-        // Add movies to database first without details for instant feedback
-        const basicProposals = moviesToAdd.map(movie => ({
-          session_id: sessionId,
-          person_id: updatedPerson.id,
-          movie_title: movie
-        }));
-
-        const { data: insertedProposals } = await supabase
-          .from('movie_proposals')
-          .insert(basicProposals)
-          .select('id, movie_title, person_id'); // include person_id so background worker can call edge fn with person ID
-
         // Update local movieRatings immediately with basic data
         const newMovieRatings = moviesToAdd.map(movieTitle => ({
           movieTitle,
@@ -406,11 +394,63 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
         }));
         setMovieRatings(prev => [...prev, ...newMovieRatings]);
 
-        // Fetch movie details in background (slow operation)
-        // Don't await this - let it update asynchronously
-        fetchMovieDetailsInBackground(moviesToAdd, insertedProposals || []);
-      }
+        // Ask the Edge Function to create proposal + fetch details.
+        // Call it per-movie (async, non-blocking) and update local state with returned details.
+        moviesToAdd.forEach(async (movieTitle) => {
+          try {
+            const { data, error } = await supabase.functions.invoke('propose-movie-with-details', {
+              body: { sessionId, personId: updatedPerson.id, movieTitle }
+            });
 
+            if (error) {
+              console.error('Edge function error for', movieTitle, error);
+              return;
+            }
+
+            // Edge function returns the created proposal (or existing proposal id)
+            const returnedProposal = data?.proposal;
+            const existingId = data?.proposalId;
+
+            if (returnedProposal) {
+              // Update UI with details returned by the function
+              const details = {
+                poster: returnedProposal.poster,
+                genre: returnedProposal.genre,
+                runtime: returnedProposal.runtime,
+                year: returnedProposal.year,
+                director: returnedProposal.director,
+                plot: returnedProposal.plot,
+                imdbRating: returnedProposal.imdb_rating,
+                imdbId: returnedProposal.imdb_id
+              };
+              setMovieRatings(prev => prev.map(m => m.movieTitle === movieTitle ? { ...m, details } : m));
+            } else if (existingId) {
+              // If function reported "already proposed", read the DB row and apply details
+              const { data: found, error: findErr } = await supabase
+                .from('movie_proposals')
+                .select('*')
+                .eq('id', existingId)
+                .maybeSingle();
+              if (!findErr && found) {
+                const details = {
+                  poster: found.poster,
+                  genre: found.genre,
+                  runtime: found.runtime,
+                  year: found.year,
+                  director: found.director,
+                  plot: found.plot,
+                  imdbRating: found.imdb_rating,
+                  imdbId: found.imdb_id
+                };
+                setMovieRatings(prev => prev.map(m => m.movieTitle === movieTitle ? { ...m, details } : m));
+              }
+            }
+          } catch (err) {
+            console.error('Failed to propose movie with details for', movieTitle, err);
+            // Optionally fallback to inserting a minimal proposal here if you prefer
+          }
+        });
+      }
     } catch (error) {
       console.error('Error updating person:', error);
       // Revert local state on error
