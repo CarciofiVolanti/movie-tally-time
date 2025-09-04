@@ -600,117 +600,43 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                             </Badge>
                           </div>
                           <div className="space-y-3">
-                            {presentPeople.map((person) => {
-                              const detailed = detailedRatings.find(
-                                r => r.watched_movie_id === movie.id && r.person_id === person.id
-                              );
-                              // Default to absent (false) if no DB entry exists
-                              const isPresent = detailed?.present ?? false; // Changed from true to false
-                              const localKey = `${movie.id}-${person.id}`;
-                              const localPresent = localPresentStates[localKey] ?? isPresent;
+                            {(() => {
+                              // only show people who have an actual rating for this movie
+                              const voters = detailedRatings
+                                .filter(r => r.watched_movie_id === movie.id && r.rating !== null)
+                                .map(r => ({
+                                  person: people.find(p => p.id === r.person_id),
+                                  rating: r.rating
+                                }))
+                                .filter(v => v.person); // drop any orphaned ratings
 
-                              return (
-                                <div key={person.id} className="p-3 bg-card/50 rounded-lg border border-border/50">
-                                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                                    <span className="text-sm font-medium flex-1 min-w-0 truncate">{person.name}</span>
-                                    {getRatingForPerson(movie.id, person.id) !== null && getRatingForPerson(movie.id, person.id) >= 0 && (
-                                      <Badge variant="secondary" className="text-xs self-start sm:self-auto">
-                                        ★ {getRatingForPerson(movie.id, person.id)}/10
-                                      </Badge>
+                              if (voters.length === 0) {
+                                // nothing to show if nobody has voted
+                                return null;
+                              }
+
+                              return voters.map(({ person, rating }) => (
+                                <div
+                                  key={person!.id}
+                                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="text-sm font-medium truncate">{person!.name}</span>
+                                    {!person!.is_present && (
+                                      <span className="text-xs text-muted-foreground">(absent)</span>
                                     )}
-                                    <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                                      <input
-                                        type="checkbox"
-                                        checked={localPresent}
-                                        onChange={async (e) => {
-                                          const newPresent = e.target.checked;
-                                          setLocalPresentStates(prev => ({
-                                            ...prev,
-                                            [localKey]: newPresent
-                                          }));
-                                          
-                                          // Only save to DB if checking present OR if entry already exists
-                                          const currentRating = getRatingForPerson(movie.id, person.id);
-                                          const entryExists = detailed !== undefined;
-                                          
-                                          if (newPresent || entryExists) {
-                                            try {
-                                              await supabase
-                                                .from("detailed_ratings")
-                                                .upsert({
-                                                  watched_movie_id: movie.id,
-                                                  person_id: person.id,
-                                                  rating: currentRating,
-                                                  present: newPresent
-                                                }, {
-                                                  onConflict: "watched_movie_id,person_id"
-                                                });
-
-                                              // Update local state
-                                              setDetailedRatings(prev => {
-                                                const existingIndex = prev.findIndex(r => 
-                                                  r.watched_movie_id === movie.id && r.person_id === person.id
-                                                );
-                                                
-                                                if (existingIndex >= 0) {
-                                                  // Update existing entry
-                                                  const newRatings = [...prev];
-                                                  newRatings[existingIndex] = { ...newRatings[existingIndex], present: newPresent };
-                                                  return newRatings;
-                                                } else if (newPresent) {
-                                                  // Create new entry only if marking as present
-                                                  return [...prev, {
-                                                    id: `temp-${Date.now()}`,
-                                                    watched_movie_id: movie.id,
-                                                    person_id: person.id,
-                                                    rating: currentRating,
-                                                    present: newPresent
-                                                  }];
-                                                }
-                                                return prev;
-                                              });
-                                            } catch (error) {
-                                              console.error("Error updating present status:", error);
-                                              // Revert local state on error
-                                              setLocalPresentStates(prev => ({
-                                                ...prev,
-                                                [localKey]: !newPresent
-                                              }));
-                                            }
-                                          }
-                                          // If unchecking and no entry exists, do nothing (no DB operation needed)
-                                        }}
-                                        className="accent-primary bg-card border-border rounded"
-                                      />
-                                      present
-                                    </label>
                                   </div>
-                                  <select
-                                    className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
-                                    value={(() => {
-                                      const rating = getRatingForPerson(movie.id, person.id);
-                                      return rating === null ? "" : rating;
-                                    })()}
-                                    onChange={e => {
-                                      const rating = e.target.value === "" ? null : Number(e.target.value);
-                                      
-                                      // Always create/update DB entry when rating is given
-                                      updateDetailedRating(
-                                        movie.id,
-                                        person.id,
-                                        rating,
-                                        localPresent // Use current present status
-                                      );
-                                    }}
-                                  >
-                                    <option value="">- Not yet rated -</option>
-                                    {Array.from({ length: 21 }, (_, i) => (
-                                      <option key={i} value={i * 0.5}>{(i * 0.5).toFixed(1)}</option>
-                                    ))}
-                                  </select>
+                                  <div className="mt-1 sm:mt-0">
+                                    <Badge
+                                      variant="secondary"
+                                      className="bg-accent/10 text-accent border-accent/20 text-sm px-2 py-0.5"
+                                    >
+                                      {rating}
+                                    </Badge>
+                                  </div>
                                 </div>
-                              );
-                            })}
+                              ));
+                            })()}
                           </div>
                         </div>
                       </CardContent>
