@@ -396,7 +396,7 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
         const { data: insertedProposals } = await supabase
           .from('movie_proposals')
           .insert(basicProposals)
-          .select('id, movie_title');
+          .select('id, movie_title, person_id'); // include person_id so background worker can call edge fn with person ID
 
         // Update local movieRatings immediately with basic data
         const newMovieRatings = moviesToAdd.map(movieTitle => ({
