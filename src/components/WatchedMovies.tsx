@@ -512,10 +512,14 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                               <div className="mt-1 text-xs text-orange-700 flex flex-wrap gap-1 items-center">
                                 <span className="font-medium">Missing:</span>
                                 {missingPresentRaters.map((p, idx) => (
-                                  <span key={p.id} className="bg-orange-100 border border-orange-200 rounded px-1 py-0.5">
-                                    {p.name}
-                                    {idx < missingPresentRaters.length - 1 && ","}
-                                  </span>
+                                  <span key={p.id} className="inline-flex items-center">
+                                    <span className="bg-orange-100 border border-orange-200 rounded px-1 py-0.5">
+                                      {p.name}
+                                    </span>
+                                    {idx < missingPresentRaters.length - 1 && (
+                                      <span className="text-orange-700 mx-1">,</span>
+                                    )}
+                                  </div>
                                 ))}
                               </div>
                             )}
