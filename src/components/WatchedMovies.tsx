@@ -341,7 +341,11 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
     if (rateSortMode === "voted" && selectedPersonId) {
       movies = movies.filter(m => hasSelectedPersonVoted(m.id));
     } else if (rateSortMode === "not-voted" && selectedPersonId) {
-      movies = movies.filter(m => !hasSelectedPersonVoted(m.id));
+      // Only show movies where the selected person was present AND they have not voted
+      movies = movies.filter(m => {
+        const presentIds = getPresentPersonIds(m.id);
+        return presentIds.includes(selectedPersonId) && !hasSelectedPersonVoted(m.id);
+      });
     } else if (rateSortMode === "not-fully-rated") {
       movies = movies.filter(m => !isFullyRated(m.id));
     }
