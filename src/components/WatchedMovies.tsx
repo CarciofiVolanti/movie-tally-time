@@ -519,7 +519,7 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
                                     {idx < missingPresentRaters.length - 1 && (
                                       <span className="text-orange-700 mx-1">,</span>
                                     )}
-                                  </div>
+                                  </span>
                                 ))}
                               </div>
                             )}
