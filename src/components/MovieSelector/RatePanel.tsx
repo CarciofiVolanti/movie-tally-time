@@ -52,6 +52,10 @@ const RatePanel = ({
       <div className="flex flex-col gap-4 w-full max-w-xl mx-auto mt-4">
         {movieRatings.map(movie => {
           const hasVoted = selectedPersonId && movie.ratings[selectedPersonId] !== undefined && movie.ratings[selectedPersonId] > 0;
+
+          // default to collapsed when there's no explicit entry
+          const isCollapsed = collapsedMovies[movie.movieTitle] ?? true;
+
           return (
             <Card key={movie.movieTitle} className="w-full max-w-full relative">
               {selectedPersonId && (
@@ -64,14 +68,14 @@ const RatePanel = ({
 
               <CardHeader className="flex flex-row items-center justify-between p-4">
                 <div className="flex items-center gap-2 min-w-0 w-full pr-20">
-                  <button onClick={() => toggleCollapse(movie.movieTitle)} aria-label={collapsedMovies[movie.movieTitle] ? "Expand" : "Collapse"} className="p-1">
-                    {collapsedMovies[movie.movieTitle] ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  <button onClick={() => toggleCollapse(movie.movieTitle)} aria-label={isCollapsed ? "Expand" : "Collapse"} className="p-1">
+                    {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </button>
                   <span className="font-semibold text-base sm:text-lg truncate min-w-0">{movie.movieTitle}</span>
                 </div>
               </CardHeader>
 
-              {!collapsedMovies[movie.movieTitle] && (
+              {!isCollapsed && (
                 <CardContent>
                   <MovieCard
                     movie={movie}
