@@ -8,6 +8,7 @@ export const useMovieRatings = (
   setDetailedRatings: React.Dispatch<React.SetStateAction<DetailedRating[]>>
 ) => {
   const [localPresentStates, setLocalPresentStates] = useState<Record<string, boolean>>({});
+  const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   const updateDetailedRating = async (
@@ -16,21 +17,15 @@ export const useMovieRatings = (
     rating: number | null,
     present?: boolean
   ) => {
+    const key = `${watchedMovieId}-${personId}`;
+    setIsUpdating(prev => ({ ...prev, [key]: true }));
+
+    // Store previous state for rollback
+    const previousRatings = [...detailedRatings];
+
     try {
       if (rating !== null || present) {
-        const { error } = await supabase
-          .from("detailed_ratings")
-          .upsert({
-            watched_movie_id: watchedMovieId,
-            person_id: personId,
-            rating,
-            present
-          }, {
-            onConflict: "watched_movie_id,person_id"
-          });
-
-        if (error) throw error;
-
+        // Optimistic update
         setDetailedRatings(prev => {
           const existingIndex = prev.findIndex(r => 
             r.watched_movie_id === watchedMovieId && r.person_id === personId
@@ -51,6 +46,19 @@ export const useMovieRatings = (
           }
         });
 
+        const { error } = await supabase
+          .from("detailed_ratings")
+          .upsert({
+            watched_movie_id: watchedMovieId,
+            person_id: personId,
+            rating,
+            present
+          }, {
+            onConflict: "watched_movie_id,person_id"
+          });
+
+        if (error) throw error;
+
         if (rating !== null) {
           toast({
             title: "Rating saved",
@@ -60,17 +68,24 @@ export const useMovieRatings = (
       }
     } catch (error) {
       console.error("Error saving rating:", error);
+      
+      // Rollback optimistic update
+      setDetailedRatings(previousRatings);
+      
       toast({
         title: "Error",
-        description: "Failed to save rating",
+        description: "Failed to save rating. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsUpdating(prev => ({ ...prev, [key]: false }));
     }
   };
 
   return {
     localPresentStates,
     setLocalPresentStates,
-    updateDetailedRating
+    updateDetailedRating,
+    isUpdating
   };
 };
