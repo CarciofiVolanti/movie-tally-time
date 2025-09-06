@@ -109,25 +109,28 @@ export type Database = {
           created_at: string
           id: string
           person_id: string
-          proposal_id: string
+          proposal_id: string | null
           rating: number
           updated_at: string
+          watched_movie_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           person_id: string
-          proposal_id: string
+          proposal_id: string | null
           rating: number
           updated_at?: string
+          watched_movie_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           person_id?: string
-          proposal_id?: string
+          proposal_id?: string | null
           rating?: number
           updated_at?: string
+          watched_movie_id?: string | null
         }
         Relationships: [
           {
@@ -144,6 +147,13 @@ export type Database = {
             referencedRelation: "movie_proposals"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "movie_ratings_watched_movie_id_fkey"
+            columns: ["watched_movie_id"]
+            isOneToOne: false
+            referencedRelation: "watched_movies"
+            referencedColumns: ["id"]
+          }
         ]
       }
       movie_sessions: {
@@ -282,7 +292,7 @@ export type Tables<
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

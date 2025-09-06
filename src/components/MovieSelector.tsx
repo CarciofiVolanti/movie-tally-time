@@ -152,12 +152,17 @@ export const MovieSelector = ({ onNavigateToWatched, onSessionLoad }: MovieSelec
       } = await supabase.from('movie_proposals').select('*').eq('session_id', sessionId);
       if (proposalsError) throw proposalsError;
 
-      // Load ratings
-      const {
-        data: ratingsData,
-        error: ratingsError
-      } = await supabase.from('movie_ratings').select('*');
-      if (ratingsError) throw ratingsError;
+      // Only fetch ratings for proposals in this session
+      const proposalIds = proposalsData?.map((p: any) => p.id) ?? [];
+      let ratingsData: any[] = [];
+      if (proposalIds.length > 0) {
+        const {
+          data: ratings,
+          error: ratingsError
+        } = await supabase.from('movie_ratings').select('*').in('proposal_id', proposalIds);
+        if (ratingsError) throw ratingsError;
+        ratingsData = ratings ?? [];
+      }
 
       // Transform data to match existing interface
       const transformedPeople: Person[] = peopleData.map(person => ({
