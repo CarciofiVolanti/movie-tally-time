@@ -5,30 +5,7 @@ import { Input } from "@/components/ui/input";
 import { StarRating } from "./StarRating";
 import { Film, Search } from "lucide-react";
 import { useState } from "react";
-
-export interface MovieDetails {
-  poster?: string;
-  genre?: string;
-  runtime?: string;
-  year?: string;
-  director?: string;
-  plot?: string;
-  imdbRating?: string;
-  imdbId?: string;
-}
-
-export interface MovieRating {
-  movieTitle: string;
-  proposedBy: string;
-  ratings: Record<string, number>; // personId -> rating
-  details?: MovieDetails;
-}
-
-interface Person {
-  id: string;
-  name: string;
-  isPresent: boolean;
-}
+import { MovieDetails, MovieRating, Person } from "@/types/session";
 
 interface MovieCardProps {
   movie: MovieRating;
@@ -36,7 +13,7 @@ interface MovieCardProps {
   currentPersonId?: string;
   onRatingChange: (movieTitle: string, personId: string, rating: number) => Promise<void>;
   onSearchAgain: (movieTitle: string) => Promise<void>;
-  onMarkAsWatched: (movieTitle: string) => Promise<void>; // Add this line
+  onMarkAsWatched: (movieTitle: string) => Promise<void>;
   showAllRatings: boolean;
 }
 
@@ -46,6 +23,7 @@ export const MovieCard = ({
   currentPersonId,
   onRatingChange,
   onSearchAgain,
+  onMarkAsWatched,
   showAllRatings = false
 }: MovieCardProps) => {
   const [searchTitle, setSearchTitle] = useState("");

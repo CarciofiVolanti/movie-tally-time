@@ -1,4 +1,4 @@
-import { MovieSelector } from "@/components/MovieSelector";
+import  MovieSelectorRoot from "@/components/MovieSelector/index";
 import { WatchedMovies } from "@/components/WatchedMovies";
 import { useState, useEffect } from "react";
 
@@ -24,7 +24,7 @@ const Index = () => {
   }
 
   return (
-    <MovieSelector 
+    <MovieSelectorRoot
       onNavigateToWatched={() => setCurrentView('watched')}
       onSessionLoad={(id) => setSessionId(id)}
     />

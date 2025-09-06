@@ -44,7 +44,7 @@ interface Person {
 interface WatchedMoviesProps {
   sessionId: string;
   onBack: () => void;
-  selectedPersonId?: string; // <-- add this
+  selectedPersonId?: string;
 }
 
 export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMoviesProps) => {
