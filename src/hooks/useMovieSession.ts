@@ -408,13 +408,20 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
   };
 
   const getSortedMovies = () => {
-    if (!selectedPersonId) return movieRatings;
+    if (!selectedPersonId) {
+      // No selected person → sort alphabetically
+      return [...movieRatings].sort((a, b) => a.movieTitle.localeCompare(b.movieTitle));
+    }
+
     return [...movieRatings].sort((a, b) => {
       const aRated = a.ratings[selectedPersonId] !== undefined && a.ratings[selectedPersonId] > 0;
       const bRated = b.ratings[selectedPersonId] !== undefined && b.ratings[selectedPersonId] > 0;
-      if (!aRated && bRated) return -1;
-      if (aRated && !bRated) return 1;
-      return 0;
+
+      // Group: not-voted first, then voted
+      if (aRated !== bRated) return aRated ? 1 : -1;
+
+      // Within the same group, sort alphabetically by title
+      return a.movieTitle.localeCompare(b.movieTitle);
     });
   };
 
