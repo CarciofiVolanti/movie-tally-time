@@ -402,9 +402,7 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
   };
 
   const toggleCollapse = (movieTitle: string) => {
-    setTimeout(() => {
-      setCollapsedMovies(prev => ({ ...prev, [movieTitle]: !prev[movieTitle] }));
-    }, 0);
+    setCollapsedMovies(prev => ({ ...prev, [movieTitle]: !(prev[movieTitle] ?? true) }));
   };
 
   const getSortedMovies = () => {
