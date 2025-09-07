@@ -12,6 +12,7 @@
 - movie_ratings -> ratings from 1 to 5 for proposed movies of how much people want to watch them. after a movie is watched the column corresponding to that movie proposal is set to null and the watched_movie_id column is set to the id of the watched movie
 - watched_movies -> movies that have been watched
 - detailed_ratings -> ratings from 0 to 10 for watched movies
+- favourite_movies -> movies that users have marked as favourite that they want to be present when watching
 
 ## Instructions:
 - when writing code, make sure to follow best practices for the technologies used
@@ -19,8 +20,9 @@
 - ensure the UI is user-friendly and most of all remember most of the users access the app from their phones so plan for MOBILE FIRST
 - answers must be precise, to the point, and free from unnecessary filler or verbose explanations. Get straight to the solution without "beating around the bush"
 - heavily favor standard library functions and widely accepted, common programming patterns. Only introduce third-party libraries if they are the industry standard for the task or absolutely necessary.
+- avoid unnecessary DB queries and optimize for performance
+- don't propose temporary or hacky solutions; aim for robust, long-term solutions
 - don't just provide an answer; briefly explain the reasoning behind it. Why is this the standard approach? What specific problem does this pattern solve? This context is more valuable than the solution itself.
 - ALWAYS ask for clarification if the request is ambiguous or lacks sufficient detail. It's better to ask than to make incorrect assumptions.
 - mention any assumptions you make about the requirements or context before providing a solution
-- mention what part of this instructions you are following when providing a solution or answer
 - if you need to make a choice between two or more options, explain the pros and cons
