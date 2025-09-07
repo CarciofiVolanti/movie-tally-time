@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { MovieRating, Person } from "@/types/session";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Film, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
+import { Film, RefreshCw, ChevronDown, ChevronRight, Heart } from "lucide-react";
 import { MovieCard } from "../MovieCard";
+import useFavouriteMovie from "@/hooks/useFavouriteMovie";
+import { supabase } from "@/integrations/supabase/client";
 
 const RatePanel = ({
   movieRatings,
@@ -31,6 +33,31 @@ const RatePanel = ({
   collapsedMovies: Record<string, boolean>;
   toggleCollapse: (title: string) => void;
 }) => {
+  const { favoriteProposalId, loading: favLoading, toggleFavourite } = useFavouriteMovie(selectedPersonId);
+  const [localCollapsedOverrides, setLocalCollapsedOverrides] = useState<Record<string, boolean>>({});
+
+  const selectedPersonName = presentPeople.find(p => p.id === selectedPersonId)?.name;
+
+  const isOwnProposalFor = (movie: MovieRating) => {
+    const proposerNameMatch = selectedPersonName ? selectedPersonName === movie.proposedBy : false;
+    const proposerIdMatch =
+      selectedPersonId &&
+      (
+        (movie as any).proposerId === selectedPersonId ||
+        (movie as any).proposedById === selectedPersonId ||
+        (movie as any).person_id === selectedPersonId ||
+        (movie as any).proposed_by === selectedPersonId
+      );
+    return proposerNameMatch || Boolean(proposerIdMatch);
+  };
+
+  const handleToggleCollapse = (title: string) => {
+    const current = collapsedMovies[title] ?? true;
+    const newVal = !current;
+    setLocalCollapsedOverrides(prev => ({ ...prev, [title]: newVal }));
+    toggleCollapse(title);
+  };
+
   return (
     <>
       <Card>
@@ -52,14 +79,36 @@ const RatePanel = ({
       <div className="flex flex-col gap-4 w-full max-w-xl mx-auto mt-4">
         {movieRatings.map(movie => {
           const hasVoted = selectedPersonId && movie.ratings[selectedPersonId] !== undefined && movie.ratings[selectedPersonId] > 0;
+          // use attached proposalId/proposerId directly
+          const proposalId = (movie as any).proposalId ?? (movie as any).proposal_id ?? null;
+          const disallowOwn = isOwnProposalFor(movie);
+          const isFavourite = proposalId ? favoriteProposalId === proposalId : false;
 
-          // default to collapsed when there's no explicit entry
-          const isCollapsed = collapsedMovies[movie.movieTitle] ?? true;
+          // prefer local optimistic override, then parent collapsed state, then default collapsed=true
+          const isCollapsed = localCollapsedOverrides[movie.movieTitle] ?? collapsedMovies[movie.movieTitle] ?? true;
 
           return (
             <Card key={movie.movieTitle} className="w-full max-w-full relative">
               {selectedPersonId && (
-                <div className="absolute top-2 right-2 z-10">
+                <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
+                  {/* hide heart entirely for own proposals or when we don't have a proposal id */}
+                  {proposalId && !disallowOwn && (
+                    <button
+                      type="button"
+                      onClick={() => toggleFavourite(proposalId)}
+                      disabled={!selectedPersonId || favLoading}
+                      className="p-1"
+                      title={isFavourite ? "Unmark favourite" : "Mark as favourite"}
+                      aria-label="Toggle favourite"
+                      aria-pressed={isFavourite}
+                    >
+                      <Heart
+                        className={`w-5 h-5 ${isFavourite ? "text-red-500 fill-current" : "text-muted-foreground"}`}
+                        style={isFavourite ? { stroke: "none" } : undefined}
+                      />
+                    </button>
+                  )}
+
                   <Badge variant={hasVoted ? "default" : "outline"} className={hasVoted ? "bg-green-100 text-green-800 border-green-300" : "bg-orange-100 text-orange-800 border-orange-300"}>
                     {hasVoted ? "✓ Voted" : "Not Voted"}
                   </Badge>
@@ -68,7 +117,7 @@ const RatePanel = ({
 
               <CardHeader className="flex flex-row items-center justify-between p-4">
                 <div className="flex items-center gap-2 min-w-0 w-full pr-20">
-                  <button onClick={() => toggleCollapse(movie.movieTitle)} aria-label={isCollapsed ? "Expand" : "Collapse"} className="p-1">
+                  <button onClick={() => handleToggleCollapse(movie.movieTitle)} aria-label={isCollapsed ? "Expand" : "Collapse"} className="p-1">
                     {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </button>
                   <span className="font-semibold text-base sm:text-lg truncate min-w-0">{movie.movieTitle}</span>

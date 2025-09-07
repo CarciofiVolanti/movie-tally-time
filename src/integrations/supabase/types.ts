@@ -19,7 +19,8 @@ export type Database = {
           created_at: string
           id: string
           person_id: string
-          rating: number
+          present: boolean | null
+          rating: number | null
           updated_at: string
           watched_movie_id: string
         }
@@ -27,7 +28,8 @@ export type Database = {
           created_at?: string
           id?: string
           person_id: string
-          rating: number
+          present?: boolean | null
+          rating?: number | null
           updated_at?: string
           watched_movie_id: string
         }
@@ -35,11 +37,51 @@ export type Database = {
           created_at?: string
           id?: string
           person_id?: string
-          rating?: number
+          present?: boolean | null
+          rating?: number | null
           updated_at?: string
           watched_movie_id?: string
         }
         Relationships: []
+      }
+      favourite_movies: {
+        Row: {
+          created_at: string
+          id: string
+          person_id: string | null
+          proposal_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          person_id?: string | null
+          proposal_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          person_id?: string | null
+          proposal_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favourite_movies_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "session_people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favourite_movies_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "movie_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       movie_proposals: {
         Row: {
@@ -118,8 +160,8 @@ export type Database = {
           created_at?: string
           id?: string
           person_id: string
-          proposal_id: string | null
-          rating: number
+          proposal_id?: string | null
+          rating?: number
           updated_at?: string
           watched_movie_id?: string | null
         }
@@ -153,7 +195,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "watched_movies"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       movie_sessions: {
@@ -292,7 +334,7 @@ export type Tables<
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

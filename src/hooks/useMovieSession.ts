@@ -431,6 +431,56 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     return { ...movie, averageRating, totalRatings: validRatings.length };
   }).filter(movie => presentPeople.some(p => p.movies.includes(movie.movieTitle))).sort((a, b) => b.averageRating - a.averageRating);
 
+  // Attach proposalId / proposerId to movieRatings so UI can use stable identifiers
+  useEffect(() => {
+    let mounted = true;
+
+    // only run when we have movies and some items don't already have proposalId
+    const needsAttach = movieRatings.length > 0 && movieRatings.some(m => !((m as any).proposalId || (m as any).proposal_id));
+    if (!needsAttach) return;
+
+    (async () => {
+      try {
+        const titles = Array.from(new Set(movieRatings.map(m => m.movieTitle)));
+        if (titles.length === 0) return;
+
+        const { data: proposals, error } = await supabase
+          .from("movie_proposals" as any)
+          .select("id, movie_title, person_id")
+          .in("movie_title", titles);
+
+        if (error) throw error;
+        if (!mounted) return;
+
+        const proposalsByTitle: Record<string, any[]> = {};
+        (proposals || []).forEach((p: any) => {
+          proposalsByTitle[p.movie_title] = proposalsByTitle[p.movie_title] || [];
+          proposalsByTitle[p.movie_title].push(p);
+        });
+
+        setMovieRatings(prev =>
+          prev.map(m => {
+            // preserve existing proposalId if present
+            const existing = (m as any).proposalId ?? (m as any).proposal_id;
+            if (existing) return m;
+
+            const list = proposalsByTitle[m.movieTitle] || [];
+            const first = list[0];
+            return {
+              ...m,
+              proposalId: first?.id ?? undefined,
+              proposerId: first?.person_id ?? undefined,
+            };
+          })
+        );
+      } catch (err) {
+        console.error("Failed to attach proposal ids to movieRatings:", err);
+      }
+    })();
+
+    return () => { mounted = false; };
+  }, [movieRatings]);
+
   return {
     // state
     people,
