@@ -40,14 +40,8 @@ const RatePanel = ({
 
   const isOwnProposalFor = (movie: MovieRating) => {
     const proposerNameMatch = selectedPersonName ? selectedPersonName === movie.proposedBy : false;
-    const proposerIdMatch =
-      selectedPersonId &&
-      (
-        (movie as any).proposerId === selectedPersonId ||
-        (movie as any).proposedById === selectedPersonId ||
-        (movie as any).person_id === selectedPersonId ||
-        (movie as any).proposed_by === selectedPersonId
-      );
+    const proposerIdMatch = selectedPersonId && movie.proposedBy === selectedPersonId;
+    
     return proposerNameMatch || Boolean(proposerIdMatch);
   };
 

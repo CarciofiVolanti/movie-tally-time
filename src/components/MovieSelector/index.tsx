@@ -110,7 +110,7 @@ const MovieSelectorRoot = ({ onNavigateToWatched, onSessionLoad }: { onNavigateT
 
             <TabsContent value="rate">
               <RatePanel
-                movieRatings={session.getSortedMovies()}
+                movieRatings={session.movieRatings}
                 presentPeople={session.presentPeople}
                 selectedPersonId={session.selectedPersonId}
                 setSelectedPersonId={session.setSelectedPersonId}

@@ -21,6 +21,8 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
   const [collapsedMovies, setCollapsedMovies] = useState<Record<string, boolean>>({});
   const [selectedPersonId, setSelectedPersonIdState] = useState<string>("");
   const [currentView, setCurrentView] = useState<'session' | 'watched'>('session');
+  // control whether getSortedMovies should re-order the list
+  const [shouldSort, setShouldSort] = useState<boolean>(true);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -34,17 +36,19 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // persist selected person per-session
+  // validate selected person exists in people list (after people are loaded)
   useEffect(() => {
-    if (sessionId) {
-      const saved = getSelectedPersonForSession(sessionId);
-      if (saved && people.some(p => p.id === saved)) {
-        setSelectedPersonIdState(saved);
+    if (sessionId && selectedPersonId && people.length > 0) {
+      // if selected person doesn't exist in people list, reset it
+      if (!people.some(p => p.id === selectedPersonId)) {
+        setSelectedPersonIdState("");
       }
     }
-  }, [sessionId, people]);
+  }, [sessionId, selectedPersonId, people]);
 
   const setSelectedPersonId = (id: string) => {
+    // selecting a different person should allow sorting logic to run
+    setShouldSort(true);
     setSelectedPersonIdState(id);
     if (sessionId) setSelectedPersonForSession(sessionId, id);
   };
@@ -56,7 +60,16 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
       if (session) {
         setSessionId(session.id);
         opts?.onSessionLoad?.(session.id);
-        await loadSessionData(session.id);
+        
+        // Load selected person BEFORE loading session data so initial sort works correctly
+        const savedPersonId = getSelectedPersonForSession(session.id);
+        console.log("Saved person ID from cookies:", savedPersonId);
+        if (savedPersonId) {
+          setSelectedPersonIdState(savedPersonId);
+          console.log("Set selectedPersonId to:", savedPersonId);
+        }
+        
+        await loadSessionData(session.id, savedPersonId || "");
       } else {
         setShowNewSession(true);
       }
@@ -93,15 +106,17 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     }
   };
 
-  const loadSessionData = async (sid: string) => {
-    try {
-      const { data: peopleData, error: peopleError } = await supabase.from('session_people').select('*').eq('session_id', sid);
-      if (peopleError) throw peopleError;
+  const loadSessionData = async (sid: string, effectiveSelectedPersonId?: string) => {
+    // Use passed selectedPersonId or fall back to state
+    const selectedId = effectiveSelectedPersonId ?? selectedPersonId;
+     try {
+       const { data: peopleData, error: peopleError } = await supabase.from('session_people').select('*').eq('session_id', sid);
+       if (peopleError) throw peopleError;
 
-      const { data: proposalsData, error: proposalsError } = await supabase.from('movie_proposals').select('*').eq('session_id', sid);
-      if (proposalsError) throw proposalsError;
+       const { data: proposalsData, error: proposalsError } = await supabase.from('movie_proposals').select('*').eq('session_id', sid);
+       if (proposalsError) throw proposalsError;
 
-      const proposalIds = (proposalsData || []).map((p: any) => p.id) ?? [];
+       const proposalIds = (proposalsData || []).map((p: any) => p.id) ?? [];
       let ratingsData: any[] = [];
       if (proposalIds.length > 0) {
         const { data: ratings, error: ratingsError } = await supabase.from('movie_ratings').select('*').in('proposal_id', proposalIds);
@@ -162,7 +177,21 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
       });
 
       setPeople(transformedPeople);
-      setMovieRatings(transformedRatings);
+      // Sort initially for better UX, then preserve order during interactions
+      const selectedPerson = selectedId ? transformedPeople.find(p => p.id === selectedId) : undefined;
+      console.log("Selected person for session:", selectedId ?? null, selectedPerson);
+      const initiallySorted = selectedId ? 
+        transformedRatings.sort((a, b) => {
+          const aRated = a.ratings[selectedId] !== undefined && a.ratings[selectedId] > 0;
+          const bRated = b.ratings[selectedId] !== undefined && b.ratings[selectedId] > 0;
+          if (aRated !== bRated) return aRated ? 1 : -1;
+          return a.movieTitle.localeCompare(b.movieTitle);
+        }) : 
+        transformedRatings.sort((a, b) => a.movieTitle.localeCompare(b.movieTitle));
+      
+      setMovieRatings(initiallySorted);
+      // freshly loaded data should be allowed to be sorted
+      setShouldSort(true);
     } catch (err) {
       console.error('Error loading session data:', err);
     }
@@ -362,6 +391,8 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
           }
           return movie;
         }));
+        // after a rating change we don't want automatic resorting
+        setShouldSort(false);
       } else {
         await supabase.from("movie_ratings").upsert({
           proposal_id: proposalId,
@@ -373,6 +404,8 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
           ...movie,
           ratings: { ...movie.ratings, [personId]: rating }
         } : movie));
+        // prevent resorting after this rating change
+        setShouldSort(false);
       }
     } catch (err) {
       console.error('Error updating rating:', err);
@@ -425,6 +458,9 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
   };
 
   const getSortedMovies = () => {
+    // If sorting has been suppressed (e.g. user just rated a movie), return current order
+    if (!shouldSort) return movieRatings;
+
     if (!selectedPersonId) {
       // No selected person → sort alphabetically
       return [...movieRatings].sort((a, b) => a.movieTitle.localeCompare(b.movieTitle));
