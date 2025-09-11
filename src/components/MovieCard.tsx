@@ -175,7 +175,7 @@ export const MovieCard = ({
                         <span className="text-xs font-medium text-muted-foreground flex-shrink-0">Proposer comment:</span>
                         <div className="flex-1 flex items-start gap-2">
                           <Input
-                            placeholder="Add a short comment (max 20 words)"
+                            placeholder={"Max " + MAX_WORDS + " words)..." }
                             value={commentText}
                             onChange={(e) => onCommentChange(e.target.value)}
                             className="flex-1 text-xs"

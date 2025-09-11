@@ -158,7 +158,7 @@ const RatePanel = ({
                     onSearchAgain={searchMovieAgain}
                     onMarkAsWatched={markMovieAsWatched}
                     showAllRatings={true}
-                    onSaveComment={onSaveComment}   /* <-- added */
+                    onSaveComment={onSaveComment}
                   />
                 </CardContent>
               )}
