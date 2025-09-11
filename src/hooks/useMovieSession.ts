@@ -109,6 +109,17 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
         ratingsData = ratings ?? [];
       }
 
+      // Add: fetch proposal comments for proposals in this session
+      let commentsData: any[] = [];
+      if (proposalIds.length > 0) {
+        const { data: comments, error: commentsError } = await supabase
+          .from('proposal_comments')
+          .select('*')
+          .in('proposal_id', proposalIds);
+        if (commentsError) throw commentsError;
+        commentsData = comments ?? [];
+      }
+
       const transformedPeople: Person[] = (peopleData || []).map((person: any) => ({
         id: person.id,
         name: person.name,
@@ -122,6 +133,12 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
         (ratingsData || []).filter(r => r.proposal_id === proposal.id).forEach(r => {
           ratings[r.person_id] = r.rating;
         });
+
+        // Attach comment (if any) for this proposal
+        const commentRow = (commentsData || []).find(c => c.proposal_id === proposal.id);
+        const comment = commentRow?.comment ?? undefined;
+        const commentAuthor = commentRow?.author ?? undefined;
+        const commentUpdatedAt = commentRow?.updated_at ?? undefined;
 
         const details: MovieDetails | undefined = (proposal.poster || proposal.genre || proposal.runtime) ? {
           poster: proposal.poster,
@@ -138,7 +155,9 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
           movieTitle: proposal.movie_title,
           proposedBy: proposer?.name || 'Unknown',
           ratings,
-          details
+          details,
+          // new fields for proposer comment
+          comment,
         };
       });
 

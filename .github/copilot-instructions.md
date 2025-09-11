@@ -5,7 +5,7 @@
 - in the 'results' section the app will show the movies with the highest average score of movies proposed and voted by present people and let users pick one to watch
 - in the 'watched movies' section users can rate the movies they've watched from 0 to 10
 
-## DATABASE
+## DATABASE TABLES
 - movie_sessions
 - session_people
 - movie_proposals
@@ -13,6 +13,7 @@
 - watched_movies -> movies that have been watched
 - detailed_ratings -> ratings from 0 to 10 for watched movies
 - favourite_movies -> movies that users have marked as favourite that they want to be present when watching
+- proposal_comments
 
 ## Instructions:
 - when writing code, make sure to follow best practices for the technologies used

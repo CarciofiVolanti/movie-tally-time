@@ -18,6 +18,7 @@ export interface MovieRating {
   // attached from movie_proposals so UI can rely on stable ids
   proposalId?: string;
   proposerId?: string;
+  comment?: string;
 }
 
 // If you have MovieWithStats / MovieWithDetails types:

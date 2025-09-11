@@ -70,7 +70,7 @@ export type Database = {
           {
             foreignKeyName: "favourite_movies_person_id_fkey"
             columns: ["person_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "session_people"
             referencedColumns: ["id"]
           },
@@ -218,6 +218,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      proposal_comments: {
+        Row: {
+          author: string | null
+          comment: string | null
+          created_at: string
+          id: string
+          proposal_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          author?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          proposal_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          author?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          proposal_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_comment_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "movie_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       session_people: {
         Row: {

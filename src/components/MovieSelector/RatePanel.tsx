@@ -58,6 +58,30 @@ const RatePanel = ({
     toggleCollapse(title);
   };
 
+  // Persist a proposer's comment to proposal_comments (one row per proposal_id)
+  const onSaveComment = async (proposalId: string, comment: string) => {
+    if (!selectedPersonId) throw new Error("No selected person");
+    if (!proposalId) throw new Error("Missing proposal id");
+    const payload = {
+      proposal_id: proposalId,
+      author: selectedPersonId,
+      comment: comment || null,
+    };
+
+    // upsert by proposal_id to avoid duplicates; this is a single, minimal DB operation
+    const { error } = await supabase
+      .from("proposal_comments")
+      .upsert(payload, { onConflict: "proposal_id" });
+
+    if (error) {
+      // bubble error to caller (MovieCard shows Save button state); parent can show toast
+      throw error;
+    }
+
+    // success — parent can re-fetch session data to surface the saved comment to others
+    return;
+  };
+
   return (
     <>
       <Card>
@@ -134,6 +158,7 @@ const RatePanel = ({
                     onSearchAgain={searchMovieAgain}
                     onMarkAsWatched={markMovieAsWatched}
                     showAllRatings={true}
+                    onSaveComment={onSaveComment}   /* <-- added */
                   />
                 </CardContent>
               )}

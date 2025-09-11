@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StarRating } from "./StarRating";
 import { Film, Search } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MovieDetails, MovieRating, Person } from "@/types/session";
 
 interface MovieCardProps {
@@ -15,6 +15,8 @@ interface MovieCardProps {
   onSearchAgain: (movieTitle: string) => Promise<void>;
   onMarkAsWatched: (movieTitle: string) => Promise<void>;
   showAllRatings: boolean;
+  // new optional prop to persist proposer comment
+  onSaveComment?: (proposalId: string, comment: string) => Promise<void>;
 }
 
 export const MovieCard = ({
@@ -24,11 +26,78 @@ export const MovieCard = ({
   onRatingChange,
   onSearchAgain,
   onMarkAsWatched,
-  showAllRatings = false
+  showAllRatings = false,
+  onSaveComment
 }: MovieCardProps) => {
   const [searchTitle, setSearchTitle] = useState("");
   const [showSearchInput, setShowSearchInput] = useState(false);
-  
+
+  // --- proposal comment state & helpers (added) ---
+  const initialComment = (movie as any).comment ?? "";
+  const proposalId = (movie as any).proposalId ?? (movie as any).proposal_id;
+  // try a few common names / ids for proposer stored on the movie object
+  const proposerId =
+    (movie as any).proposedBy
+
+  const [commentText, setCommentText] = useState<string>(initialComment);
+  const [isSavingComment, setIsSavingComment] = useState(false);
+  // track last saved comment so Save is disabled until field changes after a save
+  const [lastSavedComment, setLastSavedComment] = useState<string | null>(null);
+
+  // keep local comment in sync when movie prop changes (e.g. after parent re-fetch)
+  useEffect(() => {
+    // When either the underlying comment changes OR the current user changes,
+    // ensure the local input and "last saved" flag reflect the new context.
+    setCommentText(initialComment);
+    setLastSavedComment(null);
+  }, [initialComment, currentPersonId]);
+
+  const MAX_WORDS = 15;
+  const wordCount = (text: string) => (text.trim() ? text.trim().split(/\s+/).length : 0);
+
+  const onCommentChange = (value: string) => {
+    // enforce 20-word client-side limit by trimming extras
+    const words = value.trim().split(/\s+/).filter(Boolean);
+    if (words.length <= MAX_WORDS) {
+      setCommentText(value);
+    } else {
+      setCommentText(words.slice(0, MAX_WORDS).join(" "));
+    }
+  };
+
+  const saveComment = async () => {
+    if (!proposalId || !onSaveComment) return;
+    const trimmed = commentText.trim();
+    // avoid saving unchanged content relative to initial or last saved
+    const compareBase = (lastSavedComment ?? initialComment ?? "").trim();
+    if (trimmed === compareBase) return;
+    setIsSavingComment(true);
+    try {
+      await onSaveComment(proposalId, trimmed);
+      // mark saved value so Save stays disabled until user edits
+      setLastSavedComment(trimmed);
+      // parent should re-fetch to reflect persisted changes
+    } catch (err) {
+      console.error("Failed to save proposal comment", err);
+    } finally {
+      setIsSavingComment(false);
+    }
+  };
+
+  // Determine proposer match more robustly:
+  // - match by proposer id fields if present
+  // - fallback to comparing current person's name to movie.proposedBy
+  const currentPersonName = people.find(p => p.id === currentPersonId)?.name;
+  const isProposer = Boolean(
+    currentPersonId &&
+    (
+      (proposerId && currentPersonId === proposerId) ||
+      (movie as any).proposedBy && currentPersonName && currentPersonName === (movie as any).proposedBy ||
+      (movie as any).proposedBy === currentPersonName
+    )
+  );
+  // --- end comment additions ---
+
   const presentPeople = people.filter(p => p.isPresent);
   const ratedPeople = presentPeople.filter(p => movie.ratings[p.id] && movie.ratings[p.id] > 0);
   const totalRatings = ratedPeople.length;
@@ -95,12 +164,47 @@ export const MovieCard = ({
               {movie.details && (
                 <div className="space-y-1 text-xs text-muted-foreground">
                   {movie.details.year && <p>Year: {movie.details.year}</p>}
-                  {movie.details.director && <p>Director: {movie.details.director}</p>}  {/* Add this line */}
+                  {movie.details.director && <p>Director: {movie.details.director}</p>}
                   {movie.details.runtime && <p>Runtime: {movie.details.runtime}</p>}
                   {movie.details.genre && <p className="break-words">Genre: {movie.details.genre}</p>}
+
+                  {/* Proposer comment aligned under Genre */}
+                  <div className="mt-1">
+                    {isProposer ? (
+                      <div className="flex flex-col sm:flex-row sm:items-start gap-2">
+                        <span className="text-xs font-medium text-muted-foreground flex-shrink-0">Proposer comment:</span>
+                        <div className="flex-1 flex items-start gap-2">
+                          <Input
+                            placeholder="Add a short comment (max 20 words)"
+                            value={commentText}
+                            onChange={(e) => onCommentChange(e.target.value)}
+                            className="flex-1 text-xs"
+                          />
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">{wordCount(commentText)}/{MAX_WORDS}</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={saveComment}
+                              disabled={isSavingComment || commentText.trim() === ((lastSavedComment ?? initialComment) ?? "").trim()}
+                            >
+                              {isSavingComment ? "Saving..." : "Save"}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-2">
+                        <span className="text-xs font-medium text-muted-foreground flex-shrink-0">Proposer comment:</span>
+                        <div className="text-xs font-normal text-foreground/90 italic break-words">
+                          {(initialComment && initialComment.trim()) ? initialComment : <span className="text-muted-foreground italic">No comment</span>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
-              
+
               {/* Search button - moved to bottom on mobile */}
               {onSearchAgain && (!movie.details || !movie.details.poster || movie.details.poster === 'N/A') && (
                 <Button
