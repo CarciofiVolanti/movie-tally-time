@@ -135,9 +135,7 @@ export const MovieCard = ({
                   {movie.movieTitle}
                 </h3>
               )}
-              <p className="text-sm text-muted-foreground mt-1">
-                Proposed by {movie.proposedBy}
-              </p>
+              
             </div>
             <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0 ml-2">
               ★ {averageRating.toFixed(1)}
@@ -163,10 +161,14 @@ export const MovieCard = ({
             <div className="flex-1 min-w-0 space-y-2">
               {movie.details && (
                 <div className="space-y-1 text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Proposed by {movie.proposedBy}
+                  </p>
                   {movie.details.year && <p>Year: {movie.details.year}</p>}
                   {movie.details.director && <p>Director: {movie.details.director}</p>}
                   {movie.details.runtime && <p>Runtime: {movie.details.runtime}</p>}
                   {movie.details.genre && <p className="break-words">Genre: {movie.details.genre}</p>}
+                  {movie.details.plot && <p className="break-words">Plot: <span className="italic">{movie.details.plot}</span></p>}
 
                   {/* Proposer comment aligned under Genre */}
                   <div className="mt-1">
