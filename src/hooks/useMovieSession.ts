@@ -441,6 +441,7 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
       const watchedId = insertedWatched.id;
 
       await supabase.from('movie_ratings').update({ watched_movie_id: watchedId }).eq('proposal_id', proposal.id);
+      await supabase.from('proposal_comments').delete().eq('proposal_id', proposal.id);
       await supabase.from('movie_proposals').delete().eq('id', proposal.id);
 
       setMovieRatings(prev => prev.filter(movie => movie.movieTitle !== movieTitle));
