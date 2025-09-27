@@ -19,7 +19,8 @@ const RatePanel = ({
   searchMovieAgain,
   markMovieAsWatched,
   collapsedMovies,
-  toggleCollapse
+  toggleCollapse,
+  onRealtimeRatingUpdate // Add this prop
 }: {
   movieRatings: MovieRating[];
   presentPeople: Person[];
@@ -32,6 +33,7 @@ const RatePanel = ({
   markMovieAsWatched: (title: string) => Promise<void>;
   collapsedMovies: Record<string, boolean>;
   toggleCollapse: (title: string) => void;
+  onRealtimeRatingUpdate?: (proposalId: string, personId: string, rating: number | null) => void; // Add this type
 }) => {
   const { favoriteProposalId, loading: favLoading, toggleFavourite } = useFavouriteMovie(selectedPersonId);
   const [localCollapsedOverrides, setLocalCollapsedOverrides] = useState<Record<string, boolean>>({});
@@ -153,6 +155,7 @@ const RatePanel = ({
                     onMarkAsWatched={markMovieAsWatched}
                     showAllRatings={true}
                     onSaveComment={onSaveComment}
+                    onRealtimeRatingUpdate={onRealtimeRatingUpdate} // Pass it through
                   />
                 </CardContent>
               )}

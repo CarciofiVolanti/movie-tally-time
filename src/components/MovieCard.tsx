@@ -6,6 +6,8 @@ import { StarRating } from "./StarRating";
 import { Film, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { MovieDetails, MovieRating, Person } from "@/types/session";
+import { supabase } from "@/integrations/supabase/client";
+
 
 interface MovieCardProps {
   movie: MovieRating;
@@ -15,8 +17,9 @@ interface MovieCardProps {
   onSearchAgain: (movieTitle: string) => Promise<void>;
   onMarkAsWatched: (movieTitle: string) => Promise<void>;
   showAllRatings: boolean;
-  // new optional prop to persist proposer comment
   onSaveComment?: (proposalId: string, comment: string) => Promise<void>;
+  // Add this prop to update parent state
+  onRealtimeRatingUpdate?: (proposalId: string, personId: string, rating: number | null) => void;
 }
 
 export const MovieCard = ({
@@ -27,10 +30,60 @@ export const MovieCard = ({
   onSearchAgain,
   onMarkAsWatched,
   showAllRatings = false,
-  onSaveComment
+  onSaveComment,
+  onRealtimeRatingUpdate
 }: MovieCardProps) => {
   const [searchTitle, setSearchTitle] = useState("");
   const [showSearchInput, setShowSearchInput] = useState(false);
+  // Local state to track ratings for real-time updates
+  const [localRatings, setLocalRatings] = useState(movie.ratings);
+
+  // Sync local ratings when movie prop changes
+  useEffect(() => {
+    setLocalRatings(movie.ratings);
+  }, [movie.ratings]);
+
+  // Real-time subscription for rating changes
+  useEffect(() => {
+    const channel = supabase
+      .channel(`movie-ratings-${movie.proposalId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'movie_ratings',
+          filter: `proposal_id=eq.${movie.proposalId}`,
+        },
+        (payload) => {
+          //console.log('Rating change received:', payload);
+          
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const { person_id, rating } = payload.new;
+            setLocalRatings(prev => ({
+              ...prev,
+              [person_id]: rating
+            }));
+            // Update parent session state
+            onRealtimeRatingUpdate?.(movie.proposalId, person_id, rating);
+          } else if (payload.eventType === 'DELETE') {
+            const { person_id } = payload.old;
+            setLocalRatings(prev => {
+              const newRatings = { ...prev };
+              delete newRatings[person_id];
+              return newRatings;
+            });
+            // Update parent session state
+            onRealtimeRatingUpdate?.(movie.proposalId, person_id, null);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [movie.proposalId, onRealtimeRatingUpdate]);
 
   // --- proposal comment state & helpers (added) ---
   const initialComment = (movie as any).comment ?? "";
@@ -99,10 +152,10 @@ export const MovieCard = ({
   // --- end comment additions ---
 
   const presentPeople = people.filter(p => p.isPresent);
-  const ratedPeople = presentPeople.filter(p => movie.ratings[p.id] && movie.ratings[p.id] > 0);
+  const ratedPeople = presentPeople.filter(p => localRatings[p.id] && localRatings[p.id] > 0);
   const totalRatings = ratedPeople.length;
   const averageRating = totalRatings > 0
-    ? ratedPeople.reduce((sum, p) => sum + movie.ratings[p.id], 0) / totalRatings
+    ? ratedPeople.reduce((sum, p) => sum + localRatings[p.id], 0) / totalRatings
     : 0;
 
   const handleSearch = () => {
@@ -261,7 +314,7 @@ export const MovieCard = ({
                   <span className="text-sm font-medium flex-1 min-w-0 truncate">{person.name}</span>
                   <div className="flex-shrink-0">
                     <StarRating
-                      rating={movie.ratings[person.id] || 0}
+                      rating={localRatings[person.id] || 0}
                       onRatingChange={(rating) =>
                         onRatingChange?.(movie.movieTitle, person.id, rating)
                       }
@@ -281,7 +334,7 @@ export const MovieCard = ({
               <span className="text-sm font-medium">Your Rating</span>
               <div className="flex justify-center sm:justify-end">
                 <StarRating
-                  rating={movie.ratings[currentPersonId] || 0}
+                  rating={localRatings[currentPersonId] || 0}
                   onRatingChange={(rating) =>
                     onRatingChange?.(movie.movieTitle, currentPersonId, rating)
                   }

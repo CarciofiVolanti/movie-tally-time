@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getSelectedPersonForSession, setSelectedPersonForSession } from "@/lib/sessionCookies";
@@ -537,6 +537,24 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     return () => { mounted = false; };
   }, [movieRatings]);
 
+  const handleRealtimeRatingUpdate = useCallback((proposalId: string, personId: string, rating: number | null) => {
+    setMovieRatings(prev => 
+      prev.map(movie => {
+        // Find movie by proposalId
+        if ((movie as any).proposalId === proposalId) {
+          const newRatings = { ...movie.ratings };
+          if (rating === null) {
+            delete newRatings[personId];
+          } else {
+            newRatings[personId] = rating;
+          }
+          return { ...movie, ratings: newRatings };
+        }
+        return movie;
+      })
+    );
+  }, []);
+
   return {
     // state
     people,
@@ -570,6 +588,7 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     updateRating,
     markMovieAsWatched,
     toggleCollapse,
+    handleRealtimeRatingUpdate
   };
 };
 
