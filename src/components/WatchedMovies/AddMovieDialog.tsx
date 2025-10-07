@@ -18,6 +18,7 @@ interface AddMovieDialogProps {
 export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: AddMovieDialogProps) => {
   const [newMovieTitle, setNewMovieTitle] = useState("");
   const [searchResults, setSearchResults] = useState<MovieSearchResult[]>([]);
+  const [selectedMovie, setSelectedMovie] = useState<MovieSearchResult | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedProposer, setSelectedProposer] = useState("");
@@ -34,18 +35,20 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
       
       if (error) throw error;
       setSearchResults([data]);
+      setSelectedMovie(null);
     } catch (error) {
       console.error('Error searching movies:', error);
       setSearchResults([]);
+      setSelectedMovie(null);
     } finally {
       setIsSearching(false);
     }
   };
 
-  const addWatchedMovie = async (movieData?: MovieSearchResult) => {
+  const addWatchedMovie = async () => {
     if (!sessionId || !selectedProposer) return;
     
-    const movieTitle = movieData?.title || newMovieTitle.trim();
+    const movieTitle = selectedMovie?.title || newMovieTitle.trim();
     if (!movieTitle) return;
 
     try {
@@ -56,14 +59,14 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
           movie_title: movieTitle,
           proposed_by: selectedProposer,
           watched_at: selectedDate + 'T00:00:00Z',
-          poster: movieData?.poster,
-          genre: movieData?.genre,
-          runtime: movieData?.runtime,
-          year: movieData?.year,
-          director: movieData?.director,
-          plot: movieData?.plot,
-          imdb_rating: movieData?.imdbRating,
-          imdb_id: movieData?.imdbId
+          poster: selectedMovie?.poster,
+          genre: selectedMovie?.genre,
+          runtime: selectedMovie?.runtime,
+          year: selectedMovie?.year,
+          director: selectedMovie?.director,
+          plot: selectedMovie?.plot,
+          imdb_rating: selectedMovie?.imdbRating,
+          imdb_id: selectedMovie?.imdbId
         });
 
       if (error) throw error;
@@ -88,6 +91,7 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
   const handleClose = () => {
     setNewMovieTitle("");
     setSearchResults([]);
+    setSelectedMovie(null);
     setSelectedProposer("");
     setSelectedDate(new Date().toISOString().split('T')[0]);
     onClose();
@@ -144,8 +148,16 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
             <div className="space-y-2 mt-3">
               <Label className="text-sm font-medium">Search Results</Label>
               {searchResults.map((result, index) => (
-                <Card key={index} className="p-3 cursor-pointer hover:bg-accent/50 transition-colors">
-                  <div className="flex gap-3" onClick={() => addWatchedMovie(result)}>
+                <Card 
+                  key={index} 
+                  className={`p-3 cursor-pointer transition-colors ${
+                    selectedMovie?.imdbId === result.imdbId 
+                      ? 'bg-primary/20 border-primary' 
+                      : 'hover:bg-accent/50'
+                  }`}
+                  onClick={() => setSelectedMovie(result)}
+                >
+                  <div className="flex gap-3">
                     {result.poster && result.poster !== 'N/A' ? (
                       <img
                         src={result.poster}
@@ -196,23 +208,24 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2">
+          {selectedMovie ? (
+            <Button
+              className="w-full"
+              onClick={addWatchedMovie}
+              disabled={!selectedProposer}
+            >
+              Add Movie
+            </Button>
+          ) : (
             <Button
               variant="outline"
-              className="flex-1"
-              onClick={() => addWatchedMovie()}
+              className="w-full"
+              onClick={addWatchedMovie}
               disabled={!newMovieTitle.trim() || !selectedProposer}
             >
               Add Without Details
             </Button>
-            <Button
-              className="flex-1"
-              onClick={() => addWatchedMovie(searchResults[0])}
-              disabled={searchResults.length === 0 || !selectedProposer}
-            >
-              Add With Details
-            </Button>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>
