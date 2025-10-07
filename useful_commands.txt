@@ -1,3 +1,5 @@
+npm run dev
+
 GENERATE SCHEMA
 npx supabase gen types typescript --project-id nptmzqetvlzfhoisubav --schema public > .\src\types\supabase.ts
 

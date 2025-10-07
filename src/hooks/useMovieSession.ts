@@ -27,14 +27,14 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const sessionIdFromUrl = urlParams.get('session');
+    
     if (sessionIdFromUrl) {
       loadExistingSession(sessionIdFromUrl);
     } else {
       setShowNewSession(true);
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // Keep empty deps - only run on mount
 
   // validate selected person exists in people list (after people are loaded)
   useEffect(() => {
@@ -83,16 +83,26 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
 
   const createNewSession = async (name: string) => {
     if (!name.trim()) return;
+    
     try {
       setLoading(true);
-      const { data: session, error } = await supabase.from('movie_sessions').insert([{ name: name.trim() }]).select().single();
+      const { data: session, error } = await supabase
+        .from('movie_sessions')
+        .insert([{ name: name.trim() }])
+        .select()
+        .single();
+        
       if (error) throw error;
+      
       setSessionId(session.id);
       opts?.onSessionLoad?.(session.id);
       setShowNewSession(false);
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.set('session', session.id);
-      window.history.pushState({}, '', newUrl);
+      
+      // Cleaner URL update - preserve other params if any
+      const url = new URL(window.location.href);
+      url.searchParams.set('session', session.id);
+      window.history.replaceState({}, '', url); // Use replaceState for same-page navigation
+      
       await loadSessionData(session.id);
     } catch (err) {
       console.error('Error creating session:', err);
@@ -106,95 +116,122 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     }
   };
 
-  const loadSessionData = async (sid: string, effectiveSelectedPersonId?: string) => {
-    // Use passed selectedPersonId or fall back to state
-    const selectedId = effectiveSelectedPersonId ?? selectedPersonId;
-     try {
-       const { data: peopleData, error: peopleError } = await supabase.from('session_people').select('*').eq('session_id', sid);
-       if (peopleError) throw peopleError;
+  // Split into focused, reusable functions
+  const loadSessionData = async (sid: string, savedPersonId?: string) => {
+    try {
+      // Parallel fetch for better performance
+      const [peopleData, proposalsWithDetails] = await Promise.all([
+        fetchSessionPeople(sid),
+        fetchProposalsWithRatingsAndComments(sid)
+      ]);
 
-       const { data: proposalsData, error: proposalsError } = await supabase.from('movie_proposals').select('*').eq('session_id', sid);
-       if (proposalsError) throw proposalsError;
-
-       const proposalIds = (proposalsData || []).map((p: any) => p.id) ?? [];
-      let ratingsData: any[] = [];
-      if (proposalIds.length > 0) {
-        const { data: ratings, error: ratingsError } = await supabase.from('movie_ratings').select('*').in('proposal_id', proposalIds);
-        if (ratingsError) throw ratingsError;
-        ratingsData = ratings ?? [];
-      }
-
-      // Add: fetch proposal comments for proposals in this session
-      let commentsData: any[] = [];
-      if (proposalIds.length > 0) {
-        const { data: comments, error: commentsError } = await supabase
-          .from('proposal_comments')
-          .select('*')
-          .in('proposal_id', proposalIds);
-        if (commentsError) throw commentsError;
-        commentsData = comments ?? [];
-      }
-
-      const transformedPeople: Person[] = (peopleData || []).map((person: any) => ({
-        id: person.id,
-        name: person.name,
-        isPresent: person.is_present,
-        movies: (proposalsData || []).filter((p: any) => p.person_id === person.id).map((p: any) => p.movie_title)
-      }));
-
-      const transformedRatings: MovieRating[] = (proposalsData || []).map((proposal: any) => {
-        const proposer = (peopleData || []).find((p: any) => p.id === proposal.person_id);
-        const ratings: Record<string, number> = {};
-        (ratingsData || []).filter(r => r.proposal_id === proposal.id).forEach(r => {
-          ratings[r.person_id] = r.rating;
-        });
-
-        // Attach comment (if any) for this proposal
-        const commentRow = (commentsData || []).find(c => c.proposal_id === proposal.id);
-        const comment = commentRow?.comment ?? undefined;
-        const commentAuthor = commentRow?.author ?? undefined;
-        const commentUpdatedAt = commentRow?.updated_at ?? undefined;
-
-        const details: MovieDetails | undefined = (proposal.poster || proposal.genre || proposal.runtime) ? {
-          poster: proposal.poster,
-          genre: proposal.genre,
-          runtime: proposal.runtime,
-          year: proposal.year,
-          director: proposal.director,
-          plot: proposal.plot,
-          imdbRating: proposal.imdb_rating,
-          imdbId: proposal.imdb_id
-        } : undefined;
-
-        return {
-          movieTitle: proposal.movie_title,
-          proposedBy: proposer?.name || 'Unknown',
-          ratings,
-          details,
-          // new fields for proposer comment
-          comment,
-        };
-      });
+      const transformedPeople = transformPeopleData(peopleData, proposalsWithDetails.proposals);
+      const transformedRatings = transformRatingsData(proposalsWithDetails, peopleData);
 
       setPeople(transformedPeople);
-      // Sort initially for better UX, then preserve order during interactions
-      const selectedPerson = selectedId ? transformedPeople.find(p => p.id === selectedId) : undefined;
-      console.log("Selected person for session:", selectedId ?? null, selectedPerson);
-      const initiallySorted = selectedId ? 
-        transformedRatings.sort((a, b) => {
-          const aRated = a.ratings[selectedId] !== undefined && a.ratings[selectedId] > 0;
-          const bRated = b.ratings[selectedId] !== undefined && b.ratings[selectedId] > 0;
-          if (aRated !== bRated) return aRated ? 1 : -1;
-          return a.movieTitle.localeCompare(b.movieTitle);
-        }) : 
-        transformedRatings.sort((a, b) => a.movieTitle.localeCompare(b.movieTitle));
       
-      setMovieRatings(initiallySorted);
-      // freshly loaded data should be allowed to be sorted
+      // Initial sort based on selected person (if any)
+      const sorted = sortMovieRatings(transformedRatings, savedPersonId || selectedPersonId);
+      setMovieRatings(sorted);
       setShouldSort(true);
     } catch (err) {
       console.error('Error loading session data:', err);
+      toast({
+        title: "Error",
+        description: "Failed to load session data",
+        variant: "destructive"
+      });
     }
+  };
+
+  // Separate data fetching logic
+  const fetchSessionPeople = async (sid: string) => {
+    const { data, error } = await supabase
+      .from('session_people')
+      .select('*')
+      .eq('session_id', sid);
+    
+    if (error) throw error;
+    return data || [];
+  };
+
+  const fetchProposalsWithRatingsAndComments = async (sid: string) => {
+    const { data: proposals, error: proposalsError } = await supabase
+      .from('movie_proposals')
+      .select(`
+        *,
+        movie_ratings(*),
+        proposal_comments(*)
+      `)
+      .eq('session_id', sid);
+
+    if (proposalsError) throw proposalsError;
+    return {
+      proposals: proposals || [],
+      // Data is already joined, no need for separate queries
+    };
+  };
+
+  // Pure transformation functions - easier to test & reason about
+  const transformPeopleData = (peopleData: any[], proposals: any[]): Person[] => {
+    return peopleData.map(person => ({
+      id: person.id,
+      name: person.name,
+      isPresent: person.is_present,
+      movies: proposals
+        .filter(p => p.person_id === person.id)
+        .map(p => p.movie_title)
+    }));
+  };
+
+  const transformRatingsData = (proposalsData: { proposals: any[] }, peopleData: any[]): MovieRating[] => {
+    return proposalsData.proposals.map(proposal => {
+      const proposer = peopleData.find(p => p.id === proposal.person_id);
+      
+      // Transform ratings array to object
+      const ratings: Record<string, number> = {};
+      (proposal.movie_ratings || []).forEach((r: any) => {
+        ratings[r.person_id] = r.rating;
+      });
+
+      // Extract comment (first one if multiple exist)
+      const commentRow = proposal.proposal_comments?.[0];
+
+      const details: MovieDetails | undefined = proposal.poster ? {
+        poster: proposal.poster,
+        genre: proposal.genre,
+        runtime: proposal.runtime,
+        year: proposal.year,
+        director: proposal.director,
+        plot: proposal.plot,
+        imdbRating: proposal.imdb_rating,
+        imdbId: proposal.imdb_id
+      } : undefined;
+
+      return {
+        movieTitle: proposal.movie_title,
+        proposedBy: proposer?.name || 'Unknown',
+        ratings,
+        details,
+        comment: commentRow?.comment,
+        proposalId: proposal.id, // Add here to avoid separate useEffect
+        proposerId: proposal.person_id
+      };
+    });
+  };
+
+  const sortMovieRatings = (ratings: MovieRating[], personId: string): MovieRating[] => {
+    if (!personId) {
+      return [...ratings].sort((a, b) => a.movieTitle.localeCompare(b.movieTitle));
+    }
+
+    return [...ratings].sort((a, b) => {
+      const aRated = a.ratings[personId] !== undefined && a.ratings[personId] > 0;
+      const bRated = b.ratings[personId] !== undefined && b.ratings[personId] > 0;
+      
+      if (aRated !== bRated) return aRated ? 1 : -1;
+      return a.movieTitle.localeCompare(b.movieTitle);
+    });
   };
 
   const fetchMovieDetails = async (movieTitle: string): Promise<MovieDetails | undefined> => {
@@ -279,100 +316,201 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
 
   const addPerson = async (name: string) => {
     if (!name.trim() || !sessionId) return;
+    
     try {
-      const { data: person, error } = await supabase.from('session_people').insert([{ session_id: sessionId, name: name.trim(), is_present: true }]).select().single();
+      const { data: person, error } = await supabase
+        .from('session_people')
+        .insert([{ 
+          session_id: sessionId, 
+          name: name.trim(), 
+          is_present: true 
+        }])
+        .select()
+        .single();
+        
       if (error) throw error;
-      const newPerson: Person = { id: person.id, name: person.name, movies: [], isPresent: person.is_present };
-      setPeople(prev => [...prev, newPerson]);
+      
+      setPeople(prev => [...prev, {
+        id: person.id,
+        name: person.name,
+        movies: [],
+        isPresent: person.is_present
+      }]);
     } catch (err) {
       console.error('Error adding person:', err);
-      toast({ title: "Error", description: "Failed to add person. Please try again.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to add person. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
   const updatePerson = async (updatedPerson: Person) => {
     if (!sessionId) return;
+    
     try {
+      // Optimistic update
       setPeople(prev => prev.map(p => p.id === updatedPerson.id ? updatedPerson : p));
-      await supabase.from('session_people').update({ is_present: updatedPerson.isPresent }).eq('id', updatedPerson.id);
-
-      const { data: currentProposals } = await supabase.from('movie_proposals').select('movie_title, id').eq('person_id', updatedPerson.id);
-      const currentMovies = currentProposals?.map((p: any) => p.movie_title) || [];
-
-      const moviesToAdd = updatedPerson.movies.filter(m => !currentMovies.includes(m));
-      const moviesToRemove = currentMovies.filter(m => !updatedPerson.movies.includes(m));
-
-      if (moviesToRemove.length > 0) {
-        await supabase.from('movie_proposals').delete().eq('person_id', updatedPerson.id).in('movie_title', moviesToRemove);
-        setMovieRatings(prev => prev.filter(movie => !moviesToRemove.includes(movie.movieTitle)));
-      }
-
-      if (moviesToAdd.length > 0) {
-        const newMovieRatings = moviesToAdd.map(movieTitle => ({ movieTitle, proposedBy: updatedPerson.name, ratings: {} }));
-        setMovieRatings(prev => [...prev, ...newMovieRatings]);
-
-        moviesToAdd.forEach(async (movieTitle) => {
-          try {
-            const { data, error } = await supabase.functions.invoke('propose-movie-with-details', {
-              body: { sessionId, personId: updatedPerson.id, movieTitle }
-            });
-            if (error) {
-              console.error('Edge function error for', movieTitle, error);
-              return;
-            }
-            const returnedProposal = data?.proposal;
-            const existingId = data?.proposalId;
-            if (returnedProposal) {
-              const details = {
-                poster: returnedProposal.poster,
-                genre: returnedProposal.genre,
-                runtime: returnedProposal.runtime,
-                year: returnedProposal.year,
-                director: returnedProposal.director,
-                plot: returnedProposal.plot,
-                imdbRating: returnedProposal.imdb_rating,
-                imdbId: returnedProposal.imdb_id
-              };
-              setMovieRatings(prev => prev.map(m => m.movieTitle === movieTitle ? { ...m, details } : m));
-            } else if (existingId) {
-              const { data: found, error: findErr } = await supabase.from('movie_proposals').select('*').eq('id', existingId).maybeSingle();
-              if (!findErr && found) {
-                const details = {
-                  poster: found.poster,
-                  genre: found.genre,
-                  runtime: found.runtime,
-                  year: found.year,
-                  director: found.director,
-                  plot: found.plot,
-                  imdbRating: found.imdb_rating,
-                  imdbId: found.imdb_id
-                };
-                setMovieRatings(prev => prev.map(m => m.movieTitle === movieTitle ? { ...m, details } : m));
-              }
-            }
-          } catch (err) {
-            console.error('Failed to propose movie with details for', movieTitle, err);
-          }
-        });
-      }
+      
+      // Update presence status
+      const { error } = await supabase
+        .from('session_people')
+        .update({ is_present: updatedPerson.isPresent })
+        .eq('id', updatedPerson.id);
+        
+      if (error) throw error;
+      
+      // Handle movie proposals separately
+      await updatePersonMovies(updatedPerson);
+      
     } catch (err) {
       console.error('Error updating person:', err);
-      await loadSessionData(sessionId!);
-      toast({ title: "Error", description: "Failed to update person. Please try again.", variant: "destructive" });
+      // Rollback optimistic update
+      setPeople(prev => prev.map(p => 
+        p.id === updatedPerson.id 
+          ? people.find(original => original.id === updatedPerson.id) || p
+          : p
+      ));
+      toast({
+        title: "Error",
+        description: "Failed to update person. Please try again.",
+        variant: "destructive"
+      });
     }
+  };
+
+  const updatePersonMovies = async (person: Person) => {
+    if (!sessionId) return;
+    
+    // Get current proposals for this person
+    const { data: currentProposals } = await supabase
+      .from('movie_proposals')
+      .select('movie_title, id')
+      .eq('person_id', person.id);
+      
+    const currentMovies = currentProposals?.map(p => p.movie_title) || [];
+    const moviesToAdd = person.movies.filter(m => !currentMovies.includes(m));
+    const moviesToRemove = currentMovies.filter(m => !person.movies.includes(m));
+
+    // Remove proposals
+    if (moviesToRemove.length > 0) {
+      const proposalIds = currentProposals!
+        .filter(p => moviesToRemove.includes(p.movie_title))
+        .map(p => p.id);
+
+      await supabase.from('movie_proposals').delete().in('id', proposalIds);
+      setMovieRatings(prev => prev.filter(m => !moviesToRemove.includes(m.movieTitle)));
+    }
+
+    // Add new proposals
+    if (moviesToAdd.length > 0) {
+      // Optimistic UI update
+      const optimisticMovies = moviesToAdd.map(movieTitle => ({
+        movieTitle,
+        proposedBy: person.name,
+        ratings: {},
+        proposerId: person.id
+      }));
+      setMovieRatings(prev => [...prev, ...optimisticMovies]);
+
+      // Fetch details in background using edge function
+      // Process sequentially to avoid rate limits and race conditions
+      for (const movieTitle of moviesToAdd) {
+        try {
+          const { data, error } = await supabase.functions.invoke('propose-movie-with-details', {
+            body: { sessionId, personId: person.id, movieTitle }
+          });
+
+          if (error) {
+            console.error(`Edge function error for "${movieTitle}":`, error);
+            continue;
+          }
+
+          const proposal = data?.proposal;
+          const existingId = data?.proposalId;
+
+          // Update with fetched details
+          if (proposal || existingId) {
+            const details = proposal ? {
+              poster: proposal.poster,
+              genre: proposal.genre,
+              runtime: proposal.runtime,
+              year: proposal.year,
+              director: proposal.director,
+              plot: proposal.plot,
+              imdbRating: proposal.imdb_rating,
+              imdbId: proposal.imdb_id
+            } : await fetchExistingProposalDetails(existingId);
+
+            setMovieRatings(prev => prev.map(m => 
+              m.movieTitle === movieTitle 
+                ? { 
+                    ...m, 
+                    details,
+                    proposalId: proposal?.id || existingId,
+                    proposerId: person.id
+                  }
+                : m
+            ));
+          }
+        } catch (err) {
+          console.error(`Failed to fetch details for "${movieTitle}":`, err);
+          // Movie still appears, just without details
+        }
+      }
+    }
+  };
+
+  const fetchExistingProposalDetails = async (proposalId: string): Promise<MovieDetails | undefined> => {
+    const { data, error } = await supabase
+      .from('movie_proposals')
+      .select('*')
+      .eq('id', proposalId)
+      .single();
+
+    if (error || !data) return undefined;
+
+    return {
+      poster: data.poster,
+      genre: data.genre,
+      runtime: data.runtime,
+      year: data.year,
+      director: data.director,
+      plot: data.plot,
+      imdbRating: data.imdb_rating,
+      imdbId: data.imdb_id
+    };
   };
 
   const deletePerson = async (id: string) => {
     const person = people.find(p => p.id === id);
     if (!person) return;
-    if (!window.confirm(`Are you sure you want to remove ${person.name}? This cannot be undone.`)) return;
+    
+    if (!window.confirm(`Are you sure you want to remove ${person.name}? This will also remove all their movie proposals and cannot be undone.`)) {
+      return;
+    }
+    
     try {
-      await supabase.from('session_people').delete().eq('id', id);
+      // Cascade delete is handled by DB foreign keys
+      const { error } = await supabase
+        .from('session_people')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      // Remove from local state
       setPeople(prev => prev.filter(p => p.id !== id));
-      await loadSessionData(sessionId!);
+      setMovieRatings(prev => prev.filter(m => m.proposerId !== id));
+      
     } catch (err) {
       console.error('Error deleting person:', err);
-      toast({ title: "Error", description: "Failed to remove person. Please try again.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to remove person. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
