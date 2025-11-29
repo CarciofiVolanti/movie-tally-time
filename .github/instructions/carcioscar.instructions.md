@@ -1,3 +1,6 @@
+---
+applyTo: '**.py'
+---
 ## General INFO
 - the project is a site to help users choose a movie to watch and keep track of movies they've watched
 - in the 'people' section people can suggest up to 3 movies they'd like to watch and mark themselves as present or not

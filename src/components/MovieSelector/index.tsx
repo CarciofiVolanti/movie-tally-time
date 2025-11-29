@@ -121,7 +121,6 @@ const MovieSelectorRoot = ({ onNavigateToWatched, onSessionLoad }: { onNavigateT
                 markMovieAsWatched={session.markMovieAsWatched}
                 collapsedMovies={session.collapsedMovies}
                 toggleCollapse={session.toggleCollapse}
-                onRealtimeRatingUpdate={session.handleRealtimeRatingUpdate}
               />
             </TabsContent>
 

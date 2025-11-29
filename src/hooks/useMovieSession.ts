@@ -675,23 +675,53 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     return () => { mounted = false; };
   }, [movieRatings]);
 
-  const handleRealtimeRatingUpdate = useCallback((proposalId: string, personId: string, rating: number | null) => {
-    setMovieRatings(prev => 
-      prev.map(movie => {
-        // Find movie by proposalId
-        if ((movie as any).proposalId === proposalId) {
-          const newRatings = { ...movie.ratings };
-          if (rating === null) {
-            delete newRatings[personId];
-          } else {
-            newRatings[personId] = rating;
-          }
-          return { ...movie, ratings: newRatings };
+  // Consolidated Realtime Subscription
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const channel = supabase
+      .channel(`session-ratings-${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'movie_ratings'
+        },
+        (payload) => {
+          const proposalId = payload.new?.proposal_id || payload.old?.proposal_id;
+          
+          setMovieRatings(currentRatings => {
+            // Check if this update is relevant to our current list of movies
+            const isRelevant = currentRatings.some(m => (m as any).proposalId === proposalId);
+            if (!isRelevant) return currentRatings;
+
+            return currentRatings.map(movie => {
+              if ((movie as any).proposalId === proposalId) {
+                const newRatings = { ...movie.ratings };
+                
+                if (payload.eventType === 'DELETE') {
+                  const { person_id } = payload.old;
+                  delete newRatings[person_id];
+                } else {
+                  // INSERT or UPDATE
+                  const { person_id, rating } = payload.new;
+                  newRatings[person_id] = rating;
+                }
+                
+                return { ...movie, ratings: newRatings };
+              }
+              return movie;
+            });
+          });
         }
-        return movie;
-      })
-    );
-  }, []);
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sessionId]);
 
   return {
     // state
@@ -725,8 +755,7 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     deletePerson,
     updateRating,
     markMovieAsWatched,
-    toggleCollapse,
-    handleRealtimeRatingUpdate
+    toggleCollapse
   };
 };
 
