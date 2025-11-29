@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getSelectedPersonForSession, setSelectedPersonForSession } from "@/lib/sessionCookies";
 import { Person, MovieRating, MovieDetails, MovieWithStats } from "@/types/session";
+import { transformPeopleData, transformRatingsData, sortMovieRatings } from "@/lib/sessionHelpers";
 
 // Hook responsibilities:
 // - Owns sessionId, people, movieRatings, selectedPersonId, loading, fetchingDetails, collapsedMovies
@@ -170,68 +171,6 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
       proposals: proposals || [],
       // Data is already joined, no need for separate queries
     };
-  };
-
-  // Pure transformation functions - easier to test & reason about
-  const transformPeopleData = (peopleData: any[], proposals: any[]): Person[] => {
-    return peopleData.map(person => ({
-      id: person.id,
-      name: person.name,
-      isPresent: person.is_present,
-      movies: proposals
-        .filter(p => p.person_id === person.id)
-        .map(p => p.movie_title)
-    }));
-  };
-
-  const transformRatingsData = (proposalsData: { proposals: any[] }, peopleData: any[]): MovieRating[] => {
-    return proposalsData.proposals.map(proposal => {
-      const proposer = peopleData.find(p => p.id === proposal.person_id);
-      
-      // Transform ratings array to object
-      const ratings: Record<string, number> = {};
-      (proposal.movie_ratings || []).forEach((r: any) => {
-        ratings[r.person_id] = r.rating;
-      });
-
-      // Extract comment (first one if multiple exist)
-      const commentRow = proposal.proposal_comments?.[0];
-
-      const details: MovieDetails | undefined = proposal.poster ? {
-        poster: proposal.poster,
-        genre: proposal.genre,
-        runtime: proposal.runtime,
-        year: proposal.year,
-        director: proposal.director,
-        plot: proposal.plot,
-        imdbRating: proposal.imdb_rating,
-        imdbId: proposal.imdb_id
-      } : undefined;
-
-      return {
-        movieTitle: proposal.movie_title,
-        proposedBy: proposer?.name || 'Unknown',
-        ratings,
-        details,
-        comment: commentRow?.comment,
-        proposalId: proposal.id, // Add here to avoid separate useEffect
-        proposerId: proposal.person_id
-      };
-    });
-  };
-
-  const sortMovieRatings = (ratings: MovieRating[], personId: string): MovieRating[] => {
-    if (!personId) {
-      return [...ratings].sort((a, b) => a.movieTitle.localeCompare(b.movieTitle));
-    }
-
-    return [...ratings].sort((a, b) => {
-      const aRated = a.ratings[personId] !== undefined && a.ratings[personId] > 0;
-      const bRated = b.ratings[personId] !== undefined && b.ratings[personId] > 0;
-      
-      if (aRated !== bRated) return aRated ? 1 : -1;
-      return a.movieTitle.localeCompare(b.movieTitle);
-    });
   };
 
   const fetchMovieDetails = async (movieTitle: string): Promise<MovieDetails | undefined> => {
@@ -415,50 +354,75 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
       setMovieRatings(prev => [...prev, ...optimisticMovies]);
 
       // Fetch details in background using edge function
-      // Process sequentially to avoid rate limits and race conditions
-      for (const movieTitle of moviesToAdd) {
-        try {
-          const { data, error } = await supabase.functions.invoke('propose-movie-with-details', {
-            body: { sessionId, personId: person.id, movieTitle }
-          });
+      const results = await Promise.allSettled(
+        moviesToAdd.map(async (movieTitle) => {
+          try {
+            const { data, error } = await supabase.functions.invoke('propose-movie-with-details', {
+              body: { sessionId, personId: person.id, movieTitle }
+            });
 
-          if (error) {
-            console.error(`Edge function error for "${movieTitle}":`, error);
-            continue;
+            if (error) {
+              console.error(`Edge function error for "${movieTitle}":`, error);
+              throw new Error(`Edge function failed for "${movieTitle}"`); // Propagate error for Promise.allSettled
+            }
+
+            const proposal = data?.proposal;
+            const existingId = data?.proposalId;
+
+            let details = undefined;
+            if (proposal) {
+              details = {
+                poster: proposal.poster,
+                genre: proposal.genre,
+                runtime: proposal.runtime,
+                year: proposal.year,
+                director: proposal.director,
+                plot: proposal.plot,
+                imdbRating: proposal.imdb_rating,
+                imdbId: proposal.imdb_id
+              };
+            } else if (existingId) {
+              details = await fetchExistingProposalDetails(existingId);
+            }
+            
+            return { movieTitle, details, proposalId: proposal?.id || existingId };
+
+          } catch (err) {
+            console.error(`Failed to fetch details for "${movieTitle}":`, err);
+            throw err; // Propagate error
           }
+        })
+      );
 
-          const proposal = data?.proposal;
-          const existingId = data?.proposalId;
-
-          // Update with fetched details
-          if (proposal || existingId) {
-            const details = proposal ? {
-              poster: proposal.poster,
-              genre: proposal.genre,
-              runtime: proposal.runtime,
-              year: proposal.year,
-              director: proposal.director,
-              plot: proposal.plot,
-              imdbRating: proposal.imdb_rating,
-              imdbId: proposal.imdb_id
-            } : await fetchExistingProposalDetails(existingId);
-
-            setMovieRatings(prev => prev.map(m => 
+      setMovieRatings(prev => {
+        let updatedRatings = [...prev];
+        results.forEach(result => {
+          if (result.status === 'fulfilled') {
+            const { movieTitle, details, proposalId } = result.value;
+            updatedRatings = updatedRatings.map(m => 
               m.movieTitle === movieTitle 
                 ? { 
                     ...m, 
                     details,
-                    proposalId: proposal?.id || existingId,
-                    proposerId: person.id
+                    proposalId,
+                    proposerId: person.id // Ensure proposerId is set here too
                   }
                 : m
-            ));
+            );
+          } else {
+            // Handle rejected promises (e.g., remove from optimistic update or mark as failed)
+            // For now, if it failed, it means the proposal wasn't created, so we remove the optimistic entry.
+            const failedMovieTitle = (result.reason.message || '').replace('Edge function failed for "', '').replace('"', '');
+            updatedRatings = updatedRatings.filter(m => m.movieTitle !== failedMovieTitle);
+            toast({
+              title: "Error",
+              description: `Failed to add "${failedMovieTitle}". Please try again.`,
+              variant: "destructive"
+            });
           }
-        } catch (err) {
-          console.error(`Failed to fetch details for "${movieTitle}":`, err);
-          // Movie still appears, just without details
-        }
-      }
+        });
+        return updatedRatings;
+      });
     }
   };
 

@@ -6,7 +6,6 @@ import { StarRating } from "./StarRating";
 import { Film, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { MovieDetails, MovieRating, Person } from "@/types/session";
-import { supabase } from "@/integrations/supabase/client";
 
 
 interface MovieCardProps {
