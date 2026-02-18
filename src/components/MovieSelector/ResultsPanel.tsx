@@ -106,17 +106,12 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
                     const proposalId = (movie as any).proposalId ?? (movie as any).proposal_id ?? null;
                     const favPersonIds = proposalId ? favouritesByProposal[proposalId] ?? [] : [];
                     const absentFavNames = people.filter(p => !p.isPresent && favPersonIds.includes(p.id)).map(p => p.name);
-                    
-                    // debug: per-movie calculated values
-                    /* console.debug("[ResultsPanel] movie debug:", {
-                      title: movie.movieTitle,
-                      proposalId,
-                      favPersonIds,
-                      absentVoters,
-                      absentFavNames,
-                    }); */
+                    const notYetRated = presentPeople.filter(p => !(movie.ratings[p.id] > 0)).map(p => p.name);
 
                     const nodes: React.ReactNode[] = [];
+                    if (notYetRated.length > 0) {
+                      nodes.push(<p key="not-rated" className="text-yellow-600 font-medium mt-1">Waiting for: {notYetRated.join(", ")}</p>);
+                    }
                     if (absentVoters.length > 0) {
                       nodes.push(<p key="absent-1" className="text-green-600 font-medium mt-1">Rated 1 by absent: {absentVoters.join(", ")}</p>);
                     }
