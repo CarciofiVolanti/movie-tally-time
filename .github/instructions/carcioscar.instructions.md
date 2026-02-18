@@ -1,5 +1,5 @@
 ---
-applyTo: '**.py'
+applyTo: '{movie-tally-time/**.py, movie-tally-time/**.html, movie-tally-time/**.css, movie-tally-time/**.js, movie-tally-time/**.ts, movie-tally-time/**.md, movie-tally-time/**.json}'
 ---
 ## General INFO
 - the project is a site to help users choose a movie to watch and keep track of movies they've watched

@@ -17,7 +17,7 @@ export interface DetailedRating {
   id: string;
   watched_movie_id: string;
   person_id: string;
-  rating: number;
+  rating: number | null;
   present?: boolean;
 }
 

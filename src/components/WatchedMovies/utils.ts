@@ -7,7 +7,7 @@ export const getMovieRatings = (movieId: string, detailedRatings: DetailedRating
 export const getAverageRating = (movieId: string, detailedRatings: DetailedRating[]) => {
   const ratings = getMovieRatings(movieId, detailedRatings);
   if (ratings.length === 0) return 0;
-  return ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length;
+  return ratings.reduce((sum, r) => sum + (r.rating ?? 0), 0) / ratings.length;
 };
 
 export const getRatingForPerson = (movieId: string, personId: string, detailedRatings: DetailedRating[]) => {
@@ -123,16 +123,12 @@ export const getSortedFilteredMovies = (
         ? bDate - aDate
         : aDate - bDate;
     });
-  } else if (rateSortMode === "voted" || rateSortMode === "not-voted" || rateSortMode === "not-fully-rated") {
+  } else if (rateSortMode === "voted" || rateSortMode === "not-voted" || rateSortMode === "absent" || rateSortMode === "not-fully-rated") {
     movies.sort((a, b) => {
       const aDate = new Date(a.watched_at).getTime();
       const bDate = new Date(b.watched_at).getTime();
       return rateSortAsc ? aDate - bDate : bDate - aDate;
     });
-  }
-
-  if (rateSortAsc && (rateSortMode === "date-desc" || rateSortMode === "date-asc")) {
-    movies.reverse();
   }
 
   return movies;

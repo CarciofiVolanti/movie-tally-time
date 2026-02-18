@@ -287,28 +287,30 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
 
   const updatePerson = async (updatedPerson: Person) => {
     if (!sessionId) return;
-    
+
+    const originalPerson = people.find(p => p.id === updatedPerson.id);
+
     try {
       // Optimistic update
       setPeople(prev => prev.map(p => p.id === updatedPerson.id ? updatedPerson : p));
-      
+
       // Update presence status
       const { error } = await supabase
         .from('session_people')
         .update({ is_present: updatedPerson.isPresent })
         .eq('id', updatedPerson.id);
-        
+
       if (error) throw error;
-      
+
       // Handle movie proposals separately
       await updatePersonMovies(updatedPerson);
-      
+
     } catch (err) {
       console.error('Error updating person:', err);
       // Rollback optimistic update
-      setPeople(prev => prev.map(p => 
-        p.id === updatedPerson.id 
-          ? people.find(original => original.id === updatedPerson.id) || p
+      setPeople(prev => prev.map(p =>
+        p.id === updatedPerson.id
+          ? originalPerson || p
           : p
       ));
       toast({
@@ -344,11 +346,11 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
 
     // Add new proposals
     if (moviesToAdd.length > 0) {
-      // Optimistic UI update
+      // Optimistic UI update — proposer gets a default rating of 5
       const optimisticMovies = moviesToAdd.map(movieTitle => ({
         movieTitle,
         proposedBy: person.name,
-        ratings: {},
+        ratings: { [person.id]: 5 },
         proposerId: person.id
       }));
       setMovieRatings(prev => [...prev, ...optimisticMovies]);
@@ -384,8 +386,19 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
             } else if (existingId) {
               details = await fetchExistingProposalDetails(existingId);
             }
-            
-            return { movieTitle, details, proposalId: proposal?.id || existingId };
+
+            const proposalId = proposal?.id || existingId;
+
+            // Persist default rating of 5 for the proposer on new proposals
+            if (proposal?.id) {
+              await supabase.from('movie_ratings').upsert({
+                proposal_id: proposal.id,
+                person_id: person.id,
+                rating: 5,
+              }, { onConflict: 'proposal_id,person_id' });
+            }
+
+            return { movieTitle, details, proposalId };
 
           } catch (err) {
             console.error(`Failed to fetch details for "${movieTitle}":`, err);
@@ -587,7 +600,13 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     const validRatings = presentPeople.map(p => movie.ratings[p.id]).filter(r => typeof r === "number" && r > 0);
     const averageRating = validRatings.length > 0 ? validRatings.reduce((s, r) => s + r, 0) / validRatings.length : 0;
     return { ...movie, averageRating, totalRatings: validRatings.length };
-  }).filter(movie => presentPeople.some(p => p.movies.includes(movie.movieTitle))).sort((a, b) => b.averageRating - a.averageRating);
+  }).filter(movie => {
+    // Only show movies proposed by a present person
+    if (!presentPeople.some(p => p.movies.includes(movie.movieTitle))) return false;
+    // Require at least one vote from a present non-proposer so a lone default-5
+    // from the proposer doesn't inflate the ranking before anyone else has weighed in
+    return presentPeople.some(p => p.id !== (movie as any).proposerId && typeof movie.ratings[p.id] === "number" && movie.ratings[p.id] > 0);
+  }).sort((a, b) => b.averageRating - a.averageRating);
 
   // Attach proposalId / proposerId to movieRatings so UI can use stable identifiers
   useEffect(() => {
@@ -654,16 +673,23 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
         },
         (payload) => {
           const proposalId = payload.new?.proposal_id || payload.old?.proposal_id;
-          
+
           setMovieRatings(currentRatings => {
-            // Check if this update is relevant to our current list of movies
+            const hasProposalIds = currentRatings.some(m => (m as any).proposalId);
             const isRelevant = currentRatings.some(m => (m as any).proposalId === proposalId);
+
+            // If proposalIds haven't been attached yet, we can't match by ID.
+            // Return unchanged — this update is lost; it's a narrow race window
+            // between initial load and the proposals-attach effect completing.
+            if (!hasProposalIds) return currentRatings;
+
+            // proposalId not in our list — update belongs to a different session
             if (!isRelevant) return currentRatings;
 
             return currentRatings.map(movie => {
               if ((movie as any).proposalId === proposalId) {
                 const newRatings = { ...movie.ratings };
-                
+
                 if (payload.eventType === 'DELETE') {
                   const { person_id } = payload.old;
                   delete newRatings[person_id];
@@ -672,7 +698,7 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
                   const { person_id, rating } = payload.new;
                   newRatings[person_id] = rating;
                 }
-                
+
                 return { ...movie, ratings: newRatings };
               }
               return movie;

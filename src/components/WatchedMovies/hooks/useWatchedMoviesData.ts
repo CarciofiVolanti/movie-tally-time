@@ -74,19 +74,7 @@ export const useWatchedMoviesData = (sessionId: string): WatchedMoviesData & {
   }, [loadData]);
 
   useEffect(() => {
-    let mounted = true;
-
-    const loadDataWithMountCheck = async () => {
-      await loadData();
-      // Only update state if component is still mounted
-      if (!mounted) return;
-    };
-
-    loadDataWithMountCheck();
-
-    return () => {
-      mounted = false;
-    };
+    loadData();
   }, [loadData]);
 
   return {

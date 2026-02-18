@@ -39,10 +39,11 @@ const RatePanel = ({
   const selectedPersonName = presentPeople.find(p => p.id === selectedPersonId)?.name;
 
   const isOwnProposalFor = (movie: MovieRating) => {
-    const proposerNameMatch = selectedPersonName ? selectedPersonName === movie.proposedBy : false;
-    const proposerIdMatch = selectedPersonId && movie.proposedBy === selectedPersonId;
-    
-    return proposerNameMatch || Boolean(proposerIdMatch);
+    if (selectedPersonId && (movie as any).proposerId) {
+      return (movie as any).proposerId === selectedPersonId;
+    }
+    // Fallback to name comparison before proposerId is attached
+    return selectedPersonName ? selectedPersonName === movie.proposedBy : false;
   };
 
   const handleToggleCollapse = (title: string) => {

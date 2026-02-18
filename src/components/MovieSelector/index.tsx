@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Film, Trophy, Award } from "lucide-react";
 
-const MovieSelectorRoot = ({ onNavigateToWatched, onSessionLoad }: { onNavigateToWatched?: () => void; onSessionLoad?: (id: string) => void; }) => {
+const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => void }) => {
   const session = useMovieSession({ onSessionLoad });
   const [newSessionName, setNewSessionName] = useState("");
 
@@ -110,7 +110,7 @@ const MovieSelectorRoot = ({ onNavigateToWatched, onSessionLoad }: { onNavigateT
 
             <TabsContent value="rate">
               <RatePanel
-                movieRatings={session.movieRatings}
+                movieRatings={session.getSortedMovies()}
                 presentPeople={session.presentPeople}
                 selectedPersonId={session.selectedPersonId}
                 setSelectedPersonId={session.setSelectedPersonId}
