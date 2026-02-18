@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { MovieWithStats, Person } from "@/types/session";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,47 +14,35 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
 
   const [favouritesByProposal, setFavouritesByProposal] = useState<Record<string, string[]>>({});
 
-  const fetchFavourites = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from("favourite_movies" as any)
-        .select("person_id, proposal_id");
-      if (error) throw error;
-      const map: Record<string, string[]> = {};
-      (data || []).forEach((row: any) => {
-        if (!row?.proposal_id || !row?.person_id) return;
-        map[row.proposal_id] = map[row.proposal_id] || [];
-        map[row.proposal_id].push(row.person_id);
-      });
-      setFavouritesByProposal(map);
-    } catch (err) {
-      console.error("Failed to load favourites:", err);
-    }
-  }, []);
-
-  // Initial fetch
-  useEffect(() => { fetchFavourites(); }, [fetchFavourites]);
-
-  // Live updates for favourites
   useEffect(() => {
-    const channel = supabase
-      .channel('results-favourites')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'favourite_movies' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          const { proposal_id, person_id } = payload.new;
-          setFavouritesByProposal(prev => ({
-            ...prev,
-            [proposal_id]: [...(prev[proposal_id] ?? []), person_id],
-          }));
-        } else {
-          // For DELETE and UPDATE, payload.old only contains the PK, not proposal_id.
-          // Re-fetch the full map to stay correct.
-          fetchFavourites();
-        }
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [fetchFavourites]);
+    let mounted = true;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("favourite_movies" as any)
+          .select("person_id, proposal_id");
+        if (error) throw error;
+
+        // raw data fetched from DB (no logging)
+
+        if (!mounted) return;
+        const map: Record<string, string[]> = {};
+        (data || []).forEach((row: any) => {
+          if (!row || !row.proposal_id || !row.person_id) return;
+          map[row.proposal_id] = map[row.proposal_id] || [];
+          map[row.proposal_id].push(row.person_id);
+        });
+
+        // built map proposal_id => [person_id]
+ 
+        setFavouritesByProposal(map);
+      } catch (err) {
+        console.error("Failed to load favourites:", err);
+        setFavouritesByProposal({});
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   return (
     <>
