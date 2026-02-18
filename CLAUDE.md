@@ -40,7 +40,16 @@ React Query (`@tanstack/react-query`) is configured in `App.tsx` but data fetchi
 - `getSortedMovies()` — used in RatePanel; orders movies so the selected person's unrated movies appear first; does not compute averages; re-sorting is suppressed after each rating change via the `shouldSort` flag (reset when the selected person changes) to avoid jarring reorders mid-interaction.
 - `rankedMovies` — used in ResultsPanel; computes averages from present people's ratings only; sorts by average descending; filters to movies proposed by a present person **and** with at least one vote from a present non-proposer (prevents the proposer's default-5 from inflating the ranking before others have weighed in).
 
-**WatchedMovies has no real-time subscription.** Unlike the session view, `WatchedMovies` loads data once on mount and only refreshes via explicit `loadData()` calls (e.g. after adding a movie).
+**Session view real-time subscriptions** are all on a single channel (`session-${sessionId}`) in `useMovieSession.ts`:
+- `movie_ratings` — granular per-row updates (INSERT/UPDATE/DELETE → update rating in state)
+- `movie_proposals` filtered by `session_id` — INSERT adds the movie for all users; UPDATE propagates newly fetched OMDB details; DELETE removes a watched/deleted movie from all views
+- `session_people` UPDATE filtered by `session_id` — propagates presence toggle (`is_present`) to all users immediately
+
+**Favourites in ResultsPanel** have their own channel (`results-favourites`) subscribing to `favourite_movies`. INSERT is handled granularly; DELETE and UPDATE trigger a re-fetch since `payload.old` only contains the PK without `proposal_id` (Postgres default replica identity).
+
+**Watched Movies real-time subscriptions** are on channel `watched-movies-${sessionId}` in `useWatchedMoviesData.ts`:
+- `watched_movies` filtered by `session_id` — any change triggers a full `loadData()` reload (movies are added/removed infrequently and carry many metadata fields)
+- `detailed_ratings` — granular updates; INSERT/UPDATE are filtered client-side against `watchedMovieIdsRef` to ignore other sessions; DELETE uses the row `id` from `payload.old` (always present even without `REPLICA IDENTITY FULL`)
 
 **Optimistic updates** use a `temp-${Date.now()}` id for new `DetailedRating` entries. The temporary id is replaced only on the next `loadData()` call, not immediately after the upsert.
 
