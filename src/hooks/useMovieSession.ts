@@ -673,27 +673,30 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
 
       // ── movie_ratings: granular rating updates ──────────────────────────────
       .on('postgres_changes', { event: '*', schema: 'public', table: 'movie_ratings' }, (payload) => {
-        const proposalId = payload.new?.proposal_id || payload.old?.proposal_id;
+        const payloadProposalId = payload.new?.proposal_id || payload.old?.proposal_id;
+        const payloadPersonId = payload.new?.person_id || payload.old?.person_id;
+
+        if (!payloadProposalId || !payloadPersonId) return;
 
         setMovieRatings(currentRatings => {
-          const hasProposalIds = currentRatings.some(m => (m as any).proposalId);
-          const isRelevant = currentRatings.some(m => (m as any).proposalId === proposalId);
+          // Find the movie by comparing the payload's proposal_id to our local IDs
+          // We check both camelCase and snake_case property names for robustness
+          const movieToUpdate = currentRatings.find(m => {
+            const mId = (m as any).proposalId || (m as any).proposal_id;
+            return mId === payloadProposalId;
+          });
 
-          // If proposalIds haven't been attached yet, we can't match by ID.
-          // Return unchanged — this update is lost; it's a narrow race window
-          // between initial load and the proposals-attach effect completing.
-          if (!hasProposalIds) return currentRatings;
-
-          // proposalId not in our list — update belongs to a different session
-          if (!isRelevant) return currentRatings;
+          // If we can't find the movie by ID, it might be a race condition or a different session
+          if (!movieToUpdate) return currentRatings;
 
           return currentRatings.map(movie => {
-            if ((movie as any).proposalId === proposalId) {
+            const mId = (movie as any).proposalId || (movie as any).proposal_id;
+            if (mId === payloadProposalId) {
               const newRatings = { ...movie.ratings };
               if (payload.eventType === 'DELETE') {
-                delete newRatings[payload.old.person_id];
+                delete newRatings[payloadPersonId];
               } else {
-                newRatings[payload.new.person_id] = payload.new.rating;
+                newRatings[payloadPersonId] = payload.new.rating;
               }
               return { ...movie, ratings: newRatings };
             }
@@ -721,12 +724,15 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
           } : undefined;
 
           setMovieRatings(prev => {
-            // Already present by proposalId — our own optimistic entry got its id attached
-            if (prev.some(m => (m as any).proposalId === p.id)) return prev;
+            // Already present by ID — our own optimistic entry got its id attached
+            if (prev.some(m => {
+              const mId = (m as any).proposalId || (m as any).proposal_id;
+              return mId === p.id;
+            })) return prev;
             // Present by title without an id — attach it (own optimistic entry pre-id)
-            if (prev.some(m => m.movieTitle === p.movie_title && !(m as any).proposalId)) {
+            if (prev.some(m => m.movieTitle === p.movie_title && !((m as any).proposalId || (m as any).proposal_id))) {
               return prev.map(m =>
-                m.movieTitle === p.movie_title && !(m as any).proposalId
+                m.movieTitle === p.movie_title && !((m as any).proposalId || (m as any).proposal_id)
                   ? { ...m, proposalId: p.id, proposerId: p.person_id, details: details ?? m.details }
                   : m
               );
@@ -756,15 +762,19 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
             director: p.director, plot: p.plot, imdbRating: p.imdb_rating, imdbId: p.imdb_id,
           } : undefined;
           if (details) {
-            setMovieRatings(prev => prev.map(m =>
-              (m as any).proposalId === p.id ? { ...m, details } : m
-            ));
+            setMovieRatings(prev => prev.map(m => {
+              const mId = (m as any).proposalId || (m as any).proposal_id;
+              return mId === p.id ? { ...m, details } : m;
+            }));
           }
 
         } else if (payload.eventType === 'DELETE') {
           // Proposal deleted — movie was marked as watched (or removed)
           const { id: proposalId, movie_title: movieTitle, person_id: personId } = payload.old;
-          setMovieRatings(prev => prev.filter(m => (m as any).proposalId !== proposalId));
+          setMovieRatings(prev => prev.filter(m => {
+            const mId = (m as any).proposalId || (m as any).proposal_id;
+            return mId !== proposalId;
+          }));
           setPeople(prev => prev.map(p =>
             p.id === personId ? { ...p, movies: p.movies.filter(t => t !== movieTitle) } : p
           ));
