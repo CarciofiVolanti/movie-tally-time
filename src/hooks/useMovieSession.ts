@@ -801,12 +801,6 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     };
   }, [sessionId]);
 
-    return () => {
-      console.log("Removing consolidated real-time subscription");
-      supabase.removeChannel(channel);
-    };
-  }, [sessionId]);
-
   return {
     // state
     people,
