@@ -83,7 +83,7 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
             </div>
           </div>
 
-          <Tabs defaultValue="people" className="space-y-6" value={undefined as any}>
+          <Tabs defaultValue="people" className="space-y-6">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="people" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />

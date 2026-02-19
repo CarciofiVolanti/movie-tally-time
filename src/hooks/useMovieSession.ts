@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getSelectedPersonForSession, setSelectedPersonForSession } from "@/lib/sessionCookies";
@@ -24,6 +24,12 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
   const [currentView, setCurrentView] = useState<'session' | 'watched'>('session');
   // control whether getSortedMovies should re-order the list
   const [shouldSort, setShouldSort] = useState<boolean>(true);
+
+  // Keep a ref to people for use in real-time callbacks without triggering re-subscriptions
+  const peopleRef = useRef<Person[]>(people);
+  useEffect(() => {
+    peopleRef.current = people;
+  }, [people]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -602,10 +608,12 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     return { ...movie, averageRating, totalRatings: validRatings.length };
   }).filter(movie => {
     // Only show movies proposed by a present person
-    if (!presentPeople.some(p => p.movies.includes(movie.movieTitle))) return false;
+    const proposerId = (movie as any).proposerId || (movie as any).proposer_id;
+    if (!proposerId || !presentPeople.some(p => p.id === proposerId)) return false;
+
     // Require at least one vote from a present non-proposer so a lone default-5
     // from the proposer doesn't inflate the ranking before anyone else has weighed in
-    return presentPeople.some(p => p.id !== (movie as any).proposerId && typeof movie.ratings[p.id] === "number" && movie.ratings[p.id] > 0);
+    return presentPeople.some(p => p.id !== proposerId && typeof movie.ratings[p.id] === "number" && movie.ratings[p.id] > 0);
   }).sort((a, b) => b.averageRating - a.averageRating);
 
   // Attach proposalId / proposerId to movieRatings so UI can use stable identifiers
@@ -662,7 +670,9 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
   useEffect(() => {
     if (!sessionId) return;
 
-    const channel = supabase
+    console.log("Setting up real-time subscriptions for session:", sessionId);
+
+    const ratingsChannel = supabase
       .channel(`session-ratings-${sessionId}`)
       .on(
         'postgres_changes',
@@ -672,29 +682,37 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
           table: 'movie_ratings'
         },
         (payload) => {
+          console.log("Real-time rating update received:", payload);
           const proposalId = payload.new?.proposal_id || payload.old?.proposal_id;
 
           setMovieRatings(currentRatings => {
             const hasProposalIds = currentRatings.some(m => (m as any).proposalId);
             const isRelevant = currentRatings.some(m => (m as any).proposalId === proposalId);
 
-            // If proposalIds haven't been attached yet, we can't match by ID.
-            // Return unchanged — this update is lost; it's a narrow race window
-            // between initial load and the proposals-attach effect completing.
-            if (!hasProposalIds) return currentRatings;
+            if (!hasProposalIds) {
+              console.log("Ignoring rating update: proposalIds not yet attached to local state.");
+              return currentRatings;
+            }
 
-            // proposalId not in our list — update belongs to a different session
-            if (!isRelevant) return currentRatings;
+            if (!isRelevant) {
+              console.log(`Ignoring rating update: proposalId ${proposalId} not found in current session movies.`);
+              return currentRatings;
+            }
 
             return currentRatings.map(movie => {
               if ((movie as any).proposalId === proposalId) {
                 const newRatings = { ...movie.ratings };
 
                 if (payload.eventType === 'DELETE') {
-                  const { person_id } = payload.old;
-                  delete newRatings[person_id];
+                  // If person_id is missing in old payload, we might need to find it by value if we stored it,
+                  // but usually for DELETE it should be there if replica identity is set.
+                  const personId = payload.old.person_id;
+                  if (personId) {
+                    delete newRatings[personId];
+                  } else {
+                    console.warn("DELETE rating payload missing person_id. Cannot remove from local state.");
+                  }
                 } else {
-                  // INSERT or UPDATE
                   const { person_id, rating } = payload.new;
                   newRatings[person_id] = rating;
                 }
@@ -708,8 +726,124 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
       )
       .subscribe();
 
+    const peopleChannel = supabase
+      .channel(`session-people-${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'session_people',
+          filter: `session_id=eq.${sessionId}`
+        },
+        (payload) => {
+          console.log("Real-time people update received:", payload);
+          if (payload.eventType === 'INSERT') {
+            const newPerson = payload.new;
+            setPeople(prev => {
+              if (prev.some(p => p.id === newPerson.id)) return prev;
+              return [...prev, {
+                id: newPerson.id,
+                name: newPerson.name,
+                movies: [],
+                isPresent: newPerson.is_present
+              }];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedPerson = payload.new;
+            setPeople(prev => prev.map(p => 
+              p.id === updatedPerson.id 
+                ? { ...p, name: updatedPerson.name, isPresent: updatedPerson.is_present }
+                : p
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = payload.old.id;
+            setPeople(prev => prev.filter(p => p.id !== deletedId));
+          }
+        }
+      )
+      .subscribe();
+
+    const proposalsChannel = supabase
+      .channel(`session-proposals-${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'movie_proposals',
+          filter: `session_id=eq.${sessionId}`
+        },
+        (payload) => {
+          console.log("Real-time proposal update received:", payload);
+          if (payload.eventType === 'INSERT') {
+            const newProposal = payload.new;
+            
+            setMovieRatings(prev => {
+              if (prev.some(m => (m as any).proposalId === newProposal.id)) return prev;
+              
+              const proposer = peopleRef.current.find(p => p.id === newProposal.person_id);
+              
+              const newMovie: MovieRating = {
+                movieTitle: newProposal.movie_title,
+                proposedBy: proposer?.name || 'Unknown',
+                ratings: {},
+                proposalId: newProposal.id,
+                proposerId: newProposal.person_id,
+                details: newProposal.poster ? {
+                  poster: newProposal.poster,
+                  genre: newProposal.genre,
+                  runtime: newProposal.runtime,
+                  year: newProposal.year,
+                  director: newProposal.director,
+                  plot: newProposal.plot,
+                  imdbRating: newProposal.imdb_rating,
+                  imdbId: newProposal.imdb_id
+                } : undefined
+              };
+              
+              return [...prev, newMovie];
+            });
+
+            setPeople(prev => prev.map(p => 
+              p.id === newProposal.person_id 
+                ? { ...p, movies: Array.from(new Set([...p.movies, newProposal.movie_title])) }
+                : p
+            ));
+
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = payload.new;
+            setMovieRatings(prev => prev.map(m => 
+              (m as any).proposalId === updated.id 
+                ? { 
+                    ...m, 
+                    movieTitle: updated.movie_title,
+                    details: updated.poster ? {
+                      poster: updated.poster,
+                      genre: updated.genre,
+                      runtime: updated.runtime,
+                      year: updated.year,
+                      director: updated.director,
+                      plot: updated.plot,
+                      imdbRating: updated.imdb_rating,
+                      imdbId: updated.imdb_id
+                    } : m.details
+                  }
+                : m
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = payload.old.id;
+            setMovieRatings(prev => prev.filter(m => (m as any).proposalId !== deletedId));
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      console.log("Removing real-time subscriptions");
+      supabase.removeChannel(ratingsChannel);
+      supabase.removeChannel(peopleChannel);
+      supabase.removeChannel(proposalsChannel);
     };
   }, [sessionId]);
 
