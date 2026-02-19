@@ -20,6 +20,7 @@ const RatePanel = ({
   markMovieAsWatched,
   collapsedMovies,
   toggleCollapse,
+  setShouldSort,
 }: {
   movieRatings: MovieRating[];
   presentPeople: Person[];
@@ -32,6 +33,7 @@ const RatePanel = ({
   markMovieAsWatched: (title: string) => Promise<void>;
   collapsedMovies: Record<string, boolean>;
   toggleCollapse: (title: string) => void;
+  setShouldSort: (val: boolean) => void;
 }) => {
   const { favoriteProposalId, loading: favLoading, toggleFavourite } = useFavouriteMovie(selectedPersonId);
   const [localCollapsedOverrides, setLocalCollapsedOverrides] = useState<Record<string, boolean>>({});
@@ -86,6 +88,9 @@ const RatePanel = ({
               <span>Rate All Movies</span>
             </div>
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShouldSort(true)} className="text-xs">
+                <RefreshCw className="w-3 h-3 mr-1" /> Refresh Order
+              </Button>
               <Button variant="outline" size="sm" onClick={fetchAllMovieDetails} disabled={fetchingDetails || movieRatings.length === 0} className="text-xs">
                 {fetchingDetails ? <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-1" />} Update Details
               </Button>

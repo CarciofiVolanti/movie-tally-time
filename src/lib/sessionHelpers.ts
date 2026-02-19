@@ -48,22 +48,3 @@ export const transformRatingsData = (proposalsData: { proposals: any[] }, people
     };
   });
 };
-
-export const sortMovieRatings = (ratings: MovieRating[], personId: string): MovieRating[] => {
-  if (!personId) {
-    return [...ratings].sort((a, b) => a.movieTitle.localeCompare(b.movieTitle));
-  }
-
-  return [...ratings].sort((a, b) => {
-    const aRated = a.ratings[personId] !== undefined && a.ratings[personId] > 0;
-    const bRated = b.ratings[personId] !== undefined && b.ratings[personId] > 0;
-    
-    // Group: not-voted first, then voted
-    // If aRated is true (voted) and bRated is false (not voted) -> return 1 (put a after b)
-    // We want NOT VOTED first.
-    // Not Voted (false) < Voted (true)
-    
-    if (aRated !== bRated) return aRated ? 1 : -1;
-    return a.movieTitle.localeCompare(b.movieTitle);
-  });
-};

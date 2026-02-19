@@ -3,7 +3,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getSelectedPersonForSession, setSelectedPersonForSession } from "@/lib/sessionCookies";
 import { Person, MovieRating, MovieDetails, MovieWithStats } from "@/types/session";
-import { transformPeopleData, transformRatingsData, sortMovieRatings } from "@/lib/sessionHelpers";
+import { transformPeopleData, transformRatingsData } from "@/lib/sessionHelpers";
+
+// Internal sorting helper moved from sessionHelpers
+const sortRatings = (ratings: MovieRating[], personId: string): MovieRating[] => {
+  if (!personId) {
+    return [...ratings].sort((a, b) => a.movieTitle.localeCompare(b.movieTitle));
+  }
+
+  return [...ratings].sort((a, b) => {
+    const aRated = a.ratings[personId] !== undefined && a.ratings[personId] > 0;
+    const bRated = b.ratings[personId] !== undefined && b.ratings[personId] > 0;
+    if (aRated !== bRated) return aRated ? 1 : -1;
+    return a.movieTitle.localeCompare(b.movieTitle);
+  });
+};
 
 // Hook responsibilities:
 // - Owns sessionId, people, movieRatings, selectedPersonId, loading, fetchingDetails, collapsedMovies
@@ -57,6 +71,11 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     // selecting a different person should allow sorting logic to run
     setShouldSort(true);
     setSelectedPersonIdState(id);
+    
+    // Sort the actual state so that when shouldSort becomes false (after a rating), 
+    // the list doesn't "jump" back to a previous person's order.
+    setMovieRatings(prev => sortRatings(prev, id));
+    
     if (sessionId) setSelectedPersonForSession(sessionId, id);
   };
 
@@ -138,7 +157,7 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
       setPeople(transformedPeople);
       
       // Initial sort based on selected person (if any)
-      const sorted = sortMovieRatings(transformedRatings, savedPersonId || selectedPersonId);
+      const sorted = sortRatings(transformedRatings, savedPersonId || selectedPersonId);
       setMovieRatings(sorted);
       setShouldSort(true);
     } catch (err) {
@@ -582,22 +601,7 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
   const getSortedMovies = () => {
     // If sorting has been suppressed (e.g. user just rated a movie), return current order
     if (!shouldSort) return movieRatings;
-
-    if (!selectedPersonId) {
-      // No selected person → sort alphabetically
-      return [...movieRatings].sort((a, b) => a.movieTitle.localeCompare(b.movieTitle));
-    }
-
-    return [...movieRatings].sort((a, b) => {
-      const aRated = a.ratings[selectedPersonId] !== undefined && a.ratings[selectedPersonId] > 0;
-      const bRated = b.ratings[selectedPersonId] !== undefined && b.ratings[selectedPersonId] > 0;
-
-      // Group: not-voted first, then voted
-      if (aRated !== bRated) return aRated ? 1 : -1;
-
-      // Within the same group, sort alphabetically by title
-      return a.movieTitle.localeCompare(b.movieTitle);
-    });
+    return sortRatings(movieRatings, selectedPersonId);
   };
 
   const presentPeople = people.filter(p => p.isPresent);
@@ -837,6 +841,7 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     setCurrentView,
     setSelectedPersonId,
     setCollapsedMovies,
+    setShouldSort,
     // methods
     loadExistingSession,
     createNewSession,

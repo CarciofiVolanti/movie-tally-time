@@ -83,7 +83,11 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
             </div>
           </div>
 
-          <Tabs defaultValue="people" className="space-y-6">
+          <Tabs defaultValue="people" className="space-y-6" onValueChange={(value) => {
+            if (value === "rate") {
+              session.setShouldSort(true);
+            }
+          }}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="people" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
@@ -121,6 +125,7 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
                 markMovieAsWatched={session.markMovieAsWatched}
                 collapsedMovies={session.collapsedMovies}
                 toggleCollapse={session.toggleCollapse}
+                setShouldSort={session.setShouldSort}
               />
             </TabsContent>
 
