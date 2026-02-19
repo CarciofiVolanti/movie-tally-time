@@ -690,8 +690,9 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     const ratingsChannel = supabase
       .channel(`ratings-${sessionId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'movie_ratings' }, (payload) => {
-        console.log("Real-time: Rating event received", payload);
+        console.log("Real-time [Ratings] event:", payload.eventType, payload);
         const data = payload.new || payload.old;
+        if (!data) return;
         // Even if we don't have session_id in payload, we match by proposalId which is session-specific
         const proposalId = data.proposal_id;
 
@@ -720,9 +721,9 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     const peopleChannel = supabase
       .channel(`people-${sessionId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'session_people' }, (payload) => {
+        console.log("Real-time [People] event:", payload.eventType, payload);
         const data = payload.new || payload.old;
-        // Temporary: log all people events to see if any are arriving
-        console.log("Real-time: Person event received", payload.eventType, data);
+        if (!data) return;
         
         // Manual filter: only update if it belongs to our session
         if (data.session_id && data.session_id !== sessionId) return;
@@ -746,8 +747,9 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     const proposalsChannel = supabase
       .channel(`proposals-${sessionId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'movie_proposals' }, (payload) => {
+        console.log("Real-time [Proposals] event:", payload.eventType, payload);
         const data = payload.new || payload.old;
-        console.log("Real-time: Proposal event received", payload.eventType, data);
+        if (!data) return;
 
         if (data.session_id && data.session_id !== sessionId) return;
 
@@ -788,7 +790,20 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
                 } : m
           ));
         } else if (payload.eventType === 'DELETE') {
-          setMovieRatings(prev => prev.filter(m => (m as any).proposalId !== data.id));
+          const deletedId = payload.old.id;
+          
+          setMovieRatings(prev => {
+            const movieToDelete = prev.find(m => (m as any).proposalId === deletedId);
+            if (movieToDelete) {
+              const title = movieToDelete.movieTitle;
+              // Also clean up the people state's movies array
+              setPeople(peoplePrev => peoplePrev.map(p => ({
+                ...p,
+                movies: p.movies.filter(m => m !== title)
+              })));
+            }
+            return prev.filter(m => (m as any).proposalId !== deletedId);
+          });
         }
       })
       .subscribe(handleStatus('Proposals'));
