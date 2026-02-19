@@ -710,7 +710,10 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
         (payload) => {
           // Manual filter for session_id
           const data = payload.new || payload.old;
-          if (data.session_id !== sessionId) return;
+          if (data.session_id !== sessionId) {
+            console.log(`Ignoring people event: session_id mismatch. Expected ${sessionId}, got ${data.session_id}`);
+            return;
+          }
 
           console.log("Real-time people event:", payload.eventType, payload);
           if (payload.eventType === 'INSERT') {
@@ -742,7 +745,10 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
         (payload) => {
           // Manual filter for session_id
           const data = payload.new || payload.old;
-          if (data.session_id !== sessionId) return;
+          if (data.session_id !== sessionId) {
+            console.log(`Ignoring people event: session_id mismatch. Expected ${sessionId}, got ${data.session_id}`);
+            return;
+          }
 
           console.log("Real-time proposal event:", payload.eventType, payload);
           if (payload.eventType === 'INSERT') {
@@ -799,8 +805,9 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
           }
         }
       )
-      .subscribe((status) => {
-        console.log("Consolidated channel status:", status);
+      .subscribe((status, err) => {
+        console.log(`Consolidated channel status for session ${sessionId}:`, status);
+        if (err) console.error("Realtime subscription error:", err);
       });
 
     return () => {
