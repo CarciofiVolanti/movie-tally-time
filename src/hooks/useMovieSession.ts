@@ -759,6 +759,7 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
           } else if (payload.eventType === 'DELETE') {
             const deletedId = payload.old.id;
             setPeople(prev => prev.filter(p => p.id !== deletedId));
+            setMovieRatings(prev => prev.filter(m => (m as any).proposerId !== deletedId));
           }
         }
       )
