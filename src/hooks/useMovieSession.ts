@@ -666,149 +666,140 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     return () => { mounted = false; };
   }, [movieRatings]);
 
-  // Consolidated Realtime Subscription
+  // Detailed Realtime Subscriptions
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId) {
+      console.log("Real-time: No sessionId yet, skipping subscription.");
+      return;
+    }
 
-    console.log("Setting up consolidated real-time subscription for session:", sessionId);
+    console.log("Real-time: Setting up subscriptions for session:", sessionId);
 
-    const channel = supabase
-      .channel(`session-all-changes-${sessionId}`)
-      // 1. Ratings updates
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'movie_ratings' },
-        (payload) => {
-          console.log("Real-time rating event:", payload.eventType, payload);
-          const proposalId = payload.new?.proposal_id || payload.old?.proposal_id;
+    // Helper to log errors
+    const handleStatus = (name: string) => (status: string, err?: any) => {
+      console.log(`Real-time [${name}] status:`, status);
+      if (err) {
+        console.error(`Real-time [${name}] error detail:`, err);
+        // If it's a 'CHANNEL_ERROR', it might be due to project configuration
+        if (status === 'CHANNEL_ERROR') {
+          console.warn("Hint: Ensure 'Realtime' is enabled for your tables in Supabase and that you've run the 'alter publication' SQL.");
+        }
+      }
+    };
 
-          setMovieRatings(currentRatings => {
-            const isRelevant = currentRatings.some(m => (m as any).proposalId === proposalId);
-            if (!isRelevant) return currentRatings;
+    const ratingsChannel = supabase
+      .channel(`ratings-${sessionId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'movie_ratings' }, (payload) => {
+        console.log("Real-time: Rating event received", payload);
+        const data = payload.new || payload.old;
+        // Even if we don't have session_id in payload, we match by proposalId which is session-specific
+        const proposalId = data.proposal_id;
 
-            return currentRatings.map(movie => {
-              if ((movie as any).proposalId === proposalId) {
-                const newRatings = { ...movie.ratings };
-                if (payload.eventType === 'DELETE') {
-                  const personId = payload.old.person_id;
-                  if (personId) delete newRatings[personId];
-                } else {
-                  const { person_id, rating } = payload.new;
-                  newRatings[person_id] = rating;
-                }
-                return { ...movie, ratings: newRatings };
+        setMovieRatings(currentRatings => {
+          const isRelevant = currentRatings.some(m => (m as any).proposalId === proposalId);
+          if (!isRelevant) return currentRatings;
+
+          return currentRatings.map(movie => {
+            if ((movie as any).proposalId === proposalId) {
+              const newRatings = { ...movie.ratings };
+              if (payload.eventType === 'DELETE') {
+                const personId = payload.old.person_id;
+                if (personId) delete newRatings[personId];
+              } else {
+                const { person_id, rating } = payload.new;
+                newRatings[person_id] = rating;
               }
-              return movie;
-            });
+              return { ...movie, ratings: newRatings };
+            }
+            return movie;
           });
-        }
-      )
-      // 2. People updates
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'session_people' },
-        (payload) => {
-          // Manual filter for session_id
-          const data = payload.new || payload.old;
-          if (data.session_id !== sessionId) {
-            console.log(`Ignoring people event: session_id mismatch. Expected ${sessionId}, got ${data.session_id}`);
-            return;
-          }
+        });
+      })
+      .subscribe(handleStatus('Ratings'));
 
-          console.log("Real-time people event:", payload.eventType, payload);
-          if (payload.eventType === 'INSERT') {
-            setPeople(prev => {
-              if (prev.some(p => p.id === data.id)) return prev;
-              return [...prev, {
-                id: data.id,
-                name: data.name,
-                movies: [],
-                isPresent: data.is_present
-              }];
-            });
-          } else if (payload.eventType === 'UPDATE') {
-            setPeople(prev => prev.map(p => 
-              p.id === data.id 
-                ? { ...p, name: data.name, isPresent: data.is_present }
-                : p
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setPeople(prev => prev.filter(p => p.id !== data.id));
-            setMovieRatings(prev => prev.filter(m => (m as any).proposerId !== data.id));
-          }
-        }
-      )
-      // 3. Proposal updates
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'movie_proposals' },
-        (payload) => {
-          // Manual filter for session_id
-          const data = payload.new || payload.old;
-          if (data.session_id !== sessionId) {
-            console.log(`Ignoring people event: session_id mismatch. Expected ${sessionId}, got ${data.session_id}`);
-            return;
-          }
+    const peopleChannel = supabase
+      .channel(`people-${sessionId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_people' }, (payload) => {
+        const data = payload.new || payload.old;
+        // Temporary: log all people events to see if any are arriving
+        console.log("Real-time: Person event received", payload.eventType, data);
+        
+        // Manual filter: only update if it belongs to our session
+        if (data.session_id && data.session_id !== sessionId) return;
 
-          console.log("Real-time proposal event:", payload.eventType, payload);
-          if (payload.eventType === 'INSERT') {
-            setMovieRatings(prev => {
-              if (prev.some(m => (m as any).proposalId === data.id)) return prev;
-              
-              const proposer = peopleRef.current.find(p => p.id === data.person_id);
-              const newMovie: MovieRating = {
-                movieTitle: data.movie_title,
-                proposedBy: proposer?.name || 'Unknown',
-                ratings: {},
-                proposalId: data.id,
-                proposerId: data.person_id,
-                details: data.poster ? {
-                  poster: data.poster,
-                  genre: data.genre,
-                  runtime: data.runtime,
-                  year: data.year,
-                  director: data.director,
-                  plot: data.plot,
-                  imdbRating: data.imdb_rating,
-                  imdbId: data.imdb_id
-                } : undefined
-              };
-              return [...prev, newMovie];
-            });
-
-            setPeople(prev => prev.map(p => 
-              p.id === data.person_id 
-                ? { ...p, movies: Array.from(new Set([...p.movies, data.movie_title])) }
-                : p
-            ));
-          } else if (payload.eventType === 'UPDATE') {
-            setMovieRatings(prev => prev.map(m => 
-              (m as any).proposalId === data.id 
-                ? { 
-                    ...m, 
-                    movieTitle: data.movie_title,
-                    details: data.poster ? {
-                      poster: data.poster,
-                      genre: data.genre,
-                      runtime: data.runtime,
-                      year: data.year,
-                      director: data.director,
-                      plot: data.plot,
-                      imdbRating: data.imdb_rating,
-                      imdbId: data.imdb_id
-                    } : m.details
-                  }
-                : m
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setMovieRatings(prev => prev.filter(m => (m as any).proposalId !== data.id));
-          }
+        if (payload.eventType === 'INSERT') {
+          setPeople(prev => {
+            if (prev.some(p => p.id === data.id)) return prev;
+            return [...prev, { id: data.id, name: data.name, movies: [], isPresent: data.is_present }];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          setPeople(prev => prev.map(p => 
+            p.id === data.id ? { ...p, name: data.name, isPresent: data.is_present } : p
+          ));
+        } else if (payload.eventType === 'DELETE') {
+          setPeople(prev => prev.filter(p => p.id !== data.id));
+          setMovieRatings(prev => prev.filter(m => (m as any).proposerId !== data.id));
         }
-      )
-      .subscribe((status, err) => {
-        console.log(`Consolidated channel status for session ${sessionId}:`, status);
-        if (err) console.error("Realtime subscription error:", err);
-      });
+      })
+      .subscribe(handleStatus('People'));
+
+    const proposalsChannel = supabase
+      .channel(`proposals-${sessionId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'movie_proposals' }, (payload) => {
+        const data = payload.new || payload.old;
+        console.log("Real-time: Proposal event received", payload.eventType, data);
+
+        if (data.session_id && data.session_id !== sessionId) return;
+
+        if (payload.eventType === 'INSERT') {
+          setMovieRatings(prev => {
+            if (prev.some(m => (m as any).proposalId === data.id)) return prev;
+            const proposer = peopleRef.current.find(p => p.id === data.person_id);
+            const newMovie: MovieRating = {
+              movieTitle: data.movie_title,
+              proposedBy: proposer?.name || 'Unknown',
+              ratings: {},
+              proposalId: data.id,
+              proposerId: data.person_id,
+              details: data.poster ? {
+                poster: data.poster, genre: data.genre, runtime: data.runtime, 
+                year: data.year, director: data.director, plot: data.plot, 
+                imdbRating: data.imdb_rating, imdbId: data.imdb_id
+              } : undefined
+            };
+            return [...prev, newMovie];
+          });
+          setPeople(prev => prev.map(p => 
+            p.id === data.person_id 
+              ? { ...p, movies: Array.from(new Set([...p.movies, data.movie_title])) }
+              : p
+          ));
+        } else if (payload.eventType === 'UPDATE') {
+          setMovieRatings(prev => prev.map(m => 
+            (m as any).proposalId === data.id 
+              ? { 
+                  ...m, 
+                  movieTitle: data.movie_title,
+                  details: data.poster ? {
+                    poster: data.poster, genre: data.genre, runtime: data.runtime, 
+                    year: data.year, director: data.director, plot: data.plot, 
+                    imdbRating: data.imdb_rating, imdbId: data.imdb_id
+                  } : m.details
+                } : m
+          ));
+        } else if (payload.eventType === 'DELETE') {
+          setMovieRatings(prev => prev.filter(m => (m as any).proposalId !== data.id));
+        }
+      })
+      .subscribe(handleStatus('Proposals'));
+
+    return () => {
+      console.log("Real-time: Cleaning up subscriptions for", sessionId);
+      supabase.removeChannel(ratingsChannel);
+      supabase.removeChannel(peopleChannel);
+      supabase.removeChannel(proposalsChannel);
+    };
+  }, [sessionId]);
 
     return () => {
       console.log("Removing consolidated real-time subscription");
