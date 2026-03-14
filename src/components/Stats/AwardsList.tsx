@@ -33,7 +33,7 @@ export const AwardsList = ({ awards, expandedId, onToggleExpand }: AwardsListPro
     },
     {
       id: "tastemaker",
-      title: "The Tastemaker",
+      title: "Giuro che è bello",
       description: "Highest avg rating for their proposals",
       icon: Star,
       data: awards.tastemaker,
@@ -42,7 +42,7 @@ export const AwardsList = ({ awards, expandedId, onToggleExpand }: AwardsListPro
     },
     {
       id: "easyPleaser",
-      title: "The Easy Pleaser",
+      title: "E questo non è da paraculo",
       description: "Highest average ratings given",
       icon: Smile,
       data: awards.easyPleaser,
@@ -51,7 +51,7 @@ export const AwardsList = ({ awards, expandedId, onToggleExpand }: AwardsListPro
     },
     {
       id: "harshestCritic",
-      title: "The Harshest Critic",
+      title: "Il professorone",
       description: "Lowest average ratings given",
       icon: Frown,
       data: awards.harshestCritic,

@@ -24,7 +24,7 @@ export const AnticipationAwards = ({ stats, expandedId, onToggleExpand }: Antici
   const anticipationItems = [
     {
       id: "hypeMan",
-      title: "The Hype Man",
+      title: "Premio essere Ste",
       description: "Highest average pre-watch ratings",
       icon: Flame,
       data: stats.hypeMan,
@@ -33,7 +33,7 @@ export const AnticipationAwards = ({ stats, expandedId, onToggleExpand }: Antici
     },
     {
       id: "skeptic",
-      title: "The Skeptic",
+      title: "Sisi gli ho messo 5 stelle",
       description: "Lowest average pre-watch ratings",
       icon: Glasses,
       data: stats.skeptic,
@@ -42,7 +42,7 @@ export const AnticipationAwards = ({ stats, expandedId, onToggleExpand }: Antici
     },
     {
       id: "mostAnticipated",
-      title: "Most Anticipated Ever",
+      title: "Stasera Prisoners?",
       description: "Highest average hype for a movie",
       icon: Sparkles,
       data: stats.mostAnticipated,

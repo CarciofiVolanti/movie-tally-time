@@ -23,7 +23,7 @@ export const SynergyAwards = ({ stats, expandedId, onToggleExpand }: SynergyAwar
   const synergyItems = [
     {
       id: "perfectMatch",
-      title: "The Perfect Match",
+      title: "Notice me",
       description: "Rater who loves Proposer's ideas",
       icon: Heart,
       data: stats.perfectMatch,
@@ -32,7 +32,7 @@ export const SynergyAwards = ({ stats, expandedId, onToggleExpand }: SynergyAwar
     },
     {
       id: "soulmates",
-      title: "Taste Soulmates",
+      title: "Tu quanto hai messo?",
       description: "Closest average ratings",
       icon: Zap,
       data: stats.soulmates,
@@ -41,7 +41,7 @@ export const SynergyAwards = ({ stats, expandedId, onToggleExpand }: SynergyAwar
     },
     {
       id: "polarOpposites",
-      title: "Polar Opposites",
+      title: "Divergenze inconciliabili",
       description: "Most different average ratings",
       icon: Split,
       data: stats.polarOpposites,
