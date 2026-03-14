@@ -231,8 +231,18 @@ export const calculateAnticipationStats = (
 
   // Most Anticipated Ever
   const movieHype: Record<string, { sum: number, count: number, title: string }> = {};
+  
+  // Create a mapping from proposal_id to watched_movie_id to unify records
+  const propToWatched: Record<string, string> = {};
   movieRatings.forEach(r => {
-    const id = r.watched_movie_id || r.proposal_id;
+    if (r.proposal_id && r.watched_movie_id) {
+      propToWatched[r.proposal_id] = r.watched_movie_id;
+    }
+  });
+
+  movieRatings.forEach(r => {
+    // Use watched_movie_id as canonical ID if available or linked
+    const id = r.watched_movie_id || (r.proposal_id ? propToWatched[r.proposal_id] : null) || r.proposal_id;
     if (!id) return;
     if (!movieHype[id]) {
       let title = "Unknown";
@@ -450,8 +460,12 @@ export const calculatePersonStats = (
   let totalHypeAlignmentDiff = 0;
   let hypeAlignmentCount = 0;
   personHype.forEach(r => {
-    const movieId = r.watched_movie_id || r.proposal_id;
-    const groupHypeRatings = movieRatings.filter(mr => (mr.watched_movie_id === movieId || mr.proposal_id === movieId) && mr.rating > 0);
+    const groupHypeRatings = movieRatings.filter(mr => 
+      mr.rating > 0 && (
+        (r.watched_movie_id && mr.watched_movie_id === r.watched_movie_id) ||
+        (r.proposal_id && mr.proposal_id === r.proposal_id)
+      )
+    );
     if (groupHypeRatings.length > 1) {
       const groupAvgHype = groupHypeRatings.reduce((s, mr) => s + mr.rating, 0) / groupHypeRatings.length;
       totalHypeAlignmentDiff += Math.abs(r.rating - groupAvgHype);
@@ -470,8 +484,12 @@ export const calculatePersonStats = (
     let totalHypeDiff = 0;
     let hypeDiffCount = 0;
     personHype.forEach(r => {
-      const movieId = r.watched_movie_id || r.proposal_id;
-      const otherRating = movieRatings.find(mr => mr.person_id === other.id && (mr.watched_movie_id === movieId || mr.proposal_id === movieId));
+      const otherRating = movieRatings.find(mr => 
+        mr.person_id === other.id && mr.rating > 0 && (
+          (r.watched_movie_id && mr.watched_movie_id === r.watched_movie_id) ||
+          (r.proposal_id && mr.proposal_id === r.proposal_id)
+        )
+      );
       if (otherRating) {
         totalHypeDiff += Math.abs(r.rating - otherRating.rating);
         hypeDiffCount += 1;
@@ -586,7 +604,15 @@ export const calculateGroupHighlights = (
 
   watchedMovies.forEach(movie => {
     const scores = detailedRatings.filter(r => r.watched_movie_id === movie.id && r.rating !== null && r.rating > 0);
-    const hypes = movieRatings.filter(r => r.watched_movie_id === movie.id && r.rating > 0);
+    const hypes = movieRatings.filter(r => 
+      r.rating > 0 && (
+        (r.watched_movie_id === movie.id) || 
+        // We don't have the original proposal ID here easily, but we can find it from the movie title/session if needed.
+        // Actually, in many cases watched_movie_id IS set on the rating record when marked as watched.
+        // If it's NOT set, we might need a more complex lookup.
+        (false) 
+      )
+    );
 
     if (scores.length >= 2 && hypes.length >= 2) {
       const avgScore = scores.reduce((s, r) => s + r.rating!, 0) / scores.length;

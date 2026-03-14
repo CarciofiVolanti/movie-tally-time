@@ -203,7 +203,7 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-3 italic">Total opposites. If you love it, they probably hate it!</p>
+                  <p className="text-xs text-muted-foreground mt-3 italic">Total opposites.</p>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground italic">Not enough comparisons yet.</p>
