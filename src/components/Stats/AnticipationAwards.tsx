@@ -65,10 +65,8 @@ export const AnticipationAwards = ({ stats, expandedId, onToggleExpand }: Antici
             const list = item.data;
             
             // Logic for winner and others based on category
-            const winner = item.id === "skeptic" ? list[list.length - 1] : list[0];
-            const othersFull = item.id === "skeptic" 
-              ? [...list].reverse().slice(1) 
-              : list.slice(1);
+            const winner = list[0];
+            const othersFull = list.slice(1);
             
             // Cap at 15 items total
             const others = othersFull.slice(0, 14);
