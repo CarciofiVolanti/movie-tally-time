@@ -4,18 +4,19 @@ import { useToast } from "@/hooks/use-toast";
 import { getSelectedPersonForSession, setSelectedPersonForSession } from "@/lib/sessionCookies";
 import { Person, MovieRating, MovieDetails, MovieWithStats } from "@/types/session";
 import { transformPeopleData, transformRatingsData } from "@/lib/sessionHelpers";
+import { normalizeTitle } from "@/lib/utils";
 
 // Internal sorting helper moved from sessionHelpers
 const sortRatings = (ratings: MovieRating[], personId: string): MovieRating[] => {
   if (!personId) {
-    return [...ratings].sort((a, b) => a.movieTitle.localeCompare(b.movieTitle));
+    return [...ratings].sort((a, b) => normalizeTitle(a.movieTitle).localeCompare(normalizeTitle(b.movieTitle)));
   }
 
   return [...ratings].sort((a, b) => {
     const aRated = a.ratings[personId] !== undefined && a.ratings[personId] > 0;
     const bRated = b.ratings[personId] !== undefined && b.ratings[personId] > 0;
     if (aRated !== bRated) return aRated ? 1 : -1;
-    return a.movieTitle.localeCompare(b.movieTitle);
+    return normalizeTitle(a.movieTitle).localeCompare(normalizeTitle(b.movieTitle));
   });
 };
 
@@ -618,7 +619,12 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     // Require at least one vote from a present non-proposer so a lone default-5
     // from the proposer doesn't inflate the ranking before anyone else has weighed in
     return presentPeople.some(p => p.id !== proposerId && typeof movie.ratings[p.id] === "number" && movie.ratings[p.id] > 0);
-  }).sort((a, b) => b.averageRating - a.averageRating);
+  }).sort((a, b) => {
+    if (b.averageRating !== a.averageRating) {
+      return b.averageRating - a.averageRating;
+    }
+    return normalizeTitle(a.movieTitle).localeCompare(normalizeTitle(b.movieTitle));
+  });
 
   // Attach proposalId / proposerId to movieRatings so UI can use stable identifiers
   useEffect(() => {

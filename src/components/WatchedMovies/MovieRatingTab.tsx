@@ -53,6 +53,7 @@ const MovieRatingTab = ({
           >
             <option value="date-desc">Date (Newest)</option>
             <option value="date-asc">Date (Oldest)</option>
+            <option value="title">Title</option>
             {selectedPersonId && <option value="voted">Voted (Selected Person)</option>}
             {selectedPersonId && <option value="not-voted">Not Voted (Selected Person)</option>}
             {selectedPersonId && <option value="absent">Absent (Selected Person)</option>}

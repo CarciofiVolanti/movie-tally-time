@@ -1,4 +1,5 @@
 import type { WatchedMovie, DetailedRating, Person, RateSortMode } from "./types";
+import { normalizeTitle } from "@/lib/utils";
 
 export const getMovieRatings = (movieId: string, detailedRatings: DetailedRating[]) => {
   return detailedRatings.filter(r => r.watched_movie_id === movieId && r.rating !== null);
@@ -119,15 +120,24 @@ export const getSortedFilteredMovies = (
     movies.sort((a, b) => {
       const aDate = new Date(a.watched_at).getTime();
       const bDate = new Date(b.watched_at).getTime();
-      return rateSortMode === "date-desc"
-        ? bDate - aDate
-        : aDate - bDate;
+      const comparison = bDate - aDate;
+      if (comparison !== 0) return rateSortMode === "date-desc" ? comparison : -comparison;
+      // Tie-breaker: title
+      return normalizeTitle(a.movie_title).localeCompare(normalizeTitle(b.movie_title));
+    });
+  } else if (rateSortMode === "title") {
+    movies.sort((a, b) => {
+      const comparison = normalizeTitle(a.movie_title).localeCompare(normalizeTitle(b.movie_title));
+      return rateSortAsc ? -comparison : comparison;
     });
   } else if (rateSortMode === "voted" || rateSortMode === "not-voted" || rateSortMode === "absent" || rateSortMode === "not-fully-rated") {
     movies.sort((a, b) => {
       const aDate = new Date(a.watched_at).getTime();
       const bDate = new Date(b.watched_at).getTime();
-      return rateSortAsc ? aDate - bDate : bDate - aDate;
+      const comparison = bDate - aDate;
+      if (comparison !== 0) return rateSortAsc ? -comparison : comparison;
+      // Tie-breaker: title
+      return normalizeTitle(a.movie_title).localeCompare(normalizeTitle(b.movie_title));
     });
   }
 

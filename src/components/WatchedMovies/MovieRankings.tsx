@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight, Star, Film } from "lucide-react";
 import { getAverageRating, getAllVoters, formatWatchDate } from "./utils";
 import type { WatchedMoviesData } from "./types";
+import { normalizeTitle } from "@/lib/utils";
 
 const MovieRankings = ({ watchedMovies, detailedRatings, people }: WatchedMoviesData) => {
   const [collapsedMovies, setCollapsedMovies] = useState<Record<string, boolean>>({});
@@ -41,7 +42,14 @@ const MovieRankings = ({ watchedMovies, detailedRatings, people }: WatchedMovies
   }
 
   const sortedMovies = [...watchedMovies]
-    .sort((a, b) => getAverageRating(b.id, detailedRatings) - getAverageRating(a.id, detailedRatings));
+    .sort((a, b) => {
+      const ratingA = getAverageRating(a.id, detailedRatings);
+      const ratingB = getAverageRating(b.id, detailedRatings);
+      if (ratingB !== ratingA) {
+        return ratingB - ratingA;
+      }
+      return normalizeTitle(a.movie_title).localeCompare(normalizeTitle(b.movie_title));
+    });
 
   return (
     <>

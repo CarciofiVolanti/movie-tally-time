@@ -22,6 +22,8 @@ npm run test      # Run all tests (Vitest)
 npx vitest run src/lib/__tests__/sessionHelpers.test.ts  # Run a single test file
 ```
 
+if you find that some information should be added to this file to help future interactions, notify the user and ask if you should add it to the file. This could include new guidelines, clarifications on existing guidelines, or notes about specific scripts.
+
 ## Architecture
 
 ### State Management

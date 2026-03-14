@@ -1,4 +1,4 @@
-import { cn } from '../utils';
+import { cn, normalizeTitle } from '../utils';
 import { describe, it, expect } from 'vitest';
 
 describe('cn utility', () => {
@@ -15,13 +15,28 @@ describe('cn utility', () => {
   });
 
   // Test that Tailwind conflicts are resolved correctly (using tailwind-merge logic)
-  // This ensures we don't have CSS specificity issues in our components
   it('merges tailwind classes properly (overriding)', () => {
-    // twMerge should handle conflict resolution (p-4 overrides px-2 py-2)
-    // actually, p-4 is padding all sides. px-2 is x-axis.
-    // usually later classes override. But twMerge is smart.
-    // Let's test a clear conflict: bg-red-500 vs bg-blue-500
     const result = cn('bg-red-500', 'bg-blue-500');
     expect(result).toBe('bg-blue-500');
+  });
+});
+
+describe('normalizeTitle', () => {
+  it('removes leading "The " (case-insensitive)', () => {
+    expect(normalizeTitle('The Matrix')).toBe('Matrix');
+    expect(normalizeTitle('the matrix')).toBe('matrix');
+    expect(normalizeTitle('THE MATRIX')).toBe('MATRIX');
+  });
+
+  it('does not remove "The" if it is part of a word', () => {
+    expect(normalizeTitle('There Will Be Blood')).toBe('There Will Be Blood');
+  });
+
+  it('handles titles without "The"', () => {
+    expect(normalizeTitle('Inception')).toBe('Inception');
+  });
+
+  it('removes extra spaces if needed after the', () => {
+    expect(normalizeTitle('The  Godfather')).toBe('Godfather');
   });
 });

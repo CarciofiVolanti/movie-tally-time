@@ -41,7 +41,7 @@ export interface WatchedMoviesData {
   loadData: () => Promise<void>;
 }
 
-export type RateSortMode = "date-desc" | "date-asc" | "voted" | "not-voted" | "absent" | "not-fully-rated";
+export type RateSortMode = "date-desc" | "date-asc" | "voted" | "not-voted" | "absent" | "not-fully-rated" | "title";
 
 export interface MovieSearchResult {
   title: string;
