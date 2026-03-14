@@ -9,6 +9,7 @@ The app is named **CarciOscar**. It's a mobile-first web app for groups to colla
 - **Rate Movies** section: present members rate proposed movies 1–5 stars (how much they want to watch)
 - **Results** section: movies ranked by average score from present voters; pick one to watch
 - **Watched Movies** section: members rate watched movies 0–10
+- **Stats** section: group and individual statistics, awards, and genre analysis
 
 **No authentication.** Possessing the URL (with `?session=<uuid>`) is the only access control. There are no user accounts — identity is chosen from a dropdown and persisted per-session in a browser cookie (`selectedPerson_${sessionId}`, 30-day expiry via `src/lib/sessionCookies.ts`).
 
@@ -31,6 +32,7 @@ The primary state lives in **`src/hooks/useMovieSession.ts`** — a large centra
 - Session loading/creation, people management, movie proposals and ratings
 - Real-time Supabase subscriptions on `movie_ratings` (Postgres Changes channel)
 - Sorting logic based on `selectedPersonId` (read from cookies per session)
+- View switching between `'session'`, `'watched'`, and `'stats'`
 
 Data transformation/sorting utilities are pure functions in **`src/lib/sessionHelpers.ts`**.
 
@@ -38,11 +40,18 @@ Cookie persistence for per-session user selection is in **`src/lib/sessionCookie
 
 React Query (`@tanstack/react-query`) is configured in `App.tsx` but data fetching is primarily done inside custom hooks via direct Supabase calls, not via `useQuery`.
 
-**Two computed movie lists serve different purposes:**
+**Sorting Logic:**
+- Movie titles are sorted using `normalizeTitle` (from `src/lib/utils.ts`), which ignores leading "The " (case-insensitive).
 - `getSortedMovies()` — used in RatePanel; orders movies so the selected person's unrated movies appear first; does not compute averages; re-sorting is suppressed after each rating change via the `shouldSort` flag (reset when the selected person changes) to avoid jarring reorders mid-interaction.
-- `rankedMovies` — used in ResultsPanel; computes averages from present people's ratings only; sorts by average descending; filters to movies proposed by a present person **and** with at least one vote from a present non-proposer (prevents the proposer's default-5 from inflating the ranking before others have weighed in).
+- `rankedMovies` — used in ResultsPanel; computes averages from present people's ratings only; sorts by average descending; uses `normalizeTitle` as a tie-breaker.
 
 **WatchedMovies has no real-time subscription.** Unlike the session view, `WatchedMovies` loads data once on mount and only refreshes via explicit `loadData()` calls (e.g. after adding a movie).
+
+**Stats Section:**
+- Top-level view that calculates group and individual insights.
+- Fetches all session data (`watched_movies`, `detailed_ratings`, `movie_ratings`, `movie_proposals`) directly from Supabase.
+- Calculations are performed in `src/components/Stats/utils.ts`.
+- Uses `recharts` for Pie and Radar visualizations.
 
 **Optimistic updates** use a `temp-${Date.now()}` id for new `DetailedRating` entries. The temporary id is replaced only on the next `loadData()` call, not immediately after the upsert.
 
@@ -84,6 +93,10 @@ src/components/
     hooks/
       useWatchedMoviesData.ts
       useMovieRatings.ts   # Optimistic updates for detailed ratings
+  Stats/                  # Group and individual statistics
+    hooks/
+      useStatsData.ts      # Direct Supabase data fetching for stats
+    utils.ts              # All aggregation and calculation logic
   ui/                     # shadcn/ui components (do not modify)
 ```
 
@@ -108,9 +121,13 @@ Tests live alongside code in `__tests__/` subdirectories. Test coverage currentl
 
 - **`proposal_comments` has one comment per proposal** (unique constraint on `proposal_id`). The comment author (`person_id`) is stored in the `author` column but only a single comment text survives per proposal — any new save overwrites it.
 
-- **Cascade deletes on person removal** are handled by DB foreign keys. When a person row is deleted, all their proposals and ratings are removed automatically; the local state removal in `deletePerson` is purely for immediate UI consistency.
-
 - **`markMovieAsWatched` flow**: fetches the proposal (with OMDB data) → inserts into `watched_movies` (copying all metadata) → updates `movie_ratings` rows to set `watched_movie_id` (preserving pre-watch ratings for history) → deletes `proposal_comments` → deletes the `movie_proposals` row.
+
+- **Stats Ratings Interpretation**:
+  - **Hype (Pre-Watch)**: 0-5 scale. Represented as `movie_ratings`. Used for "Hype Man", "Most Anticipated", etc.
+  - **Score (Post-Watch)**: 0-10 scale. Represented as `detailed_ratings`. Used for "Highest Rated", "Harshest Critic", etc.
+  - **Biggest Surprise**: Calculated as `(Score) - (Hype * 2)`. Maximum positive gap.
+  - **Biggest Disappointment**: Calculated as `(Score) - (Hype * 2)`. Maximum negative gap.
 
 ## Key Conventions
 

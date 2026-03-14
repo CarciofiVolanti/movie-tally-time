@@ -4,10 +4,11 @@ import PeoplePanel from "./PeoplePanel";
 import RatePanel from "./RatePanel";
 import ResultsPanel from "./ResultsPanel";
 import { WatchedMovies } from "../WatchedMovies";
+import Stats from "../Stats";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Film, Trophy, Award } from "lucide-react";
+import { Users, Film, Trophy, Award, BarChart } from "lucide-react";
 
 const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => void }) => {
   const session = useMovieSession({ onSessionLoad });
@@ -43,7 +44,7 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      {session.currentView === 'session' ? (
+      {session.currentView === 'session' && (
         <div className="container mx-auto py-8 px-4">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold bg-gradient-cinema bg-clip-text text-transparent mb-4">CarciOscar</h1>
@@ -66,6 +67,17 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
               >
                 <Award className="w-4 h-4 mr-2" />
                 Watched Movies
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => session.setCurrentView('stats')}
+                disabled={!session.sessionId}
+                className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 hover:from-blue-500/20 hover:to-purple-500/20"
+              >
+                <BarChart className="w-4 h-4 mr-2" />
+                Session Stats
               </Button>
             </div>
 
@@ -134,11 +146,20 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
             </TabsContent>
           </Tabs>
         </div>
-      ) : (
+      )}
+      
+      {session.currentView === 'watched' && (
         <WatchedMovies
           sessionId={session.sessionId!}
           onBack={() => session.setCurrentView('session')}
           selectedPersonId={session.selectedPersonId}
+        />
+      )}
+
+      {session.currentView === 'stats' && (
+        <Stats
+          sessionId={session.sessionId!}
+          onBack={() => session.setCurrentView('session')}
         />
       )}
     </div>

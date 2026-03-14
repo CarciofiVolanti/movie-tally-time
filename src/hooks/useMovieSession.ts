@@ -36,7 +36,7 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
   const [fetchingDetails, setFetchingDetails] = useState(false);
   const [collapsedMovies, setCollapsedMovies] = useState<Record<string, boolean>>({});
   const [selectedPersonId, setSelectedPersonIdState] = useState<string>("");
-  const [currentView, setCurrentView] = useState<'session' | 'watched'>('session');
+  const [currentView, setCurrentView] = useState<'session' | 'watched' | 'stats'>('session');
   // control whether getSortedMovies should re-order the list
   const [shouldSort, setShouldSort] = useState<boolean>(true);
 
