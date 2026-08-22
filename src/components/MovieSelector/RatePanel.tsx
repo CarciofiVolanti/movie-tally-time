@@ -28,7 +28,7 @@ const RatePanel = ({
   setSelectedPersonId: (id: string) => void;
   fetchingDetails: boolean;
   fetchAllMovieDetails: () => Promise<void>;
-  updateRating: (movieTitle: string, personId: string, rating: number) => Promise<void>;
+  updateRating: (proposalId: string, personId: string, rating: number) => Promise<void>;
   searchMovieAgain: (title: string) => Promise<void>;
   markMovieAsWatched: (title: string) => Promise<void>;
   collapsedMovies: Record<string, boolean>;

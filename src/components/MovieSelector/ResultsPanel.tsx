@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Film, Trophy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { formatProposalAge, formatDateDDMMYYYY } from "@/lib/sessionHelpers";
 
 const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
   rankedMovies: MovieWithStats[];
@@ -12,6 +14,7 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
 }) => {
   const presentPeople = people.filter(p => p.isPresent);
 
+  const [pendingWatched, setPendingWatched] = useState<string | null>(null);
   const [favouritesByProposal, setFavouritesByProposal] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
@@ -68,7 +71,14 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
                  </div>
                  <div className="flex-1 min-w-0">
                    <h3 className="font-semibold text-base sm:text-lg leading-tight truncate">{movie.movieTitle}</h3>
-                   <p className="text-xs sm:text-sm text-muted-foreground">Proposed by {movie.proposedBy}</p>
+                   <p className="text-xs sm:text-sm text-muted-foreground">
+                     Proposed by {movie.proposedBy}
+                     {movie.createdAt && formatProposalAge(movie.createdAt) ? (
+                       <span title={formatDateDDMMYYYY(movie.createdAt)}>
+                         {` • ${formatProposalAge(movie.createdAt)}`}
+                       </span>
+                     ) : null}
+                   </p>
                  </div>
                  <Badge variant="secondary" className="text-base sm:text-lg">★ {movie.averageRating.toFixed(1)}</Badge>
                </div>
@@ -117,7 +127,7 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
                    <a href={`https://www.imdb.com/title/${movie.details.imdbId}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View on IMDb</a>
                  )}
 
-                 <button onClick={() => markMovieAsWatched(movie.movieTitle)} className="inline-flex items-center gap-2 px-3 py-1 border rounded text-xs">
+                 <button onClick={() => setPendingWatched(movie.movieTitle)} className="inline-flex items-center gap-2 px-3 py-1 border rounded text-xs">
                    <Check className="w-3 h-3" />
                    Watched
                  </button>
@@ -135,6 +145,18 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
           </CardContent>
         </Card>
       )}
+
+      <ConfirmDialog
+        open={pendingWatched !== null}
+        onOpenChange={(open) => { if (!open) setPendingWatched(null); }}
+        title="Mark as watched?"
+        description={`Move "${pendingWatched}" to the watched movies section? This cannot be undone.`}
+        confirmLabel="Mark as watched"
+        onConfirm={() => {
+          if (pendingWatched) markMovieAsWatched(pendingWatched);
+          setPendingWatched(null);
+        }}
+      />
     </>
   );
 };

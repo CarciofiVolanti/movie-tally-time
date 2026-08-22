@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StarRating } from "./StarRating";
 import { Film, Search } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { MovieDetails, MovieRating, Person } from "@/types/session";
 
 
@@ -12,14 +12,14 @@ interface MovieCardProps {
   movie: MovieRating;
   people: Person[];
   currentPersonId?: string;
-  onRatingChange: (movieTitle: string, personId: string, rating: number) => Promise<void>;
+  onRatingChange: (proposalId: string, personId: string, rating: number) => Promise<void>;
   onSearchAgain: (movieTitle: string) => Promise<void>;
   onMarkAsWatched: (movieTitle: string) => Promise<void>;
   showAllRatings: boolean;
   onSaveComment?: (proposalId: string, comment: string) => Promise<void>;
 }
 
-export const MovieCard = ({
+export const MovieCard = memo(({
   movie,
   people,
   currentPersonId,
@@ -263,7 +263,7 @@ export const MovieCard = ({
                     <StarRating
                       rating={movie.ratings[person.id] || 0}
                       onRatingChange={(rating) =>
-                        onRatingChange?.(movie.movieTitle, person.id, rating)
+                        movie.proposalId && onRatingChange?.(movie.proposalId, person.id, rating)
                       }
                       readonly={false}
                       size="sm"
@@ -283,7 +283,7 @@ export const MovieCard = ({
                 <StarRating
                   rating={movie.ratings[currentPersonId] || 0}
                   onRatingChange={(rating) =>
-                    onRatingChange?.(movie.movieTitle, currentPersonId, rating)
+                    movie.proposalId && onRatingChange?.(movie.proposalId, currentPersonId, rating)
                   }
                   size="md"
                 />
@@ -294,4 +294,4 @@ export const MovieCard = ({
       </CardContent>
     </Card>
   );
-};
+});

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface WatchedMovie {
@@ -44,81 +44,59 @@ export interface MovieRating {
   rating: number;
 }
 
+const fetchStatsData = async (sessionId: string) => {
+  const [moviesRes, peopleRes, proposalsRes] = await Promise.all([
+    supabase.from("watched_movies").select("*").eq("session_id", sessionId),
+    supabase.from("session_people").select("*").eq("session_id", sessionId),
+    supabase.from("movie_proposals").select("*").eq("session_id", sessionId),
+  ]);
+
+  if (moviesRes.error) throw moviesRes.error;
+  if (peopleRes.error) throw peopleRes.error;
+  if (proposalsRes.error) throw proposalsRes.error;
+
+  const watchedMovies: WatchedMovie[] = moviesRes.data ?? [];
+  const people: Person[] = peopleRes.data ?? [];
+  const proposals: MovieProposal[] = proposalsRes.data ?? [];
+
+  const personIds = people.map(p => p.id);
+  const movieIds = watchedMovies.map(m => m.id);
+
+  const [ratingsRes, detailedRes] = await Promise.all([
+    personIds.length > 0
+      ? supabase.from("movie_ratings").select("proposal_id, watched_movie_id, person_id, rating").in("person_id", personIds)
+      : Promise.resolve({ data: [] as MovieRating[], error: null }),
+    movieIds.length > 0
+      ? supabase.from("detailed_ratings").select("*").in("watched_movie_id", movieIds)
+      : Promise.resolve({ data: [] as DetailedRating[], error: null }),
+  ]);
+
+  if (ratingsRes.error) throw ratingsRes.error;
+  if (detailedRes.error) throw detailedRes.error;
+
+  return {
+    watchedMovies,
+    people,
+    proposals,
+    proposalRatings: (ratingsRes.data ?? []) as MovieRating[],
+    detailedRatings: (detailedRes.data ?? []) as DetailedRating[],
+  };
+};
+
 export const useStatsData = (sessionId: string) => {
-  const [watchedMovies, setWatchedMovies] = useState<WatchedMovie[]>([]);
-  const [detailedRatings, setDetailedRatings] = useState<DetailedRating[]>([]);
-  const [proposals, setProposals] = useState<MovieProposal[]>([]);
-  const [proposalRatings, setProposalRatings] = useState<MovieRating[]>([]);
-  const [people, setPeople] = useState<Person[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useQuery({
+    queryKey: ["stats", sessionId],
+    queryFn: () => fetchStatsData(sessionId),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!sessionId,
+  });
 
-  useEffect(() => {
-    let mounted = true;
-    const fetchStats = async () => {
-      if (!sessionId) return;
-      
-      setLoading(true);
-      try {
-        // 1. Fetch basic session data
-        const [moviesRes, peopleRes, proposalsRes] = await Promise.all([
-          supabase.from("watched_movies").select("*").eq("session_id", sessionId),
-          supabase.from("session_people").select("*").eq("session_id", sessionId),
-          supabase.from("movie_proposals").select("*").eq("session_id", sessionId),
-        ]);
-
-        if (!mounted) return;
-
-        if (moviesRes.error) throw moviesRes.error;
-        if (peopleRes.error) throw peopleRes.error;
-        if (proposalsRes.error) throw proposalsRes.error;
-
-        const movies = moviesRes.data || [];
-        const currentPeople = peopleRes.data || [];
-        const currentProposals = proposalsRes.data || [];
-
-        setWatchedMovies(movies);
-        setPeople(currentPeople);
-        setProposals(currentProposals);
-        
-        // 2. Fetch all ratings for these people in this session
-        const personIds = currentPeople.map(p => p.id);
-        if (personIds.length > 0) {
-          const { data: ratingsData, error: ratingsError } = await supabase
-            .from("movie_ratings")
-            .select("proposal_id, watched_movie_id, person_id, rating")
-            .in("person_id", personIds);
-
-          if (ratingsError) {
-            console.error("Error fetching movie ratings:", ratingsError);
-          } else if (mounted) {
-            setProposalRatings(ratingsData || []);
-          }
-        }
-
-        if (movies.length > 0) {
-          // 3. Fetch detailed post-watch ratings for these specific movies
-          const movieIds = movies.map(m => m.id);
-          const { data: ratingsData, error: ratingsError } = await supabase
-            .from("detailed_ratings")
-            .select("*")
-            .in("watched_movie_id", movieIds);
-
-          if (ratingsError) {
-            console.error("Error fetching detailed ratings:", ratingsError);
-          } else if (mounted) {
-            setDetailedRatings(ratingsData || []);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load stats data", err);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    fetchStats();
-    return () => { mounted = false; };
-  }, [sessionId]);
-
-  return { watchedMovies, detailedRatings, proposals, proposalRatings, people, loading };
+  return {
+    watchedMovies: data?.watchedMovies ?? [],
+    detailedRatings: data?.detailedRatings ?? [],
+    proposals: data?.proposals ?? [],
+    proposalRatings: data?.proposalRatings ?? [],
+    people: data?.people ?? [],
+    loading: isLoading,
+  };
 };

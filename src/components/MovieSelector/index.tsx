@@ -1,14 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import useMovieSession from "@/hooks/useMovieSession";
 import PeoplePanel from "./PeoplePanel";
 import RatePanel from "./RatePanel";
 import ResultsPanel from "./ResultsPanel";
-import { WatchedMovies } from "../WatchedMovies";
-import Stats from "../Stats";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Film, Trophy, Award, BarChart } from "lucide-react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+const WatchedMovies = lazy(() => import("../WatchedMovies").then(m => ({ default: m.WatchedMovies })));
+const Stats = lazy(() => import("../Stats"));
 
 const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => void }) => {
   const session = useMovieSession({ onSessionLoad });
@@ -45,19 +47,12 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       {session.currentView === 'session' && (
+        <ErrorBoundary>
         <div className="container mx-auto py-8 px-4">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold bg-gradient-cinema bg-clip-text text-transparent mb-4">CarciOscar</h1>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
-              <Button variant="outline" size="sm" onClick={() => {
-                session.setShowNewSession?.(true);
-                session.setSessionId?.(null);
-                window.history.pushState({}, '', window.location.pathname);
-              }}>
-                Start New Session
-              </Button>
-
               <Button
                 variant="outline"
                 size="sm"
@@ -146,21 +141,30 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
             </TabsContent>
           </Tabs>
         </div>
+        </ErrorBoundary>
       )}
-      
+
       {session.currentView === 'watched' && (
-        <WatchedMovies
-          sessionId={session.sessionId!}
-          onBack={() => session.setCurrentView('session')}
-          selectedPersonId={session.selectedPersonId}
-        />
+        <ErrorBoundary>
+          <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" /></div>}>
+            <WatchedMovies
+              sessionId={session.sessionId!}
+              onBack={() => session.setCurrentView('session')}
+              selectedPersonId={session.selectedPersonId}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
       {session.currentView === 'stats' && (
-        <Stats
-          sessionId={session.sessionId!}
-          onBack={() => session.setCurrentView('session')}
-        />
+        <ErrorBoundary>
+          <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" /></div>}>
+            <Stats
+              sessionId={session.sessionId!}
+              onBack={() => session.setCurrentView('session')}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import PeoplePanel from '../PeoplePanel';
 import { Person } from '@/types/session';
@@ -35,9 +35,9 @@ describe('PeoplePanel', () => {
   });
 
   // Test that typing in the input and clicking Add calls the onAddPerson callback
-  it('calls onAddPerson when add button is clicked', () => {
+  it('calls onAddPerson when add button is clicked', async () => {
     const handleAdd = vi.fn().mockResolvedValue(undefined);
-    
+
     render(
       <PeoplePanel
         people={mockPeople}
@@ -51,7 +51,7 @@ describe('PeoplePanel', () => {
     const button = screen.getByText('Add Person');
 
     fireEvent.change(input, { target: { value: 'Charlie' } });
-    fireEvent.click(button);
+    await act(async () => { fireEvent.click(button); });
 
     expect(handleAdd).toHaveBeenCalledWith('Charlie');
   });

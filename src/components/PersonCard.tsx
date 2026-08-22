@@ -4,9 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, Plus, Search } from "lucide-react";
-import { useState } from "react";
+import { useState, memo } from "react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { useMovieSearch } from "@/hooks/useMovieSearch";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 export interface Person {
   id: string;
@@ -21,11 +22,24 @@ interface PersonCardProps {
   onDeletePerson: (id: string) => void;
 }
 
-export const PersonCard = ({ person, onUpdatePerson, onDeletePerson }: PersonCardProps) => {
+export const PersonCard = memo(({ person, onUpdatePerson, onDeletePerson }: PersonCardProps) => {
   const [newMovie, setNewMovie] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showSearchResults, setShowSearchResults] = useState(false);
+  const { searchResults, isSearching, showSearchResults, searchMovies, clearResults } = useMovieSearch();
+  const [pendingConfirm, setPendingConfirm] = useState<
+    | { type: 'remove-movie'; index: number }
+    | { type: 'delete-person' }
+    | null
+  >(null);
+
+  const handleConfirm = () => {
+    if (!pendingConfirm) return;
+    if (pendingConfirm.type === 'remove-movie') {
+      onUpdatePerson({ ...person, movies: person.movies.filter((_, i) => i !== pendingConfirm.index) });
+    } else {
+      onDeletePerson(person.id);
+    }
+    setPendingConfirm(null);
+  };
 
   const addMovie = (movieTitle?: string) => {
     const title = movieTitle || newMovie.trim();
@@ -35,40 +49,12 @@ export const PersonCard = ({ person, onUpdatePerson, onDeletePerson }: PersonCar
         movies: [...person.movies, title]
       });
       setNewMovie("");
-      setShowSearchResults(false);
-      setSearchResults([]);
-    }
-  };
-
-  const searchMovies = async () => {
-    if (!newMovie.trim()) return;
-    
-    setIsSearching(true);
-    setShowSearchResults(true);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('search-movie', {
-        body: { title: newMovie.trim() }
-      });
-      
-      if (error) throw error;
-      
-      setSearchResults([data]);
-    } catch (error) {
-      console.error('Error searching movies:', error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
+      clearResults();
     }
   };
 
   const removeMovie = (index: number) => {
-    const movieTitle = person.movies[index];
-    if (!window.confirm(`Are you sure you want to remove the proposal for "${movieTitle}"? This cannot be undone.`)) return;
-    onUpdatePerson({
-      ...person,
-      movies: person.movies.filter((_, i) => i !== index)
-    });
+    setPendingConfirm({ type: 'remove-movie', index });
   };
 
   const togglePresent = (checked: boolean) => {
@@ -99,7 +85,7 @@ export const PersonCard = ({ person, onUpdatePerson, onDeletePerson }: PersonCar
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onDeletePerson(person.id)}
+            onClick={() => setPendingConfirm({ type: 'delete-person' })}
             className="text-destructive hover:text-destructive hover:bg-destructive/10"
           >
             <Trash2 className="w-4 h-4" />
@@ -136,15 +122,12 @@ export const PersonCard = ({ person, onUpdatePerson, onDeletePerson }: PersonCar
                 value={newMovie}
                 onChange={(e) => {
                   setNewMovie(e.target.value);
-                  if (!e.target.value.trim()) {
-                    setShowSearchResults(false);
-                    setSearchResults([]);
-                  }
+                  if (!e.target.value.trim()) clearResults();
                 }}
-                onKeyPress={(e) => e.key === "Enter" && searchMovies()}
+                onKeyPress={(e) => e.key === "Enter" && searchMovies(newMovie)}
                 className="flex-1"
               />
-              <Button onClick={searchMovies} size="sm" disabled={!newMovie.trim() || isSearching}>
+              <Button onClick={() => searchMovies(newMovie)} size="sm" disabled={!newMovie.trim() || isSearching}>
                 <Search className="w-4 h-4" />
               </Button>
               <Button onClick={() => addMovie()} size="sm" disabled={!newMovie.trim()} variant="outline">
@@ -192,6 +175,19 @@ export const PersonCard = ({ person, onUpdatePerson, onDeletePerson }: PersonCar
           </div>
         )}
       </CardContent>
+
+      <ConfirmDialog
+        open={pendingConfirm !== null}
+        onOpenChange={(open) => { if (!open) setPendingConfirm(null); }}
+        title={pendingConfirm?.type === 'delete-person' ? `Remove ${person.name}?` : "Remove proposal?"}
+        description={
+          pendingConfirm?.type === 'delete-person'
+            ? `This will also remove all of ${person.name}'s movie proposals and cannot be undone.`
+            : `Remove "${pendingConfirm?.type === 'remove-movie' ? person.movies[pendingConfirm.index] : ''}" from the proposals? This cannot be undone.`
+        }
+        confirmLabel="Remove"
+        onConfirm={handleConfirm}
+      />
     </Card>
   );
-};
+});

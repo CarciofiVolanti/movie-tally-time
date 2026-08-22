@@ -98,11 +98,11 @@ describe('MovieCard', () => {
     // Find the star rating component associated with current user (p1 has rating 4)
     // Our mock simulates a click incrementing the rating passed to it.
     // So if we click, it should call with 4+1 = 5? Or just verify the call.
-    // In the component: onRatingChange?.(movie.movieTitle, currentPersonId, rating)
-    
+    // In the component: movie.proposalId && onRatingChange?.(movie.proposalId, currentPersonId, rating)
+
     const ratingComponent = screen.getAllByTestId('star-rating')[1]; // 0 is avg, 1 is user
     fireEvent.click(ratingComponent);
-    
-    expect(handleRatingChange).toHaveBeenCalledWith('Test Movie', 'p1', 5);
+
+    expect(handleRatingChange).toHaveBeenCalledWith('prop-123', 'p1', 5);
   });
 });

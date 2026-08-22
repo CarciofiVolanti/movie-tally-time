@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -8,11 +9,11 @@ interface StarRatingProps {
   size?: "sm" | "md" | "lg";
 }
 
-export const StarRating = ({ 
-  rating, 
-  onRatingChange, 
-  readonly = false, 
-  size = "md" 
+export const StarRating = memo(({
+  rating,
+  onRatingChange,
+  readonly = false,
+  size = "md"
 }: StarRatingProps) => {
   const sizeClasses = {
     sm: "w-4 h-4",
@@ -47,4 +48,4 @@ export const StarRating = ({
       ))}
     </div>
   );
-};
+});

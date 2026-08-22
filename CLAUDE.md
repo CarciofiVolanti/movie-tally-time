@@ -23,8 +23,6 @@ npm run test      # Run all tests (Vitest)
 npx vitest run src/lib/__tests__/sessionHelpers.test.ts  # Run a single test file
 ```
 
-if you find that some information should be added to this file to help future interactions, notify the user and ask if you should add it to the file. This could include new guidelines, clarifications on existing guidelines, or notes about specific scripts.
-
 ## Architecture
 
 ### State Management
@@ -103,7 +101,7 @@ src/components/
 ### Testing
 Vitest + @testing-library/react + jsdom. Setup file: `src/test/setup.ts`.
 
-Tests live alongside code in `__tests__/` subdirectories. Test coverage currently includes: `MovieCard`, `StarRating`, `PeoplePanel`, `ResultsPanel`, and lib utilities (`sessionHelpers`, `utils`, `sessionCookies`).
+Tests live alongside code in `__tests__/` subdirectories. Test coverage currently includes: `MovieCard`, `StarRating`, `PeoplePanel`, `ResultsPanel`, and lib utilities (`sessionCookies`). Test files for `sessionHelpers` and `utils` exist but are empty stubs. `useMovieSession`, `Stats/utils.ts`, and WatchedMovies hooks have no test coverage.
 
 ## Design Decisions
 
@@ -132,6 +130,7 @@ Tests live alongside code in `__tests__/` subdirectories. Test coverage currentl
 ## Key Conventions
 
 - **Mobile-first**: always design for small screens first; most users are on phones
+- **Date format**: `DD/MM/YYYY` (`DDMMYYYY`) convention for all displayed dates
 - Favour direct Supabase calls inside custom hooks over abstracting into a service layer
 - Optimistic UI updates for ratings and presence changes; roll back on error
 - Real-time updates via a single Supabase channel per session (re-subscribed when `sessionId` changes)

@@ -19,6 +19,7 @@ export interface MovieRating {
   proposalId?: string;
   proposerId?: string;
   comment?: string;
+  createdAt?: string;
 }
 
 // If you have MovieWithStats / MovieWithDetails types:
@@ -28,6 +29,7 @@ export interface MovieWithStats {
   proposedBy?: string | null; // display name
   proposalId?: string | null; // movie_proposals.id (preferred)
   proposerId?: string | null; // movie_proposals.person_id (preferred)
+  createdAt?: string;
 
   // ratings from present/absent people (keyed by person id)
   ratings: Record<string, number | null>; // 1-5 (or null when reset)

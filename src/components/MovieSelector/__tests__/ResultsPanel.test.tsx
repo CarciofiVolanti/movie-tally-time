@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import ResultsPanel from '../ResultsPanel';
 import { MovieWithStats, Person } from '@/types/session';
@@ -36,48 +36,77 @@ describe('ResultsPanel', () => {
   ];
 
   // Test that the component correctly renders the list of ranked movies
-  it('renders ranked movies list', () => {
-    render(
-      <ResultsPanel
-        rankedMovies={mockRankedMovies}
-        people={mockPeople}
-        markMovieAsWatched={vi.fn()}
-      />
-    );
+  it('renders ranked movies list', async () => {
+    await act(async () => {
+      render(
+        <ResultsPanel
+          rankedMovies={mockRankedMovies}
+          people={mockPeople}
+          markMovieAsWatched={vi.fn()}
+        />
+      );
+    });
 
     expect(screen.getByText('Best Movie')).toBeInTheDocument();
     expect(screen.getByText('Mediocre Movie')).toBeInTheDocument();
-    // Check if the rank badge (1, 2) is rendered. 
-    // The code renders index + 1 inside a div.
     expect(screen.getByText('1')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
   });
 
   // Test empty state handling
-  it('shows empty state when no movies are ranked', () => {
-    render(
-      <ResultsPanel
-        rankedMovies={[]}
-        people={mockPeople}
-        markMovieAsWatched={vi.fn()}
-      />
-    );
+  it('shows empty state when no movies are ranked', async () => {
+    await act(async () => {
+      render(
+        <ResultsPanel
+          rankedMovies={[]}
+          people={mockPeople}
+          markMovieAsWatched={vi.fn()}
+        />
+      );
+    });
 
     expect(screen.getByText(/No results found/i)).toBeInTheDocument();
   });
 
   // Test that the "Watched" action is available
-  it('renders watched button for movies', () => {
-    render(
-      <ResultsPanel
-        rankedMovies={mockRankedMovies}
-        people={mockPeople}
-        markMovieAsWatched={vi.fn()}
-      />
-    );
-    
-    // There should be a "Watched" button for each movie
+  it('renders watched button for movies', async () => {
+    await act(async () => {
+      render(
+        <ResultsPanel
+          rankedMovies={mockRankedMovies}
+          people={mockPeople}
+          markMovieAsWatched={vi.fn()}
+        />
+      );
+    });
+
     const buttons = screen.getAllByText(/Watched/i);
     expect(buttons.length).toBeGreaterThan(0);
+  });
+
+  // Test that proposal age is rendered when createdAt is present
+  it('renders proposal age when createdAt is provided', async () => {
+    const moviesWithAge: MovieWithStats[] = [
+      {
+        movieTitle: 'Old Movie',
+        proposedBy: 'Alice',
+        ratings: { 'p1': 5 },
+        averageRating: 5.0,
+        totalRatings: 1,
+        createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    ];
+
+    await act(async () => {
+      render(
+        <ResultsPanel
+          rankedMovies={moviesWithAge}
+          people={mockPeople}
+          markMovieAsWatched={vi.fn()}
+        />
+      );
+    });
+
+    expect(screen.getByText(/4 days ago/i)).toBeInTheDocument();
   });
 });
