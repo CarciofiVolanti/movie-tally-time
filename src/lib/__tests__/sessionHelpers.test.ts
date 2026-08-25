@@ -168,6 +168,28 @@ describe('sessionHelpers', () => {
       expect(result[0].details).toBeUndefined();
       expect(result[0].createdAt).toBe('2026-08-21T10:00:00Z');
     });
+
+    it('correctly maps 1-to-1 object proposal_comments (PostgREST unique constraint response)', () => {
+      const mockProposals = [
+        {
+          id: 'pr1',
+          person_id: 'p1',
+          movie_title: 'Arrival',
+          session_id: 's1',
+          created_at: '2026-08-21T10:00:00Z',
+          director: null, genre: null, imdb_id: null, imdb_rating: null, plot: null, poster: null, runtime: null, year: null,
+          movie_ratings: [],
+          proposal_comments: { id: 'c1', author: 'p1', comment: 'Must see!', proposal_id: 'pr1', created_at: '', updated_at: null },
+        },
+      ];
+      const mockPeople = [
+        { id: 'p1', name: 'Alice', is_present: true, session_id: 's1', created_at: '' },
+      ];
+
+      const result = transformRatingsData({ proposals: mockProposals as any }, mockPeople as any);
+      expect(result).toHaveLength(1);
+      expect(result[0].comment).toBe('Must see!');
+    });
   });
 });
 

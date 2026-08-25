@@ -128,6 +128,7 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
                 fetchingDetails={session.fetchingDetails}
                 fetchAllMovieDetails={session.fetchAllMovieDetails}
                 updateRating={session.updateRating}
+                updateComment={session.updateComment}
                 searchMovieAgain={session.searchMovieAgain}
                 markMovieAsWatched={session.markMovieAsWatched}
                 collapsedMovies={session.collapsedMovies}

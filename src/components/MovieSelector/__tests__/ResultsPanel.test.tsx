@@ -109,4 +109,31 @@ describe('ResultsPanel', () => {
 
     expect(screen.getByText(/4 days ago/i)).toBeInTheDocument();
   });
+
+  // Test that proposer comment is rendered when present
+  it('renders proposer comment when present in ranked movies', async () => {
+    const moviesWithComment: MovieWithStats[] = [
+      {
+        movieTitle: 'Commented Movie',
+        proposedBy: 'Alice',
+        comment: 'A director masterpiece',
+        ratings: { 'p1': 5 },
+        averageRating: 5.0,
+        totalRatings: 1,
+      },
+    ];
+
+    await act(async () => {
+      render(
+        <ResultsPanel
+          rankedMovies={moviesWithComment}
+          people={mockPeople}
+          markMovieAsWatched={vi.fn()}
+        />
+      );
+    });
+
+    expect(screen.getByText(/Proposer comment:/i)).toBeInTheDocument();
+    expect(screen.getByText('A director masterpiece')).toBeInTheDocument();
+  });
 });

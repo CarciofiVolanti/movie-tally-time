@@ -121,6 +121,26 @@ export const useRealtimeSync = ({
         }
       })
 
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'proposal_comments' }, (payload) => {
+        const data = payload.new || payload.old;
+        if (!data) return;
+        const proposalId = data.proposal_id;
+        if (!proposalId) return;
+
+        setMovieRatings(currentRatings => {
+          if (!currentRatings.some(m => m.proposalId === proposalId)) return currentRatings;
+          return currentRatings.map(movie => {
+            if (movie.proposalId !== proposalId) return movie;
+            if (payload.eventType === 'DELETE') {
+              return { ...movie, comment: undefined };
+            } else {
+              const { comment } = payload.new;
+              return { ...movie, comment: comment || undefined };
+            }
+          });
+        });
+      })
+
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };

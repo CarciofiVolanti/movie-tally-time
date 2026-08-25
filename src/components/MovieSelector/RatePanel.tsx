@@ -16,6 +16,7 @@ const RatePanel = ({
   fetchingDetails,
   fetchAllMovieDetails,
   updateRating,
+  updateComment,
   searchMovieAgain,
   markMovieAsWatched,
   collapsedMovies,
@@ -29,6 +30,7 @@ const RatePanel = ({
   fetchingDetails: boolean;
   fetchAllMovieDetails: () => Promise<void>;
   updateRating: (proposalId: string, personId: string, rating: number) => Promise<void>;
+  updateComment?: (proposalId: string, authorId: string, comment: string) => Promise<void>;
   searchMovieAgain: (title: string) => Promise<void>;
   markMovieAsWatched: (title: string) => Promise<void>;
   collapsedMovies: Record<string, boolean>;
@@ -59,24 +61,24 @@ const RatePanel = ({
   const onSaveComment = async (proposalId: string, comment: string) => {
     if (!selectedPersonId) throw new Error("No selected person");
     if (!proposalId) throw new Error("Missing proposal id");
-    const payload = {
-      proposal_id: proposalId,
-      author: selectedPersonId,
-      comment: comment || null,
-    };
 
-    // upsert by proposal_id to avoid duplicates; this is a single, minimal DB operation
-    const { error } = await supabase
-      .from("proposal_comments")
-      .upsert(payload, { onConflict: "proposal_id" });
+    if (updateComment) {
+      await updateComment(proposalId, selectedPersonId, comment);
+    } else {
+      const payload = {
+        proposal_id: proposalId,
+        author: selectedPersonId,
+        comment: comment.trim() || null,
+      };
 
-    if (error) {
-      // bubble error to caller (MovieCard shows Save button state); parent can show toast
-      throw error;
+      const { error } = await supabase
+        .from("proposal_comments")
+        .upsert(payload, { onConflict: "proposal_id" });
+
+      if (error) {
+        throw error;
+      }
     }
-
-    // success — parent can re-fetch session data to surface the saved comment to others
-    return;
   };
 
   return (

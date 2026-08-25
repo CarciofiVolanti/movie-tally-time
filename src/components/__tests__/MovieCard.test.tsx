@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { MovieCard } from '../MovieCard';
 import { MovieRating, Person } from '@/types/session';
@@ -104,5 +104,79 @@ describe('MovieCard', () => {
     fireEvent.click(ratingComponent);
 
     expect(handleRatingChange).toHaveBeenCalledWith('prop-123', 'p1', 5);
+  });
+
+  it('renders editable proposer comment input when current person is the proposer', async () => {
+    const handleSaveComment = vi.fn().mockResolvedValue(undefined);
+    render(
+      <MovieCard
+        movie={{ ...mockMovie, comment: 'Must watch this!' }}
+        people={mockPeople}
+        currentPersonId="p2" // Alice (proposer)
+        onRatingChange={vi.fn()}
+        onSearchAgain={vi.fn()}
+        onMarkAsWatched={vi.fn()}
+        onSaveComment={handleSaveComment}
+        showAllRatings={false}
+      />
+    );
+
+    expect(screen.getByText('Proposer comment:')).toBeInTheDocument();
+    const input = screen.getByDisplayValue('Must watch this!') as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Updated comment' } });
+    });
+    const saveButton = screen.getByText('Save');
+    await act(async () => {
+      fireEvent.click(saveButton);
+    });
+
+    expect(handleSaveComment).toHaveBeenCalledWith('prop-123', 'Updated comment');
+  });
+
+  it('renders read-only proposer comment when current person is not the proposer', () => {
+    render(
+      <MovieCard
+        movie={{ ...mockMovie, comment: 'Awesome classic' }}
+        people={mockPeople}
+        currentPersonId="p1" // Bob (not proposer)
+        onRatingChange={vi.fn()}
+        onSearchAgain={vi.fn()}
+        onMarkAsWatched={vi.fn()}
+        showAllRatings={false}
+      />
+    );
+
+    expect(screen.getByText('Awesome classic')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Max 15 words/i)).not.toBeInTheDocument();
+  });
+
+  it('renders proposer comment even when movie details are missing', () => {
+    const movieWithoutDetails: MovieRating = {
+      movieTitle: 'No Details Movie',
+      proposedBy: 'Alice',
+      ratings: {},
+      proposerId: 'p2',
+      proposalId: 'prop-456',
+      comment: 'Hidden gem without OMDB details',
+      details: undefined,
+    };
+
+    render(
+      <MovieCard
+        movie={movieWithoutDetails}
+        people={mockPeople}
+        currentPersonId="p1"
+        onRatingChange={vi.fn()}
+        onSearchAgain={vi.fn()}
+        onMarkAsWatched={vi.fn()}
+        showAllRatings={false}
+      />
+    );
+
+    expect(screen.getByText('Proposed by Alice')).toBeInTheDocument();
+    expect(screen.getByText('Hidden gem without OMDB details')).toBeInTheDocument();
   });
 });

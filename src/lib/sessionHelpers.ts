@@ -6,7 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 type SessionPersonRow = Tables<'session_people'>;
 type ProposalWithRelations = Tables<'movie_proposals'> & {
   movie_ratings?: Tables<'movie_ratings'>[] | null;
-  proposal_comments?: Tables<'proposal_comments'>[] | null;
+  proposal_comments?: Tables<'proposal_comments'>[] | Tables<'proposal_comments'> | null;
 };
 
 export const formatProposalAge = (createdAt?: string | null): string | null => {
@@ -63,8 +63,9 @@ export const transformRatingsData = (proposalsData: { proposals: ProposalWithRel
       }
     });
 
-    // Extract comment (first one if multiple exist)
-    const commentRow = proposal.proposal_comments?.[0];
+    // Extract comment (handles both 1-to-1 object and 1-to-many array)
+    const rawComments = (proposal as any).proposal_comments ?? (proposal as any).proposal_comment;
+    const commentRow = Array.isArray(rawComments) ? rawComments[0] : rawComments;
 
     const details: MovieDetails | undefined = proposal.poster ? {
       poster: proposal.poster,

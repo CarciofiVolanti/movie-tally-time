@@ -97,6 +97,12 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
                    {movie.details?.director && <p>Director: {movie.details.director}</p>}
                    {movie.details?.runtime && <p>Runtime: {movie.details.runtime}</p>}
                    {movie.details?.genre && <p className="break-words">Genre: {movie.details.genre}</p>}
+                   {movie.comment && (
+                     <p className="break-words">
+                       <span className="font-medium text-foreground/80">Proposer comment: </span>
+                       <span className="italic">{movie.comment}</span>
+                     </p>
+                   )}
                    <p>{movie.totalRatings}/{presentPeople.length} people rated</p>
 
                   {(() => {

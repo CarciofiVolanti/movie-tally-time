@@ -198,11 +198,32 @@ export const useProposalRatings = ({
     }
   };
 
+  const updateComment = async (proposalId: string, authorId: string, comment: string) => {
+    try {
+      const trimmed = comment.trim();
+      const { error } = await supabase.from('proposal_comments').upsert(
+        { proposal_id: proposalId, author: authorId, comment: trimmed || null },
+        { onConflict: 'proposal_id' }
+      );
+      if (error) throw error;
+      setMovieRatings(prev => prev.map(movie =>
+        movie.proposalId === proposalId
+          ? { ...movie, comment: trimmed || undefined }
+          : movie
+      ));
+    } catch (err) {
+      console.error('Error updating comment:', err);
+      toast({ title: "Error", description: "Failed to save comment. Please try again.", variant: "destructive" });
+      throw err;
+    }
+  };
+
   return {
     presentPeople,
     rankedMovies,
     toggleCollapse,
     updateRating,
+    updateComment,
     markMovieAsWatched,
     fetchAllMovieDetails,
     searchMovieAgain,
