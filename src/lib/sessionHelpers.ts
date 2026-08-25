@@ -38,6 +38,16 @@ export const sortRatings = (ratings: MovieRating[], personId: string): MovieRati
   });
 };
 
+export const sortPeople = (people: Person[], selectedPersonId?: string): Person[] => {
+  return [...people].sort((a, b) => {
+    if (selectedPersonId) {
+      if (a.id === selectedPersonId && b.id !== selectedPersonId) return -1;
+      if (b.id === selectedPersonId && a.id !== selectedPersonId) return 1;
+    }
+    return a.name.localeCompare(b.name);
+  });
+};
+
 // Pure transformation functions
 
 export const transformPeopleData = (peopleData: SessionPersonRow[], proposals: ProposalWithRelations[]): Person[] => {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { sortRatings, transformPeopleData, transformRatingsData, formatProposalAge, formatDateDDMMYYYY } from '../sessionHelpers';
-import { MovieRating } from '@/types/session';
+import { sortRatings, sortPeople, transformPeopleData, transformRatingsData, formatProposalAge, formatDateDDMMYYYY } from '../sessionHelpers';
+import { MovieRating, Person } from '@/types/session';
 
 const makeMovie = (title: string, ratings: Record<string, number> = {}): MovieRating => ({
   movieTitle: title, proposedBy: 'Alice', ratings,
@@ -64,6 +64,42 @@ describe('sessionHelpers', () => {
       ];
       const sorted = sortRatings(input, 'p1');
       expect(sorted[0].movieTitle).toBe('Not Rated');
+    });
+  });
+
+  describe('sortPeople', () => {
+    const mockPeople: Person[] = [
+      { id: 'p1', name: 'Charlie', isPresent: true, movies: [] },
+      { id: 'p2', name: 'Alice', isPresent: true, movies: [] },
+      { id: 'p3', name: 'Bob', isPresent: false, movies: [] },
+    ];
+
+    it('sorts alphabetically when no selectedPersonId is provided', () => {
+      const sorted = sortPeople(mockPeople);
+      expect(sorted.map(p => p.name)).toEqual(['Alice', 'Bob', 'Charlie']);
+    });
+
+    it('sorts alphabetically when selectedPersonId is empty', () => {
+      const sorted = sortPeople(mockPeople, '');
+      expect(sorted.map(p => p.name)).toEqual(['Alice', 'Bob', 'Charlie']);
+    });
+
+    it('places the selected person first, with the rest sorted alphabetically', () => {
+      const sortedWithCharlie = sortPeople(mockPeople, 'p1');
+      expect(sortedWithCharlie.map(p => p.name)).toEqual(['Charlie', 'Alice', 'Bob']);
+
+      const sortedWithBob = sortPeople(mockPeople, 'p3');
+      expect(sortedWithBob.map(p => p.name)).toEqual(['Bob', 'Alice', 'Charlie']);
+    });
+
+    it('handles selectedPersonId that does not exist in the list', () => {
+      const sorted = sortPeople(mockPeople, 'p999');
+      expect(sorted.map(p => p.name)).toEqual(['Alice', 'Bob', 'Charlie']);
+    });
+
+    it('handles empty or single person arrays', () => {
+      expect(sortPeople([])).toEqual([]);
+      expect(sortPeople([mockPeople[0]], 'p1')).toEqual([mockPeople[0]]);
     });
   });
 

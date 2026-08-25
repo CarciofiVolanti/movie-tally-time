@@ -113,6 +113,7 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
             <TabsContent value="people">
               <PeoplePanel
                 people={session.people}
+                selectedPersonId={session.selectedPersonId}
                 onAddPerson={session.addPerson}
                 onUpdatePerson={session.updatePerson}
                 onDeletePerson={session.deletePerson}

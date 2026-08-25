@@ -1,0 +1,7 @@
+STATS:
+- best friend and worst enemy with the rating given to each other's proposals
+- one's own worst proposal (the one you gave a bad rating to)
+- the longest time between proposing and watching
+- your beloved: the one you gave the highest want to watch to
+GENERAL: 
+- ignore presence and show global ratings

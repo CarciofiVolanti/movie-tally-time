@@ -6,13 +6,25 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from "lucide-react";
 
-const PeoplePanel = ({ people, onAddPerson, onUpdatePerson, onDeletePerson }: {
+import { sortPeople } from "@/lib/sessionHelpers";
+
+interface PeoplePanelProps {
   people: Person[];
+  selectedPersonId?: string;
   onAddPerson: (name: string) => Promise<void>;
   onUpdatePerson: (p: Person) => Promise<void>;
   onDeletePerson: (id: string) => Promise<void>;
-}) => {
+}
+
+const PeoplePanel = ({
+  people,
+  selectedPersonId,
+  onAddPerson,
+  onUpdatePerson,
+  onDeletePerson,
+}: PeoplePanelProps) => {
   const [newPersonName, setNewPersonName] = useState("");
+  const sortedPeople = sortPeople(people, selectedPersonId);
 
   return (
     <>
@@ -31,7 +43,7 @@ const PeoplePanel = ({ people, onAddPerson, onUpdatePerson, onDeletePerson }: {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2 mt-4">
-        {people.slice().sort((a, b) => a.name.localeCompare(b.name)).map(person => (
+        {sortedPeople.map(person => (
           <PersonCard key={person.id} person={person} onUpdatePerson={onUpdatePerson} onDeletePerson={onDeletePerson} />
         ))}
       </div>

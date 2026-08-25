@@ -4,7 +4,7 @@ import PeoplePanel from '../PeoplePanel';
 import { Person } from '@/types/session';
 
 // Mock PersonCard to avoid testing child implementation details here
-vi.mock('../PersonCard', () => ({
+vi.mock('@/components/PersonCard', () => ({
   PersonCard: ({ person, onDeletePerson }: any) => (
     <div data-testid="person-card">
       {person.name}
@@ -68,5 +68,44 @@ describe('PeoplePanel', () => {
     );
 
     expect(screen.getByText(/No people added yet/i)).toBeInTheDocument();
+  });
+
+  it('renders selected person first in the list when selectedPersonId is provided', () => {
+    const peopleList: Person[] = [
+      { id: 'p1', name: 'Alice', isPresent: true, movies: [] },
+      { id: 'p2', name: 'Bob', isPresent: true, movies: [] },
+      { id: 'p3', name: 'Charlie', isPresent: true, movies: [] },
+    ];
+
+    const { rerender } = render(
+      <PeoplePanel
+        people={peopleList}
+        selectedPersonId="p3"
+        onAddPerson={vi.fn()}
+        onUpdatePerson={vi.fn()}
+        onDeletePerson={vi.fn()}
+      />
+    );
+
+    let cards = screen.getAllByTestId('person-card');
+    expect(cards[0]).toHaveTextContent('Charlie');
+    expect(cards[1]).toHaveTextContent('Alice');
+    expect(cards[2]).toHaveTextContent('Bob');
+
+    // Rerender with Bob selected
+    rerender(
+      <PeoplePanel
+        people={peopleList}
+        selectedPersonId="p2"
+        onAddPerson={vi.fn()}
+        onUpdatePerson={vi.fn()}
+        onDeletePerson={vi.fn()}
+      />
+    );
+
+    cards = screen.getAllByTestId('person-card');
+    expect(cards[0]).toHaveTextContent('Bob');
+    expect(cards[1]).toHaveTextContent('Alice');
+    expect(cards[2]).toHaveTextContent('Charlie');
   });
 });
