@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Star, Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Star, Plus, Search, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddMovieDialog } from "./AddMovieDialog";
 import  MovieRatingTab  from "./MovieRatingTab";
@@ -10,6 +11,7 @@ import type { WatchedMoviesProps } from "./types";
 
 export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMoviesProps) => {
   const [showAddMovie, setShowAddMovie] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { loading, ...data } = useWatchedMoviesData(sessionId);
 
   if (loading) {
@@ -26,6 +28,18 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
       </div>
     );
   }
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredWatchedMovies = data.watchedMovies.filter(movie => {
+    if (!normalizedQuery) return true;
+    return (
+      movie.movie_title.toLowerCase().includes(normalizedQuery) ||
+      (movie.proposed_by && movie.proposed_by.toLowerCase().includes(normalizedQuery)) ||
+      (movie.genre && movie.genre.toLowerCase().includes(normalizedQuery)) ||
+      (movie.director && movie.director.toLowerCase().includes(normalizedQuery)) ||
+      (movie.year && movie.year.toLowerCase().includes(normalizedQuery))
+    );
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 p-4">
@@ -56,6 +70,28 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
           </div>
         </div>
 
+        {data.watchedMovies.length > 0 && (
+          <div className="relative mb-6">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search watched movies by title, proposer, genre..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-9 text-sm h-10 bg-card/60"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                aria-label="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
+
         <Tabs defaultValue="rate" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="rate">Rate Movies</TabsTrigger>
@@ -67,11 +103,15 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
               sessionId={sessionId}
               selectedPersonId={selectedPersonId}
               {...data}
+              watchedMovies={filteredWatchedMovies}
             />
           </TabsContent>
 
           <TabsContent value="rankings" className="space-y-4">
-            <MovieRankings {...data} />
+            <MovieRankings
+              {...data}
+              watchedMovies={filteredWatchedMovies}
+            />
           </TabsContent>
         </Tabs>
 

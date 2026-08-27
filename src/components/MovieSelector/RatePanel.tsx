@@ -3,7 +3,10 @@ import { MovieRating, Person } from "@/types/session";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Film, RefreshCw, ChevronDown, ChevronRight, Heart } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Film, RefreshCw, ChevronDown, ChevronRight, Heart, Search, X } from "lucide-react";
 import { MovieCard } from "../MovieCard";
 import useFavouriteMovie from "@/hooks/useFavouriteMovie";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 const RatePanel = ({
   movieRatings,
   presentPeople,
+  people,
   selectedPersonId,
   setSelectedPersonId,
   fetchingDetails,
@@ -25,6 +29,7 @@ const RatePanel = ({
 }: {
   movieRatings: MovieRating[];
   presentPeople: Person[];
+  people?: Person[];
   selectedPersonId: string;
   setSelectedPersonId: (id: string) => void;
   fetchingDetails: boolean;
@@ -39,12 +44,16 @@ const RatePanel = ({
 }) => {
   const { favoriteProposalId, loading: favLoading, toggleFavourite } = useFavouriteMovie(selectedPersonId);
   const [localCollapsedOverrides, setLocalCollapsedOverrides] = useState<Record<string, boolean>>({});
+  const [showAllVotes, setShowAllVotes] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const selectedPersonName = presentPeople.find(p => p.id === selectedPersonId)?.name;
+  const allPeople = people ?? presentPeople;
+  const displayPeople = showAllVotes ? allPeople : presentPeople;
+  const selectedPersonName = allPeople.find(p => p.id === selectedPersonId)?.name;
 
   const isOwnProposalFor = (movie: MovieRating) => {
-    if (selectedPersonId && (movie as any).proposerId) {
-      return (movie as any).proposerId === selectedPersonId;
+    if (selectedPersonId && movie.proposerId) {
+      return movie.proposerId === selectedPersonId;
     }
     // Fallback to name comparison before proposerId is attached
     return selectedPersonName ? selectedPersonName === movie.proposedBy : false;
@@ -81,32 +90,80 @@ const RatePanel = ({
     }
   };
 
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredMovieRatings = movieRatings.filter(movie => {
+    if (!normalizedQuery) return true;
+    return (
+      movie.movieTitle.toLowerCase().includes(normalizedQuery) ||
+      (movie.proposedBy && movie.proposedBy.toLowerCase().includes(normalizedQuery)) ||
+      (movie.details?.genre && movie.details.genre.toLowerCase().includes(normalizedQuery)) ||
+      (movie.details?.director && movie.details.director.toLowerCase().includes(normalizedQuery)) ||
+      (movie.details?.year && movie.details.year.toLowerCase().includes(normalizedQuery))
+    );
+  });
+
   return (
     <>
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between w-full">
+        <CardHeader className="space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
             <div className="flex items-center gap-2">
               <span>Rate All Movies</span>
             </div>
             <div className="flex flex-wrap items-center gap-2 justify-end">
+              <div className="flex items-center space-x-2 mr-1">
+                <Switch
+                  id="show-all-votes"
+                  checked={showAllVotes}
+                  onCheckedChange={setShowAllVotes}
+                />
+                <Label htmlFor="show-all-votes" className="text-xs cursor-pointer select-none">
+                  Show all votes
+                </Label>
+              </div>
               <Button variant="outline" size="sm" onClick={() => setShouldSort(true)} className="text-xs">
                 <RefreshCw className="w-3 h-3 mr-1" /> Refresh Order
               </Button>
               <Button variant="outline" size="sm" onClick={fetchAllMovieDetails} disabled={fetchingDetails || movieRatings.length === 0} className="text-xs">
                 {fetchingDetails ? <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-1" />} Update Details
               </Button>
-              <Badge variant="secondary">{presentPeople.length} present</Badge>
+              <Badge variant="secondary">
+                {showAllVotes
+                  ? `${allPeople.length} total`
+                  : `${presentPeople.length} present`}
+              </Badge>
             </div>
           </div>
+
+          {movieRatings.length > 0 && (
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search movies by title, proposer, genre..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-9 text-sm h-9"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
         </CardHeader>
       </Card>
 
       <div className="flex flex-col gap-4 w-full max-w-xl mx-auto mt-4">
-        {movieRatings.map(movie => {
+        {filteredMovieRatings.map(movie => {
           const hasVoted = selectedPersonId && movie.ratings[selectedPersonId] !== undefined && movie.ratings[selectedPersonId] > 0;
           // use attached proposalId/proposerId directly
-          const proposalId = (movie as any).proposalId ?? (movie as any).proposal_id ?? null;
+          const proposalId = movie.proposalId ?? null;
           const disallowOwn = isOwnProposalFor(movie);
           const isFavourite = proposalId ? favoriteProposalId === proposalId : false;
 
@@ -154,7 +211,8 @@ const RatePanel = ({
                 <CardContent>
                   <MovieCard
                     movie={movie}
-                    people={presentPeople}
+                    people={displayPeople}
+                    ignorePresence={showAllVotes}
                     currentPersonId={selectedPersonId}
                     onRatingChange={updateRating}
                     onSearchAgain={searchMovieAgain}
@@ -169,12 +227,23 @@ const RatePanel = ({
         })}
       </div>
 
-      {movieRatings.length === 0 && <Card className="text-center py-8 mt-4">
-        <CardContent>
-          <Film className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">No movies found in this session. Add some movies to get started!</p>
-        </CardContent>
-      </Card>}
+      {movieRatings.length === 0 && (
+        <Card className="text-center py-8 mt-4">
+          <CardContent>
+            <Film className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No movies found in this session. Add some movies to get started!</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {movieRatings.length > 0 && filteredMovieRatings.length === 0 && (
+        <Card className="text-center py-8 mt-4">
+          <CardContent>
+            <Search className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No movies found matching "{searchQuery}"</p>
+          </CardContent>
+        </Card>
+      )}
     </>
   );
 };

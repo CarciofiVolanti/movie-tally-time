@@ -11,6 +11,7 @@ import { MovieDetails, MovieRating, Person } from "@/types/session";
 interface MovieCardProps {
   movie: MovieRating;
   people: Person[];
+  ignorePresence?: boolean;
   currentPersonId?: string;
   onRatingChange: (proposalId: string, personId: string, rating: number) => Promise<void>;
   onSearchAgain: (movieTitle: string) => Promise<void>;
@@ -22,6 +23,7 @@ interface MovieCardProps {
 export const MovieCard = memo(({
   movie,
   people,
+  ignorePresence = false,
   currentPersonId,
   onRatingChange,
   onSearchAgain,
@@ -94,8 +96,8 @@ export const MovieCard = memo(({
   );
   // --- end comment additions ---
 
-  const presentPeople = people.filter(p => p.isPresent);
-  const ratedPeople = presentPeople.filter(p => movie.ratings[p.id] && movie.ratings[p.id] > 0);
+  const activePeople = ignorePresence ? people : people.filter(p => p.isPresent);
+  const ratedPeople = activePeople.filter(p => movie.ratings[p.id] && movie.ratings[p.id] > 0);
   const totalRatings = ratedPeople.length;
   const averageRating = totalRatings > 0
     ? ratedPeople.reduce((sum, p) => sum + movie.ratings[p.id], 0) / totalRatings
@@ -242,7 +244,7 @@ export const MovieCard = memo(({
 
       <CardContent className="space-y-4 p-4 pt-0">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>{totalRatings}/{presentPeople.length} ratings</span>
+          <span>{totalRatings}/{activePeople.length} ratings</span>
           <StarRating rating={averageRating} readonly size="sm" />
         </div>
 
@@ -250,9 +252,16 @@ export const MovieCard = memo(({
           <div className="space-y-3">
             <h4 className="text-sm font-medium">Individual Ratings</h4>
             <div className="space-y-2">
-              {presentPeople.map((person) => (
+              {activePeople.map((person) => (
                 <div key={person.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-md gap-2">
-                  <span className="text-sm font-medium flex-1 min-w-0 truncate">{person.name}</span>
+                  <span className="text-sm font-medium flex-1 min-w-0 truncate flex items-center gap-1.5">
+                    <span className="truncate">{person.name}</span>
+                    {!person.isPresent && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal text-muted-foreground flex-shrink-0">
+                        Absent
+                      </Badge>
+                    )}
+                  </span>
                   <div className="flex-shrink-0">
                     <StarRating
                       rating={movie.ratings[person.id] || 0}

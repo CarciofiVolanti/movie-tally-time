@@ -124,6 +124,7 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
               <RatePanel
                 movieRatings={session.getSortedMovies()}
                 presentPeople={session.presentPeople}
+                people={session.people}
                 selectedPersonId={session.selectedPersonId}
                 setSelectedPersonId={session.setSelectedPersonId}
                 fetchingDetails={session.fetchingDetails}

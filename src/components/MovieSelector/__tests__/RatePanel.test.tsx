@@ -13,11 +13,13 @@ vi.mock('@/hooks/useFavouriteMovie', () => ({
 }));
 
 vi.mock('../../MovieCard', () => ({
-  MovieCard: ({ movie, onSaveComment }: any) => (
+  MovieCard: ({ movie, people, ignorePresence, onSaveComment }: any) => (
     <div data-testid={`movie-card-${movie.movieTitle}`}>
       <span data-testid="card-title">{movie.movieTitle}</span>
       <span data-testid="card-proposer">{movie.proposedBy}</span>
       <span data-testid="card-comment">{movie.comment || 'No comment'}</span>
+      <span data-testid="card-ignore-presence">{String(ignorePresence)}</span>
+      <span data-testid="card-people-count">{people?.length ?? 0}</span>
       {onSaveComment && (
         <button
           data-testid="save-comment-btn"
@@ -95,5 +97,71 @@ describe('RatePanel', () => {
     });
 
     expect(handleUpdateComment).toHaveBeenCalledWith('prop-1', 'p1', 'New saved comment');
+  });
+
+  it('renders the "Show all votes" switch and updates badge and MovieCard props when toggled', async () => {
+    const allPeople: Person[] = [
+      { id: 'p1', name: 'Alice', isPresent: true, movies: [] },
+      { id: 'p2', name: 'Bob', isPresent: true, movies: [] },
+      { id: 'p3', name: 'Charlie', isPresent: false, movies: [] },
+    ];
+    const presentPeople = allPeople.filter(p => p.isPresent);
+
+    render(
+      <RatePanel
+        {...defaultProps}
+        people={allPeople}
+        presentPeople={presentPeople}
+      />
+    );
+
+    // Initial state: Show all votes is off
+    expect(screen.getByText('2 present')).toBeInTheDocument();
+    const ignorePresenceTags = screen.getAllByTestId('card-ignore-presence');
+    expect(ignorePresenceTags[0]).toHaveTextContent('false');
+    const peopleCountTags = screen.getAllByTestId('card-people-count');
+    expect(peopleCountTags[0]).toHaveTextContent('2');
+
+    // Toggle "Show all votes" switch
+    const toggleSwitch = screen.getByRole('switch');
+    await act(async () => {
+      fireEvent.click(toggleSwitch);
+    });
+
+    // After toggle: Show all votes is on
+    expect(screen.getByText('3 total')).toBeInTheDocument();
+    expect(ignorePresenceTags[0]).toHaveTextContent('true');
+    expect(peopleCountTags[0]).toHaveTextContent('3');
+  });
+
+  it('filters movies by search query and allows clearing search', async () => {
+    render(<RatePanel {...defaultProps} />);
+
+    const searchInput = screen.getByPlaceholderText(/Search movies by title/i);
+    expect(searchInput).toBeInTheDocument();
+
+    // Search for "Matrix"
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'Matrix' } });
+    });
+
+    expect(screen.getByTestId('movie-card-The Matrix')).toBeInTheDocument();
+    expect(screen.queryByTestId('movie-card-Interstellar')).not.toBeInTheDocument();
+
+    // Search for non-existent movie
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'Nonexistent' } });
+    });
+
+    expect(screen.getByText('No movies found matching "Nonexistent"')).toBeInTheDocument();
+
+    // Clear search
+    const clearButton = screen.getByLabelText(/Clear search/i);
+    await act(async () => {
+      fireEvent.click(clearButton);
+    });
+
+    expect(screen.getByTestId('movie-card-The Matrix')).toBeInTheDocument();
+    expect(screen.getByTestId('movie-card-Interstellar')).toBeInTheDocument();
   });
 });

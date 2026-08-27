@@ -179,4 +179,32 @@ describe('MovieCard', () => {
     expect(screen.getByText('Proposed by Alice')).toBeInTheDocument();
     expect(screen.getByText('Hidden gem without OMDB details')).toBeInTheDocument();
   });
+
+  it('calculates ratings and shows Absent badge for absent people when ignorePresence is true', () => {
+    const movieWithMultipleVotes: MovieRating = {
+      ...mockMovie,
+      ratings: { 'p1': 4, 'p3': 2 } // p1 is present (4), p3 is absent (2)
+    };
+
+    render(
+      <MovieCard
+        movie={movieWithMultipleVotes}
+        people={mockPeople}
+        ignorePresence={true}
+        onRatingChange={vi.fn()}
+        onSearchAgain={vi.fn()}
+        onMarkAsWatched={vi.fn()}
+        showAllRatings={true}
+      />
+    );
+
+    // Total = 2 (p1 and p3), total people = 3 (Bob, Alice, Charlie), avg = (4+2)/2 = 3
+    expect(screen.getByText('2/3 ratings')).toBeInTheDocument();
+    expect(screen.getByText('Rating: 3 (ReadOnly)')).toBeInTheDocument();
+
+    // Absent badge should be present for Charlie
+    expect(screen.getByText('Charlie')).toBeInTheDocument();
+    expect(screen.getByText('Absent')).toBeInTheDocument();
+  });
 });
+
