@@ -1,6 +1,29 @@
 import { WatchedMovie, DetailedRating, MovieRating, Person, MovieProposal } from "../hooks/useStatsData";
-import { calculateTotalRuntime, formatRuntime } from "./runtime";
+import { calculateTotalRuntime, formatRuntime, parseRuntime } from "./runtime";
 import { calculateGenreRadarData } from "./genre";
+
+export const calculatePearsonCorrelation = (x: number[], y: number[]): number | null => {
+  if (x.length !== y.length || x.length < 2) return null;
+  const n = x.length;
+  const sumX = x.reduce((a, b) => a + b, 0);
+  const sumY = y.reduce((a, b) => a + b, 0);
+  const sumXY = x.reduce((a, b, i) => a + b * y[i], 0);
+  const sumX2 = x.reduce((a, b) => a + b * b, 0);
+  const sumY2 = y.reduce((a, b) => a + b * b, 0);
+
+  const numerator = n * sumXY - sumX * sumY;
+  const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+  
+  if (denominator === 0) return 0;
+  return numerator / denominator;
+};
+
+export const getLengthPreference = (correlation: number | null): string => {
+  if (correlation === null) return "Not enough data";
+  if (correlation > 0.3) return "Prefers longer movies";
+  if (correlation < -0.3) return "Prefers shorter movies";
+  return "No strong preference";
+};
 
 export const calculatePersonStats = (
   personId: string,
@@ -37,6 +60,40 @@ export const calculatePersonStats = (
     : 0;
 
   const totalRuntimeMinutes = calculateTotalRuntime(attendedMovies);
+
+  const ratingRuntimes: number[] = [];
+  const ratingValues: number[] = [];
+  personRatings.forEach(r => {
+    const movie = watchedMovies.find(m => m.id === r.watched_movie_id);
+    if (movie && movie.runtime) {
+      const mins = parseRuntime(movie.runtime);
+      if (mins > 0) {
+        ratingRuntimes.push(mins);
+        ratingValues.push(r.rating!);
+      }
+    }
+  });
+
+  const hypeRuntimes: number[] = [];
+  const hypeValues: number[] = [];
+  personHype.forEach(r => {
+    let movie = null;
+    if (r.watched_movie_id) {
+      movie = watchedMovies.find(m => m.id === r.watched_movie_id);
+    } else if (r.proposal_id) {
+      movie = proposals.find(p => p.id === r.proposal_id);
+    }
+    if (movie && movie.runtime) {
+      const mins = parseRuntime(movie.runtime);
+      if (mins > 0) {
+        hypeRuntimes.push(mins);
+        hypeValues.push(r.rating);
+      }
+    }
+  });
+
+  const scoreLengthCorrelation = calculatePearsonCorrelation(ratingRuntimes, ratingValues);
+  const hypeLengthCorrelation = calculatePearsonCorrelation(hypeRuntimes, hypeValues);
 
   const genreScores: Record<string, { sum: number, count: number }> = {};
   personRatings.forEach(r => {
@@ -215,6 +272,8 @@ export const calculatePersonStats = (
     worstSynergy,
     biggestSurprise,
     biggestDisappointment,
-    radarData
+    radarData,
+    scoreLengthPreference: getLengthPreference(scoreLengthCorrelation),
+    hypeLengthPreference: getLengthPreference(hypeLengthCorrelation),
   };
 };

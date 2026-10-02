@@ -24,6 +24,8 @@ interface PersonStatsProps {
     biggestSurprise: { title: string; hype: number; score: number; diff: number } | null;
     biggestDisappointment: { title: string; hype: number; score: number; diff: number } | null;
     radarData: { subject: string; hype: number; score: number; fullMark: number }[];
+    scoreLengthPreference: string;
+    hypeLengthPreference: string;
   };
 }
 
@@ -134,6 +136,18 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
                   <div className="p-2 rounded bg-orange-500/5 border border-orange-500/10">
                     <p className="text-[10px] text-orange-600 font-bold uppercase">Most Anticipated</p>
                     <p className="text-sm font-medium">{stats.topHypeGenre.name}</p>
+                  </div>
+                )}
+                {stats.scoreLengthPreference !== "Not enough data" && (
+                  <div className="p-2 rounded bg-blue-500/5 border border-blue-500/10">
+                    <p className="text-[10px] text-blue-600 font-bold uppercase">Runtime Pref (Post-Watch)</p>
+                    <p className="text-sm font-medium">{stats.scoreLengthPreference}</p>
+                  </div>
+                )}
+                {stats.hypeLengthPreference !== "Not enough data" && (
+                  <div className="p-2 rounded bg-purple-500/5 border border-purple-500/10">
+                    <p className="text-[10px] text-purple-600 font-bold uppercase">Runtime Pref (Pre-Watch)</p>
+                    <p className="text-sm font-medium">{stats.hypeLengthPreference}</p>
                   </div>
                 )}
               </div>
