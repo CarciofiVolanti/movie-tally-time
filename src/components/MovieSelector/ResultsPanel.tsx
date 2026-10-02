@@ -140,10 +140,6 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
                </div>
 
                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-3">
-                 {movie.details?.imdbId && (
-                   <a href={`https://www.imdb.com/title/${movie.details.imdbId}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View on IMDb</a>
-                 )}
-
                  <button onClick={() => setPendingWatched(movie.movieTitle)} className="inline-flex items-center gap-2 px-3 py-1 border rounded text-xs">
                    <Check className="w-3 h-3" />
                    Watched
