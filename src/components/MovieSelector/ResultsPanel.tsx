@@ -70,7 +70,18 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
                    {index + 1}
                  </div>
                  <div className="flex-1 min-w-0">
-                   <h3 className="font-semibold text-base sm:text-lg leading-tight truncate">{movie.movieTitle}</h3>
+                   {movie.details?.imdbId ? (
+                     <a
+                       href={`https://www.imdb.com/title/${movie.details.imdbId}`}
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       className="font-semibold text-base sm:text-lg leading-tight truncate hover:underline hover:text-primary transition-colors block"
+                     >
+                       {movie.movieTitle}
+                     </a>
+                   ) : (
+                     <h3 className="font-semibold text-base sm:text-lg leading-tight truncate">{movie.movieTitle}</h3>
+                   )}
                    <p className="text-xs sm:text-sm text-muted-foreground">
                      Proposed by {movie.proposedBy}
                      {movie.createdAt && formatProposalAge(movie.createdAt) ? (
