@@ -34,6 +34,9 @@ export const calculateGroupLengthPreferences = (
 ) => {
   const ratingRuntimes: number[] = [];
   const ratingValues: number[] = [];
+  const scoreScatterData: { runtime: number; score: number; title: string }[] = [];
+  const hypeScatterData: { runtime: number; score: number; title: string }[] = [];
+
   detailedRatings.forEach(r => {
     if (r.rating !== null && r.rating > 0) {
       const movie = watchedMovies.find(m => m.id === r.watched_movie_id);
@@ -42,26 +45,29 @@ export const calculateGroupLengthPreferences = (
         if (mins > 0) {
           ratingRuntimes.push(mins);
           ratingValues.push(r.rating);
+          scoreScatterData.push({ runtime: mins, score: r.rating, title: movie.movie_title });
         }
       }
     }
   });
 
-  const hypeRuntimes: number[] = [];
-  const hypeValues: number[] = [];
   movieRatings.forEach(r => {
     if (r.rating > 0) {
       let movie = null;
+      let title = "";
       if (r.watched_movie_id) {
         movie = watchedMovies.find(m => m.id === r.watched_movie_id);
+        title = movie?.movie_title || "";
       } else if (r.proposal_id) {
         movie = proposals.find(p => p.id === r.proposal_id);
+        title = movie?.movie_title || "";
       }
-      if (movie && movie.runtime) {
+      if (movie && movie.runtime && title) {
         const mins = parseRuntime(movie.runtime);
         if (mins > 0) {
           hypeRuntimes.push(mins);
           hypeValues.push(r.rating);
+          hypeScatterData.push({ runtime: mins, score: r.rating, title });
         }
       }
     }
@@ -70,6 +76,8 @@ export const calculateGroupLengthPreferences = (
   return {
     scorePreference: getLengthPreference(calculatePearsonCorrelation(ratingRuntimes, ratingValues)),
     hypePreference: getLengthPreference(calculatePearsonCorrelation(hypeRuntimes, hypeValues)),
+    scoreScatterData,
+    hypeScatterData,
   };
 };
 

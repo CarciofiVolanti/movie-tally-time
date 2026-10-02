@@ -14,6 +14,7 @@ import { AnticipationAwards } from "./AnticipationAwards";
 import { PersonStats } from "./PersonStats";
 import { GroupHighlights } from "./GroupHighlights";
 import { GenreRadarChart } from "./GenreRadarChart";
+import { RuntimeScatterChart } from "./RuntimeScatterChart";
 
 interface StatsProps {
   sessionId: string;
@@ -143,6 +144,21 @@ export const Stats = ({ sessionId, onBack }: StatsProps) => {
                 </div>
 
                 <AwardsList awards={awards} expandedId={expandedRankingId} onToggleExpand={(id) => setExpandedRankingId(expandedRankingId === id ? null : id)} />
+
+                <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <RuntimeScatterChart 
+                    data={lengthPreferences.scoreScatterData} 
+                    title="Group Post-Watch Score vs Runtime" 
+                    preferenceText={lengthPreferences.scorePreference}
+                  />
+                  <RuntimeScatterChart 
+                    data={lengthPreferences.hypeScatterData} 
+                    title="Group Pre-Watch Hype vs Runtime" 
+                    preferenceText={lengthPreferences.hypePreference}
+                    isHype={true}
+                  />
+                </div>
+
                 <GroupHighlights surprise={groupHighlights.surprise} disappointment={groupHighlights.disappointment} />
                 <SynergyAwards stats={synergyStats} expandedId={expandedRankingId} onToggleExpand={(id) => setExpandedRankingId(expandedRankingId === id ? null : id)} />
                 <AnticipationAwards stats={anticipationStats} expandedId={expandedRankingId} onToggleExpand={(id) => setExpandedRankingId(expandedRankingId === id ? null : id)} />

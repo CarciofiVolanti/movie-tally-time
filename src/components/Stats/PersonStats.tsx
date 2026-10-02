@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Clock, Film, Star, Sparkles, Target, TrendingUp, TrendingDown, Info, Heart, Zap, Ghost, AlertCircle, Frown } from "lucide-react";
 import { GenreRadarChart } from "./GenreRadarChart";
+import { RuntimeScatterChart } from "./RuntimeScatterChart";
 
 interface PersonStatsProps {
   name: string;
@@ -26,6 +27,8 @@ interface PersonStatsProps {
     radarData: { subject: string; hype: number; score: number; fullMark: number }[];
     scoreLengthPreference: string;
     hypeLengthPreference: string;
+    scoreScatterData: { runtime: number; score: number; title: string }[];
+    hypeScatterData: { runtime: number; score: number; title: string }[];
   };
 }
 
@@ -154,6 +157,21 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Runtime Scatter Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <RuntimeScatterChart 
+          data={stats.scoreScatterData} 
+          title="Runtime vs Post-Watch Score" 
+          preferenceText={stats.scoreLengthPreference}
+        />
+        <RuntimeScatterChart 
+          data={stats.hypeScatterData} 
+          title="Runtime vs Pre-Watch Hype" 
+          preferenceText={stats.hypeLengthPreference}
+          isHype={true}
+        />
       </div>
 
       {/* Social Synergy & Anti-Synergy */}
