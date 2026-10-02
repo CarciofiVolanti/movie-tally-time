@@ -49,7 +49,7 @@ export const Stats = ({ sessionId, onBack }: StatsProps) => {
     );
   }
 
-  const { averageRating, totalVotes, medianRating, averageHype, totalHypeVotes, medianHype, awards, genreData, movieAverages, anticipationStats, synergyStats, groupHighlights, groupRadarData, personStats, mostAnticipated, totalRuntime } = calc;
+  const { averageRating, totalVotes, medianRating, averageHype, totalHypeVotes, medianHype, lengthPreferences, awards, genreData, movieAverages, anticipationStats, synergyStats, groupHighlights, groupRadarData, personStats, mostAnticipated, totalRuntime } = calc;
 
   const hasWatched = watchedMovies.length > 0;
   const hasProposals = proposals.length > 0;
@@ -145,17 +145,11 @@ export const Stats = ({ sessionId, onBack }: StatsProps) => {
 
                 <AwardsList awards={awards} expandedId={expandedRankingId} onToggleExpand={(id) => setExpandedRankingId(expandedRankingId === id ? null : id)} />
 
-                <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="col-span-full grid grid-cols-1 gap-6">
                   <RuntimeScatterChart 
                     data={lengthPreferences.scoreScatterData} 
                     title="Group Post-Watch Score vs Runtime" 
                     preferenceText={lengthPreferences.scorePreference}
-                  />
-                  <RuntimeScatterChart 
-                    data={lengthPreferences.hypeScatterData} 
-                    title="Group Pre-Watch Hype vs Runtime" 
-                    preferenceText={lengthPreferences.hypePreference}
-                    isHype={true}
                   />
                 </div>
 

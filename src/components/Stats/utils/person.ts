@@ -12,9 +12,10 @@ export const calculatePearsonCorrelation = (x: number[], y: number[]): number | 
   const sumY2 = y.reduce((a, b) => a + b * b, 0);
 
   const numerator = n * sumXY - sumX * sumY;
-  const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+  const varianceProduct = (n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY);
+  if (varianceProduct <= 0) return 0;
   
-  if (denominator === 0) return 0;
+  const denominator = Math.sqrt(varianceProduct);
   return numerator / denominator;
 };
 

@@ -147,12 +147,7 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
                     <p className="text-sm font-medium">{stats.scoreLengthPreference}</p>
                   </div>
                 )}
-                {stats.hypeLengthPreference !== "Not enough data" && (
-                  <div className="p-2 rounded bg-purple-500/5 border border-purple-500/10">
-                    <p className="text-[10px] text-purple-600 font-bold uppercase">Runtime Pref (Pre-Watch)</p>
-                    <p className="text-sm font-medium">{stats.hypeLengthPreference}</p>
-                  </div>
-                )}
+
               </div>
             </div>
           </CardContent>
@@ -160,17 +155,11 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
       </div>
 
       {/* Runtime Scatter Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <RuntimeScatterChart 
           data={stats.scoreScatterData} 
           title="Runtime vs Post-Watch Score" 
           preferenceText={stats.scoreLengthPreference}
-        />
-        <RuntimeScatterChart 
-          data={stats.hypeScatterData} 
-          title="Runtime vs Pre-Watch Hype" 
-          preferenceText={stats.hypeLengthPreference}
-          isHype={true}
         />
       </div>
 
