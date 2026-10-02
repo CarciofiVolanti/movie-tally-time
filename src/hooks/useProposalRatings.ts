@@ -20,6 +20,8 @@ interface UseProposalRatingsConfig {
   toast: Toast;
 }
 
+import { useQueryClient } from "@tanstack/react-query";
+
 export const useProposalRatings = ({
   sessionId,
   people,
@@ -32,6 +34,8 @@ export const useProposalRatings = ({
   setCollapsedMovies,
   toast,
 }: UseProposalRatingsConfig) => {
+
+  const queryClient = useQueryClient();
 
   const presentPeople = useMemo(() => people.filter(p => p.isPresent), [people]);
 
@@ -143,7 +147,8 @@ export const useProposalRatings = ({
       if (insertError) throw insertError;
 
       const watchedId = insertedWatched.id;
-      await supabase.from('movie_ratings').update({ watched_movie_id: watchedId }).eq('proposal_id', proposal.id);
+      // Also setting proposal_id to null for correctness, though cascade might handle it
+      await supabase.from('movie_ratings').update({ watched_movie_id: watchedId, proposal_id: null }).eq('proposal_id', proposal.id);
       await supabase.from('proposal_comments').delete().eq('proposal_id', proposal.id);
       await supabase.from('movie_proposals').delete().eq('id', proposal.id);
 
@@ -152,6 +157,7 @@ export const useProposalRatings = ({
         ...person,
         movies: person.movies.filter(m => m !== movieTitle),
       })));
+      queryClient.invalidateQueries({ queryKey: ["stats", sessionId] });
       toast({ title: "Movie marked as watched", description: `"${movieTitle}" has been moved to watched movies section` });
     } catch (err) {
       console.error('Error marking movie as watched:', err);

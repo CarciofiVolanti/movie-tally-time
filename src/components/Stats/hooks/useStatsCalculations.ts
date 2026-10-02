@@ -4,6 +4,7 @@ import {
   calculateTotalRuntime,
   formatRuntime,
   calculateOverallAverageRating,
+  calculateOverallHype,
   calculateAwards,
   calculateGenreDistribution,
   calculateMovieAverages,
@@ -12,6 +13,7 @@ import {
   calculatePersonStats,
   calculateGroupHighlights,
   calculateGenreRadarData,
+  calculateGroupLengthPreferences,
 } from "../utils";
 
 interface StatsData {
@@ -31,10 +33,12 @@ export const useStatsCalculations = ({
   people,
   viewingPersonId,
 }: StatsData) => {
-  return useMemo(() => {
+  const groupStats = useMemo(() => {
     try {
       const totalRuntime = calculateTotalRuntime(watchedMovies);
-      const { average: averageRating, count: totalVotes } = calculateOverallAverageRating(detailedRatings);
+      const { average: averageRating, count: totalVotes, median: medianRating } = calculateOverallAverageRating(detailedRatings);
+      const { average: averageHype, count: totalHypeVotes, median: medianHype } = calculateOverallHype(proposalRatings);
+      const lengthPreferences = calculateGroupLengthPreferences(watchedMovies, detailedRatings, proposalRatings, proposals);
       const awards = calculateAwards(watchedMovies, detailedRatings, people);
       const genreData = calculateGenreDistribution(watchedMovies);
       const movieAverages = calculateMovieAverages(watchedMovies, detailedRatings);
@@ -42,9 +46,6 @@ export const useStatsCalculations = ({
       const synergyStats = calculateSynergyStats(proposalRatings, detailedRatings, people, watchedMovies, proposals);
       const groupHighlights = calculateGroupHighlights(watchedMovies, detailedRatings, proposalRatings);
       const groupRadarData = calculateGenreRadarData(watchedMovies, detailedRatings, proposalRatings);
-      const personStats = viewingPersonId
-        ? calculatePersonStats(viewingPersonId, watchedMovies, detailedRatings, proposalRatings, proposals, people)
-        : null;
 
       const mostAnticipated = proposals.length > 0
         ? [...proposals].map(p => {
@@ -60,6 +61,11 @@ export const useStatsCalculations = ({
         formattedRuntime: formatRuntime(totalRuntime),
         averageRating,
         totalVotes,
+        medianRating,
+        averageHype,
+        totalHypeVotes,
+        medianHype,
+        lengthPreferences,
         awards,
         genreData,
         movieAverages,
@@ -67,12 +73,29 @@ export const useStatsCalculations = ({
         synergyStats,
         groupHighlights,
         groupRadarData,
-        personStats,
         mostAnticipated,
       };
     } catch (err) {
-      console.error("Error calculating stats:", err);
+      console.error("Error calculating group stats:", err);
       return { ok: false as const };
     }
-  }, [watchedMovies, detailedRatings, proposals, proposalRatings, people, viewingPersonId]);
+  }, [watchedMovies, detailedRatings, proposals, proposalRatings, people]);
+
+  const personStats = useMemo(() => {
+    try {
+      if (!viewingPersonId) return null;
+      return calculatePersonStats(viewingPersonId, watchedMovies, detailedRatings, proposalRatings, proposals, people);
+    } catch (err) {
+      console.error("Error calculating person stats:", err);
+      return null;
+    }
+  }, [viewingPersonId, watchedMovies, detailedRatings, proposalRatings, proposals, people]);
+
+  return useMemo(() => {
+    if (!groupStats.ok) return { ok: false as const };
+    return {
+      ...groupStats,
+      personStats,
+    };
+  }, [groupStats, personStats]);
 };

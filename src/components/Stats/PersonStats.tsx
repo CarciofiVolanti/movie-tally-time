@@ -8,7 +8,9 @@ interface PersonStatsProps {
     moviesWatched: number;
     totalWatchTime: string;
     avgRatingGiven: string;
+    medianRating: string;
     avgHypeGiven: string;
+    medianHype: string;
     topGenre: { name: string; avg: number; count: number } | null;
     bottomGenre: { name: string; avg: number; count: number } | null;
     topHypeGenre: { name: string; avg: number; count: number } | null;
@@ -72,7 +74,7 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.avgRatingGiven} / 10</div>
-            <p className="text-xs text-muted-foreground mt-1">From {stats.totalRatings} ratings</p>
+            <p className="text-xs text-muted-foreground mt-1">From {stats.totalRatings} ratings • Median: {stats.medianRating}</p>
           </CardContent>
         </Card>
 
@@ -85,7 +87,7 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.avgHypeGiven} / 5</div>
-            <p className="text-xs text-muted-foreground mt-1">From {stats.totalHypeRatings} votes</p>
+            <p className="text-xs text-muted-foreground mt-1">From {stats.totalHypeRatings} votes • Median: {stats.medianHype}</p>
           </CardContent>
         </Card>
       </div>
@@ -173,7 +175,6 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-3 italic">You two usually agree on what to watch and how good it was.</p>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground italic">Not enough comparisons yet.</p>
@@ -203,7 +204,6 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-3 italic">Total opposites.</p>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground italic">Not enough comparisons yet.</p>
@@ -213,39 +213,8 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
         </CardContent>
       </Card>
 
-      {/* Surprise & Disappointment */}
+    {/* Surprise & Disappointment */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {stats.biggestSurprise && (
-          <Card className="border-purple-500/20 bg-purple-500/5">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-purple-500" />
-                The Biggest Surprise
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-4">
-                <div>
-                  <h3 className="text-xl font-bold text-purple-700">{stats.biggestSurprise.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Low initial expectations, but you ended up loving it!
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-2 rounded bg-orange-500/10 border border-orange-500/20 text-center">
-                    <p className="text-[10px] uppercase font-bold text-orange-600">Hype</p>
-                    <p className="text-lg font-bold">{stats.biggestSurprise.hype}/5</p>
-                  </div>
-                  <div className="p-2 rounded bg-primary/10 border border-primary/20 text-center">
-                    <p className="text-[10px] uppercase font-bold text-primary">Rating</p>
-                    <p className="text-lg font-bold">{stats.biggestSurprise.score}/10</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {stats.biggestDisappointment && (
           <Card className="border-red-500/20 bg-red-500/5">
             <CardHeader>

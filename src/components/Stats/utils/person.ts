@@ -18,10 +18,22 @@ export const calculatePersonStats = (
   const avgRatingGiven = personRatings.length > 0
     ? personRatings.reduce((sum, r) => sum + r.rating!, 0) / personRatings.length
     : 0;
+  
+  const sortedRatings = personRatings.map(r => r.rating!).sort((a, b) => a - b);
+  const midRating = Math.floor(sortedRatings.length / 2);
+  const medianRating = sortedRatings.length > 0
+    ? (sortedRatings.length % 2 !== 0 ? sortedRatings[midRating] : (sortedRatings[midRating - 1] + sortedRatings[midRating]) / 2)
+    : 0;
 
   const personHype = movieRatings.filter(r => r.person_id === personId && r.rating > 0);
   const avgHypeGiven = personHype.length > 0
     ? personHype.reduce((sum, r) => sum + r.rating, 0) / personHype.length
+    : 0;
+    
+  const sortedHype = personHype.map(r => r.rating).sort((a, b) => a - b);
+  const midHype = Math.floor(sortedHype.length / 2);
+  const medianHype = sortedHype.length > 0
+    ? (sortedHype.length % 2 !== 0 ? sortedHype[midHype] : (sortedHype[midHype - 1] + sortedHype[midHype]) / 2)
     : 0;
 
   const totalRuntimeMinutes = calculateTotalRuntime(attendedMovies);
@@ -188,7 +200,9 @@ export const calculatePersonStats = (
     moviesWatched: attendedMovies.length,
     totalWatchTime: formatRuntime(totalRuntimeMinutes),
     avgRatingGiven: avgRatingGiven.toFixed(2),
+    medianRating: medianRating.toFixed(1),
     avgHypeGiven: avgHypeGiven.toFixed(2),
+    medianHype: medianHype.toFixed(1),
     topGenre,
     bottomGenre,
     topHypeGenre,

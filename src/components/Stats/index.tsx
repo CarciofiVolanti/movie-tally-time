@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Clock, Film, Star } from "lucide-react";
+import { ArrowLeft, Clock, Film, Star, Sparkles } from "lucide-react";
 import { useStatsData } from "./hooks/useStatsData";
 import { useStatsCalculations } from "./hooks/useStatsCalculations";
 import { formatRuntime } from "./utils";
@@ -48,7 +48,7 @@ export const Stats = ({ sessionId, onBack }: StatsProps) => {
     );
   }
 
-  const { averageRating, totalVotes, awards, genreData, movieAverages, anticipationStats, synergyStats, groupHighlights, groupRadarData, personStats, mostAnticipated, totalRuntime } = calc;
+  const { averageRating, totalVotes, medianRating, averageHype, totalHypeVotes, medianHype, awards, genreData, movieAverages, anticipationStats, synergyStats, groupHighlights, groupRadarData, personStats, mostAnticipated, totalRuntime } = calc;
 
   const hasWatched = watchedMovies.length > 0;
   const hasProposals = proposals.length > 0;
@@ -125,14 +125,20 @@ export const Stats = ({ sessionId, onBack }: StatsProps) => {
 
             {hasWatched && (
               <>
-                <div className="col-span-full grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <StatCard title="Total Watch Time" value={formatRuntime(totalRuntime)} icon={Clock} />
                   <StatCard title="Movies Watched" value={watchedMovies.length} icon={Film} />
                   <StatCard
                     title="Group Post-Watch Rating"
                     value={`★ ${averageRating.toFixed(2)} / 10`}
-                    description={`Calculated from ${totalVotes} total ratings`}
+                    description={`From ${totalVotes} ratings • Median: ${medianRating.toFixed(1)}`}
                     icon={Star}
+                  />
+                  <StatCard
+                    title="Group Pre-Watch Hype"
+                    value={`★ ${averageHype.toFixed(2)} / 5`}
+                    description={`From ${totalHypeVotes} votes • Median: ${medianHype.toFixed(1)}`}
+                    icon={Sparkles}
                   />
                 </div>
 
