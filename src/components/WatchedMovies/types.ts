@@ -50,7 +50,10 @@ export interface MovieSearchResult {
   genre?: string;
   runtime?: string;
   director?: string;
+  actors?: string;
   plot?: string;
   imdbRating?: string;
   imdbId?: string;
+  tmdbId?: number;
 }
+

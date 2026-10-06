@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X, Search, RefreshCw, Film } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { X, Search, RefreshCw, Film, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Person, MovieSearchResult } from "./types";
@@ -20,6 +21,7 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
   const [searchResults, setSearchResults] = useState<MovieSearchResult[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<MovieSearchResult | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedProposer, setSelectedProposer] = useState("");
   const { toast } = useToast();
@@ -28,14 +30,27 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
     if (!newMovieTitle.trim()) return;
     
     setIsSearching(true);
+    setHasSearched(true);
     try {
       const { data, error } = await supabase.functions.invoke('search-movie', {
         body: { title: newMovieTitle.trim() }
       });
       
       if (error) throw error;
-      setSearchResults([data]);
-      setSelectedMovie(null);
+      const results: MovieSearchResult[] = Array.isArray(data?.results)
+        ? data.results
+        : Array.isArray(data)
+        ? data
+        : data && typeof data === 'object' && data.title
+        ? [data]
+        : [];
+
+      setSearchResults(results);
+      if (results.length > 0) {
+        setSelectedMovie(results[0]);
+      } else {
+        setSelectedMovie(null);
+      }
     } catch (error) {
       console.error('Error searching movies:', error);
       setSearchResults([]);
@@ -93,8 +108,20 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
     setSearchResults([]);
     setSelectedMovie(null);
     setSelectedProposer("");
+    setHasSearched(false);
     setSelectedDate(new Date().toISOString().split('T')[0]);
     onClose();
+  };
+
+  const isMovieSelected = (result: MovieSearchResult) => {
+    if (!selectedMovie) return false;
+    if (selectedMovie.tmdbId && result.tmdbId) {
+      return selectedMovie.tmdbId === result.tmdbId;
+    }
+    if (selectedMovie.imdbId && result.imdbId) {
+      return selectedMovie.imdbId === result.imdbId;
+    }
+    return selectedMovie.title === result.title && selectedMovie.year === result.year;
   };
 
   return (
@@ -119,7 +146,14 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
                 id="movie-title"
                 placeholder="Enter movie title..."
                 value={newMovieTitle}
-                onChange={e => setNewMovieTitle(e.target.value)}
+                onChange={e => {
+                  setNewMovieTitle(e.target.value);
+                  if (!e.target.value.trim()) {
+                    setSearchResults([]);
+                    setSelectedMovie(null);
+                    setHasSearched(false);
+                  }
+                }}
                 onKeyPress={e => e.key === "Enter" && searchMovies()}
                 className="flex-1"
               />
@@ -146,39 +180,71 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
 
           {searchResults.length > 0 && (
             <div className="space-y-2 mt-3">
-              <Label className="text-sm font-medium">Search Results</Label>
-              {searchResults.map((result, index) => (
-                <Card 
-                  key={index} 
-                  className={`p-3 cursor-pointer transition-colors ${
-                    selectedMovie?.imdbId === result.imdbId 
-                      ? 'bg-primary/20 border-primary' 
-                      : 'hover:bg-accent/50'
-                  }`}
-                  onClick={() => setSelectedMovie(result)}
-                >
-                  <div className="flex gap-3">
-                    {result.poster && result.poster !== 'N/A' ? (
-                      <img
-                        src={result.poster}
-                        alt={`${result.title} poster`}
-                        className="w-10 h-15 sm:w-12 sm:h-18 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="w-10 h-15 sm:w-12 sm:h-18 bg-primary/10 rounded flex items-center justify-center">
-                        <Film className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Search Results ({searchResults.length} options)</Label>
+                <span className="text-xs text-muted-foreground">Select one</span>
+              </div>
+              <div className="max-h-60 overflow-y-auto space-y-2 pr-1.5 rounded-md border p-1 bg-background/50">
+                {searchResults.map((result, index) => {
+                  const selected = isMovieSelected(result);
+                  return (
+                    <Card 
+                      key={result.tmdbId ?? index} 
+                      className={`p-2.5 cursor-pointer transition-colors ${
+                        selected 
+                          ? 'bg-primary/20 border-primary ring-1 ring-primary' 
+                          : 'hover:bg-accent/50'
+                      }`}
+                      onClick={() => setSelectedMovie(result)}
+                    >
+                      <div className="flex gap-3 items-start">
+                        {result.poster && result.poster !== 'N/A' ? (
+                          <img
+                            src={result.poster}
+                            alt={`${result.title} poster`}
+                            className="w-10 h-14 sm:w-12 sm:h-16 object-cover rounded flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-14 sm:w-12 sm:h-16 bg-primary/10 rounded flex items-center justify-center flex-shrink-0">
+                            <Film className="w-4 h-4 text-primary" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0 space-y-0.5">
+                          <div className="flex items-center justify-between gap-1">
+                            <h4 className="font-semibold truncate text-sm leading-tight">{result.title}</h4>
+                            {selected && <Check className="w-4 h-4 text-primary flex-shrink-0" />}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {result.year ? `${result.year}` : ""}
+                            {(result.director || result.runtime) && (
+                              <span>
+                                {result.year ? " • " : ""}
+                                {result.director ? `Dir: ${result.director}` : ""}
+                                {result.director && result.runtime ? " • " : ""}
+                                {result.runtime || ""}
+                              </span>
+                            )}
+                          </p>
+                          <div className="flex flex-wrap gap-1 pt-0.5">
+                            {result.genre && (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{result.genre}</Badge>
+                            )}
+                            {result.imdbRating && result.imdbRating !== 'N/A' && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">★ {result.imdbRating}</Badge>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate text-sm sm:text-base">{result.title}</h4>
-                      <p className="text-xs sm:text-sm text-muted-foreground">{result.year}</p>
-                      {result.genre && (
-                        <p className="text-xs text-muted-foreground truncate">{result.genre}</p>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              ))}
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {!isSearching && hasSearched && searchResults.length === 0 && newMovieTitle.trim() && (
+            <div className="text-sm text-muted-foreground p-2 border rounded-md">
+              No matching movies found on TMDB. You can still add "{newMovieTitle}" without details below.
             </div>
           )}
 
@@ -214,7 +280,7 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
               onClick={addWatchedMovie}
               disabled={!selectedProposer}
             >
-              Add Movie
+              Add Selected Movie
             </Button>
           ) : (
             <Button

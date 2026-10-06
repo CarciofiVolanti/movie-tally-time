@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Person } from "@/types/session";
+import { Person, MovieDetails } from "@/types/session";
 import { PersonCard } from "../PersonCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ interface PeoplePanelProps {
   people: Person[];
   selectedPersonId?: string;
   onAddPerson: (name: string) => Promise<void>;
-  onUpdatePerson: (p: Person) => Promise<void>;
+  onUpdatePerson: (p: Person, movieDetailsMap?: Record<string, Partial<MovieDetails>>) => Promise<void> | void;
   onDeletePerson: (id: string) => Promise<void>;
 }
 

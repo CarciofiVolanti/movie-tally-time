@@ -68,10 +68,12 @@ export const useProposalRatings = ({
     try {
       const { data, error } = await supabase.functions.invoke('search-movie', { body: { title: movieTitle } });
       if (error) { console.error('Error fetching movie details:', error); return undefined; }
+      const movie = (Array.isArray(data?.results) && data.results.length > 0) ? data.results[0] : data;
+      if (!movie) return undefined;
       return {
-        poster: data.poster, genre: data.genre, runtime: data.runtime, year: data.year,
-        director: data.director, plot: data.plot,
-        imdbRating: data.imdbRating, imdbId: data.imdbId,
+        poster: movie.poster, genre: movie.genre, runtime: movie.runtime, year: movie.year,
+        director: movie.director, plot: movie.plot,
+        imdbRating: movie.imdbRating, imdbId: movie.imdbId, tmdbId: movie.tmdbId,
       };
     } catch (err) {
       console.error('Error fetching movie details:', err);

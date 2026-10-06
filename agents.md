@@ -57,8 +57,8 @@ React Query (`@tanstack/react-query`) is configured in `App.tsx` but data fetchi
 - Client: `src/integrations/supabase/client.ts`
 - Generated DB types: `src/integrations/supabase/types.ts`
 - **Edge Functions** (in `supabase/functions/`):
-  - `search-movie` — OMDB API search; returns a **single best match**, not a list
-  - `propose-movie-with-details` — atomically creates a proposal and fetches OMDB metadata; returns an existing proposal if the movie was already proposed in this session
+  - `search-movie` — TMDB API search (with OMDB fallback); returns multiple matching movie options with full metadata
+  - `propose-movie-with-details` — atomically creates a proposal and enriches metadata via TMDB/OMDB; returns an existing proposal if the movie was already proposed in this session
 
 ### Database Tables
 | Table | Purpose |

@@ -3,11 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface MovieSearchResult {
   title: string;
-  year: string;
-  poster: string;
-  plot: string;
-  genre: string;
-  imdbRating: string;
+  year?: string;
+  poster?: string;
+  plot?: string;
+  genre?: string;
+  imdbRating?: string;
+  runtime?: string;
+  director?: string;
+  actors?: string;
+  imdbId?: string;
+  tmdbId?: number;
 }
 
 export const useMovieSearch = () => {
@@ -24,7 +29,16 @@ export const useMovieSearch = () => {
         body: { title: query.trim() },
       });
       if (error) throw error;
-      setSearchResults([data]);
+
+      const results = Array.isArray(data?.results)
+        ? data.results
+        : Array.isArray(data)
+        ? data
+        : data && typeof data === 'object' && data.title
+        ? [data]
+        : [];
+
+      setSearchResults(results);
     } catch (err) {
       console.error("Error searching movies:", err);
       setSearchResults([]);

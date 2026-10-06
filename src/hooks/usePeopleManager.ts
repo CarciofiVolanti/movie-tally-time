@@ -35,7 +35,10 @@ export const usePeopleManager = ({
     };
   };
 
-  const updatePersonMovies = async (person: Person) => {
+  const updatePersonMovies = async (
+    person: Person,
+    movieDetailsMap?: Record<string, Partial<MovieDetails>>
+  ) => {
     if (!sessionId) return;
     const { data: currentProposals } = await supabase
       .from('movie_proposals').select('movie_title, id').eq('person_id', person.id);
@@ -53,21 +56,42 @@ export const usePeopleManager = ({
 
     if (moviesToAdd.length > 0) {
       const now = new Date().toISOString();
-      const optimisticMovies = moviesToAdd.map(movieTitle => ({
-        movieTitle,
-        proposedBy: person.name,
-        ratings: { [person.id]: 5 },
-        proposerId: person.id,
-        createdAt: now,
-      }));
+      const optimisticMovies = moviesToAdd.map(movieTitle => {
+        const addedMeta = movieDetailsMap?.[movieTitle];
+        return {
+          movieTitle,
+          proposedBy: person.name,
+          ratings: { [person.id]: 5 },
+          proposerId: person.id,
+          createdAt: now,
+          details: addedMeta ? {
+            poster: addedMeta.poster,
+            genre: addedMeta.genre,
+            runtime: addedMeta.runtime,
+            year: addedMeta.year,
+            director: addedMeta.director,
+            plot: addedMeta.plot,
+            imdbRating: addedMeta.imdbRating,
+            imdbId: addedMeta.imdbId,
+            tmdbId: addedMeta.tmdbId,
+          } : undefined,
+        };
+      });
       setMovieRatings(prev => [...prev, ...optimisticMovies]);
 
       // Never-throw wrapper: each movie resolves to {ok, movieTitle, ...}
       const results = await Promise.all(
         moviesToAdd.map(async (movieTitle) => {
           try {
+            const addedMeta = movieDetailsMap?.[movieTitle];
             const { data, error } = await supabase.functions.invoke('propose-movie-with-details', {
-              body: { sessionId, personId: person.id, movieTitle },
+              body: {
+                sessionId,
+                personId: person.id,
+                movieTitle,
+                tmdbId: addedMeta?.tmdbId,
+                movieDetails: addedMeta,
+              },
             });
             if (error) throw error;
 
@@ -78,9 +102,15 @@ export const usePeopleManager = ({
 
             if (proposal) {
               details = {
-                poster: proposal.poster, genre: proposal.genre, runtime: proposal.runtime,
-                year: proposal.year, director: proposal.director, plot: proposal.plot,
-                imdbRating: proposal.imdb_rating, imdbId: proposal.imdb_id,
+                poster: proposal.poster,
+                genre: proposal.genre,
+                runtime: proposal.runtime,
+                year: proposal.year,
+                director: proposal.director,
+                plot: proposal.plot,
+                imdbRating: proposal.imdb_rating,
+                imdbId: proposal.imdb_id,
+                tmdbId: addedMeta?.tmdbId,
               };
             } else if (existingId) {
               const existingData = await fetchExistingProposalDetails(existingId);
@@ -150,7 +180,10 @@ export const usePeopleManager = ({
     }
   };
 
-  const updatePerson = async (updatedPerson: Person) => {
+  const updatePerson = async (
+    updatedPerson: Person,
+    movieDetailsMap?: Record<string, Partial<MovieDetails>>
+  ) => {
     if (!sessionId) return;
     const originalPerson = people.find(p => p.id === updatedPerson.id);
     try {
@@ -158,7 +191,7 @@ export const usePeopleManager = ({
       const { error } = await supabase
         .from('session_people').update({ is_present: updatedPerson.isPresent }).eq('id', updatedPerson.id);
       if (error) throw error;
-      await updatePersonMovies(updatedPerson);
+      await updatePersonMovies(updatedPerson, movieDetailsMap);
     } catch (err) {
       console.error('Error updating person:', err);
       setPeople(prev => prev.map(p => p.id === updatedPerson.id ? originalPerson || p : p));

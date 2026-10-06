@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, Search } from "lucide-react";
+import { Trash2, Plus, Search, Film, X } from "lucide-react";
 import { useState, memo } from "react";
 import { cn } from "@/lib/utils";
-import { useMovieSearch } from "@/hooks/useMovieSearch";
+import { useMovieSearch, MovieSearchResult } from "@/hooks/useMovieSearch";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { MovieDetails } from "@/types/session";
 
 export interface Person {
   id: string;
@@ -18,7 +19,7 @@ export interface Person {
 
 interface PersonCardProps {
   person: Person;
-  onUpdatePerson: (person: Person) => void;
+  onUpdatePerson: (person: Person, movieDetailsMap?: Record<string, Partial<MovieDetails>>) => void;
   onDeletePerson: (id: string) => void;
 }
 
@@ -41,13 +42,30 @@ export const PersonCard = memo(({ person, onUpdatePerson, onDeletePerson }: Pers
     setPendingConfirm(null);
   };
 
-  const addMovie = (movieTitle?: string) => {
-    const title = movieTitle || newMovie.trim();
+  const addMovie = (selectedMovie?: MovieSearchResult) => {
+    const title = selectedMovie?.title || newMovie.trim();
     if (title && person.movies.length < 3) {
-      onUpdatePerson({
-        ...person,
-        movies: [...person.movies, title]
-      });
+      const detailsMap = selectedMovie ? {
+        [title]: {
+          poster: selectedMovie.poster,
+          genre: selectedMovie.genre,
+          runtime: selectedMovie.runtime,
+          year: selectedMovie.year,
+          director: selectedMovie.director,
+          plot: selectedMovie.plot,
+          imdbRating: selectedMovie.imdbRating,
+          imdbId: selectedMovie.imdbId,
+          tmdbId: selectedMovie.tmdbId,
+        }
+      } : undefined;
+
+      onUpdatePerson(
+        {
+          ...person,
+          movies: [...person.movies, title]
+        },
+        detailsMap
+      );
       setNewMovie("");
       clearResults();
     }
@@ -130,45 +148,77 @@ export const PersonCard = memo(({ person, onUpdatePerson, onDeletePerson }: Pers
               <Button onClick={() => searchMovies(newMovie)} size="sm" disabled={!newMovie.trim() || isSearching}>
                 <Search className="w-4 h-4" />
               </Button>
-              <Button onClick={() => addMovie()} size="sm" disabled={!newMovie.trim()} variant="outline">
+              <Button onClick={() => addMovie()} size="sm" disabled={!newMovie.trim()} variant="outline" title="Add manually without selecting details">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
             
             {showSearchResults && (
               <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                  <span>{isSearching ? "Searching..." : `${searchResults.length} options found (select one):`}</span>
+                  <Button variant="ghost" size="sm" onClick={clearResults} className="h-5 px-1 text-xs">
+                    <X className="w-3 h-3 mr-1" /> Close
+                  </Button>
+                </div>
+
                 {isSearching && (
-                  <div className="text-sm text-muted-foreground p-2">Searching...</div>
+                  <div className="text-sm text-muted-foreground p-3 text-center border rounded-md">Searching for options...</div>
                 )}
-                {searchResults.map((movie, index) => (
-                  <div
-                    key={index}
-                    className="p-3 border rounded-md cursor-pointer hover:bg-secondary transition-colors"
-                    onClick={() => addMovie(movie.title)}
-                  >
-                    <div className="flex items-start gap-3">
-                      {movie.poster && movie.poster !== 'N/A' && (
-                        <img 
-                          src={movie.poster} 
-                          alt={movie.title}
-                          className="w-12 h-16 object-cover rounded"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h5 className="font-medium text-sm truncate">{movie.title} ({movie.year})</h5>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{movie.plot}</p>
-                        <div className="flex gap-2 mt-1">
-                          <Badge variant="secondary" className="text-xs">{movie.genre}</Badge>
-                          {movie.imdbRating && movie.imdbRating !== 'N/A' && (
-                            <Badge variant="outline" className="text-xs">IMDb: {movie.imdbRating}</Badge>
+
+                {!isSearching && searchResults.length > 0 && (
+                  <div className="max-h-72 overflow-y-auto space-y-2 pr-1.5 rounded-md border p-1 bg-background/50">
+                    {searchResults.map((movie, index) => (
+                      <div
+                        key={movie.tmdbId ?? index}
+                        className="p-2.5 border rounded-md cursor-pointer hover:bg-secondary/80 transition-colors"
+                        onClick={() => addMovie(movie)}
+                      >
+                        <div className="flex items-start gap-3">
+                          {movie.poster && movie.poster !== 'N/A' ? (
+                            <img 
+                              src={movie.poster} 
+                              alt={movie.title}
+                              className="w-12 h-16 object-cover rounded flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-12 h-16 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                              <Film className="w-5 h-5 text-muted-foreground" />
+                            </div>
                           )}
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <h5 className="font-semibold text-sm truncate leading-tight">
+                              {movie.title} {movie.year ? `(${movie.year})` : ""}
+                            </h5>
+                            {(movie.director || movie.runtime) && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                {movie.director ? `Dir: ${movie.director}` : ""}
+                                {movie.director && movie.runtime ? " • " : ""}
+                                {movie.runtime || ""}
+                              </p>
+                            )}
+                            {movie.plot && (
+                              <p className="text-xs text-muted-foreground line-clamp-2">{movie.plot}</p>
+                            )}
+                            <div className="flex flex-wrap gap-1.5 pt-0.5">
+                              {movie.genre && (
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{movie.genre}</Badge>
+                              )}
+                              {movie.imdbRating && movie.imdbRating !== 'N/A' && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">★ {movie.imdbRating}</Badge>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-                {!isSearching && searchResults.length === 0 && newMovie.trim() && showSearchResults && (
-                  <div className="text-sm text-muted-foreground p-2">No movies found. You can still add "{newMovie}" manually.</div>
+                )}
+
+                {!isSearching && searchResults.length === 0 && newMovie.trim() && (
+                  <div className="text-sm text-muted-foreground p-2 border rounded-md">
+                    No movies found. You can still click <Plus className="w-3 h-3 inline mx-0.5" /> to add "{newMovie}" manually.
+                  </div>
                 )}
               </div>
             )}

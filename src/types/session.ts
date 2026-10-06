@@ -7,7 +7,7 @@ export interface MovieDetails {
   imdbId?: string | null;
   plot?: string | null;
   imdbRating?: string | null;
-  // any other metadata you use
+  tmdbId?: number | null;
 }
 
 export interface MovieRating {
