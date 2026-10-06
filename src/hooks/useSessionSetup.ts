@@ -34,7 +34,8 @@ export const useSessionSetup = (config: UseSessionSetupConfig) => {
   const loadExistingSession = async (id: string) => {
     try {
       const { data: session, error } = await supabase
-        .from('movie_sessions').select().eq('id', id).maybeSingle();
+        .rpc('get_movie_session', { p_id: id })
+        .maybeSingle();
       if (error) throw error;
       if (session) {
         config.setSessionId(session.id);
@@ -58,9 +59,7 @@ export const useSessionSetup = (config: UseSessionSetupConfig) => {
     try {
       config.setLoading(true);
       const { data: session, error } = await supabase
-        .from('movie_sessions')
-        .insert([{ name: name.trim() }])
-        .select()
+        .rpc('create_movie_session', { p_name: name.trim() })
         .single();
       if (error) throw error;
       config.setSessionId(session.id);

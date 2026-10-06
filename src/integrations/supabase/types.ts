@@ -345,7 +345,34 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_movie_session: {
+        Args: {
+          p_name: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }[]
+      }
+      get_movie_session: {
+        Args: {
+          p_id: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }[]
+      }
+      session_exists: {
+        Args: {
+          p_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
