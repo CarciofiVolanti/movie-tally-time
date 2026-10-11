@@ -4,6 +4,10 @@ import RatePanel from '../RatePanel';
 import { MovieRating, Person } from '@/types/session';
 
 // Mock hooks and components
+vi.mock('../QuickVotingPanel', () => ({
+  default: () => <div>Quick voting</div>,
+}));
+
 vi.mock('@/hooks/useFavouriteMovie', () => ({
   default: () => ({
     favoriteProposalId: null,

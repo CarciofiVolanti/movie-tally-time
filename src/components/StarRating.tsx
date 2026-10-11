@@ -27,6 +27,7 @@ export const StarRating = memo(({
         <button
           key={star}
           type="button"
+          aria-label={`Rate ${star} ${star === 1 ? "star" : "stars"}`}
           disabled={readonly}
           onClick={() => onRatingChange?.(rating === star ? 0 : star)}
           className={cn(

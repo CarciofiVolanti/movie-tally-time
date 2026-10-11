@@ -97,8 +97,9 @@ export const useProposalRatings = ({
   const updateRating = async (proposalId: string, personId: string, rating: number) => {
     try {
       if (rating === 0) {
-        await supabase.from('movie_ratings').delete()
+        const { error } = await supabase.from('movie_ratings').delete()
           .eq('proposal_id', proposalId).eq('person_id', personId);
+        if (error) throw error;
         setMovieRatings(prev => prev.map(movie => {
           if (movie.proposalId === proposalId) {
             const newRatings = { ...movie.ratings };
@@ -108,10 +109,11 @@ export const useProposalRatings = ({
           return movie;
         }));
       } else {
-        await supabase.from("movie_ratings").upsert(
+        const { error } = await supabase.from("movie_ratings").upsert(
           { proposal_id: proposalId, person_id: personId, rating },
           { onConflict: "proposal_id,person_id" }
         );
+        if (error) throw error;
         setMovieRatings(prev => prev.map(movie =>
           movie.proposalId === proposalId
             ? { ...movie, ratings: { ...movie.ratings, [personId]: rating } }

@@ -144,6 +144,7 @@ Tests live alongside code in `__tests__/` subdirectories. Current tests cover `M
 
 ## Key Conventions
 
+- **Concise UI text**: avoid unnecessary subtitles, filler, and instructions that repeat what the controls already make clear. Add text only when it helps users act or understand a meaningful state.
 - **Mobile-first**: always design for small screens first; most users are on phones
 - **Date format**: `DD/MM/YYYY` (`DDMMYYYY`) convention for all displayed dates
 - Favour direct Supabase calls inside custom hooks over abstracting into a service layer

@@ -17,6 +17,8 @@ interface MovieCardProps {
   onSearchAgain: (movieTitle: string) => Promise<void>;
   onMarkAsWatched: (movieTitle: string) => Promise<void>;
   showAllRatings: boolean;
+  quickVoting?: boolean;
+  ratingDisabled?: boolean;
   onSaveComment?: (proposalId: string, comment: string) => Promise<void>;
 }
 
@@ -29,6 +31,8 @@ export const MovieCard = memo(({
   onSearchAgain,
   onMarkAsWatched,
   showAllRatings = false,
+  quickVoting = false,
+  ratingDisabled = false,
   onSaveComment,
 }: MovieCardProps) => {
   const [searchTitle, setSearchTitle] = useState("");
@@ -115,10 +119,10 @@ export const MovieCard = memo(({
     <Card className="transition-all duration-300 hover:shadow-glow group">
       <CardHeader className="pb-3 p-4">
         {/* Mobile-first layout with responsive adjustments */}
-        <div className="space-y-3 sm:space-y-0">
+        <div className="space-y-3">
           {/* Header with title and rating - always on top */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">
+            <div className="w-full flex-1 min-w-0 [overflow-wrap:anywhere]">
               {movie.details?.imdbId ? (
                 <a 
                   href={`https://www.imdb.com/title/${movie.details.imdbId}`}
@@ -135,7 +139,7 @@ export const MovieCard = memo(({
               )}
               
             </div>
-            <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0 ml-2">
+            <Badge variant="secondary" className="bg-accent/10 text-accent border-accent/20 flex-shrink-0">
               ★ {averageRating.toFixed(1)}
             </Badge>
           </div>
@@ -243,12 +247,12 @@ export const MovieCard = memo(({
       </CardHeader>
 
       <CardContent className="space-y-4 p-4 pt-0">
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
+        {!quickVoting && <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>{totalRatings}/{activePeople.length} ratings</span>
           <StarRating rating={averageRating} readonly size="sm" />
-        </div>
+        </div>}
 
-        {showAllRatings && (
+        {showAllRatings && !quickVoting && (
           <div className="space-y-3">
             <h4 className="text-sm font-medium">Individual Ratings</h4>
             <div className="space-y-2">
@@ -289,6 +293,7 @@ export const MovieCard = memo(({
                     movie.proposalId && onRatingChange?.(movie.proposalId, currentPersonId, rating)
                   }
                   size="md"
+                  readonly={ratingDisabled || !movie.proposalId}
                 />
               </div>
             </div>

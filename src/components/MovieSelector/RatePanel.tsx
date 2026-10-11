@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Film, ChevronDown, ChevronRight, Heart, Search, X } from "lucide-react";
 import { MovieCard } from "../MovieCard";
+import QuickVotingPanel from "./QuickVotingPanel";
 import useFavouriteMovie from "@/hooks/useFavouriteMovie";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,7 +16,6 @@ const RatePanel = ({
   presentPeople,
   people,
   selectedPersonId,
-  setSelectedPersonId,
   updateRating,
   updateComment,
   searchMovieAgain,
@@ -100,6 +100,16 @@ const RatePanel = ({
 
   return (
     <>
+      <section aria-label="Quick voting" className="mb-6">
+        <QuickVotingPanel
+          movieRatings={movieRatings}
+          people={allPeople}
+          selectedPersonId={selectedPersonId}
+          updateRating={updateRating}
+          searchMovieAgain={searchMovieAgain}
+          markMovieAsWatched={markMovieAsWatched}
+        />
+      </section>
       <Card>
         <CardHeader className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
@@ -161,40 +171,40 @@ const RatePanel = ({
           const isCollapsed = localCollapsedOverrides[movie.movieTitle] ?? collapsedMovies[movie.movieTitle] ?? true;
 
           return (
-            <Card key={movie.movieTitle} className="w-full max-w-full relative">
-              {selectedPersonId && (
-                <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
-                  {/* hide heart entirely for own proposals or when we don't have a proposal id */}
-                  {proposalId && !disallowOwn && (
-                    <button
-                      type="button"
-                      onClick={() => toggleFavourite(proposalId)}
-                      disabled={!selectedPersonId || favLoading}
-                      className="p-1"
-                      title={isFavourite ? "Unmark favourite" : "Mark as favourite"}
-                      aria-label="Toggle favourite"
-                      aria-pressed={isFavourite}
-                    >
-                      <Heart
-                        className={`w-5 h-5 ${isFavourite ? "text-red-500 fill-current" : "text-muted-foreground"}`}
-                        style={isFavourite ? { stroke: "none" } : undefined}
-                      />
-                    </button>
-                  )}
-
-                  <Badge variant={hasVoted ? "default" : "outline"} className={hasVoted ? "bg-green-100 text-green-800 border-green-300" : "bg-orange-100 text-orange-800 border-orange-300"}>
-                    {hasVoted ? "✓ Voted" : "Not Voted"}
-                  </Badge>
-                </div>
-              )}
-
-              <CardHeader className="flex flex-row items-center justify-between p-4">
-                <div className="flex items-center gap-2 min-w-0 w-full pr-20">
-                  <button onClick={() => handleToggleCollapse(movie.movieTitle)} aria-label={isCollapsed ? "Expand" : "Collapse"} className="p-1">
+            <Card key={movie.movieTitle} className="w-full min-w-0 max-w-full">
+              <CardHeader className="space-y-3 p-4">
+                <div className="flex items-start gap-2 min-w-0">
+                  <button onClick={() => handleToggleCollapse(movie.movieTitle)} aria-label={isCollapsed ? "Expand" : "Collapse"} aria-expanded={!isCollapsed} className="shrink-0 p-1">
                     {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </button>
-                  <span className="font-semibold text-base sm:text-lg truncate min-w-0">{movie.movieTitle}</span>
+                  <span className="min-w-0 flex-1 pt-0.5 font-semibold text-base leading-snug sm:text-lg [overflow-wrap:anywhere]">{movie.movieTitle}</span>
                 </div>
+
+                {selectedPersonId && (
+                  <div className="flex flex-wrap items-center gap-2 pl-9">
+                    {/* hide heart entirely for own proposals or when we don't have a proposal id */}
+                    {proposalId && !disallowOwn && (
+                      <button
+                        type="button"
+                        onClick={() => toggleFavourite(proposalId)}
+                        disabled={!selectedPersonId || favLoading}
+                        className="p-1"
+                        title={isFavourite ? "Unmark favourite" : "Mark as favourite"}
+                        aria-label="Toggle favourite"
+                        aria-pressed={isFavourite}
+                      >
+                        <Heart
+                          className={`w-5 h-5 ${isFavourite ? "text-red-500 fill-current" : "text-muted-foreground"}`}
+                          style={isFavourite ? { stroke: "none" } : undefined}
+                        />
+                      </button>
+                    )}
+
+                    <Badge variant={hasVoted ? "default" : "outline"} className={hasVoted ? "bg-green-100 text-green-800 border-green-300" : "bg-orange-100 text-orange-800 border-orange-300"}>
+                      {hasVoted ? "✓ Voted" : "Not Voted"}
+                    </Badge>
+                  </div>
+                )}
               </CardHeader>
 
               {!isCollapsed && (
