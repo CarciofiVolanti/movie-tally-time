@@ -1,4 +1,5 @@
 import React, { useState, lazy, Suspense } from "react";
+import { createPortal } from "react-dom";
 import useMovieSession from "@/hooks/useMovieSession";
 import PeoplePanel from "./PeoplePanel";
 import RatePanel from "./RatePanel";
@@ -6,7 +7,8 @@ import ResultsPanel from "./ResultsPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Film, Trophy, Award, BarChart } from "lucide-react";
+import { Users, Film, Trophy, Award, BarChart, Menu } from "lucide-react";
+import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const WatchedMovies = lazy(() => import("../WatchedMovies").then(m => ({ default: m.WatchedMovies })));
@@ -48,12 +50,24 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       {session.currentView === 'session' && (
         <ErrorBoundary>
-        <div className="container mx-auto py-8 px-4">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold bg-gradient-cinema bg-clip-text text-transparent mb-4">CarciOscar</h1>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
-              <Button
+        <div className="container mx-auto pt-[calc(7rem+env(safe-area-inset-top))] pb-[calc(7rem+env(safe-area-inset-bottom))] px-4">
+          <div className="fixed inset-x-0 top-0 z-40 flex min-h-[calc(5rem+env(safe-area-inset-top))] items-center border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur">
+            <div className="container mx-auto px-4">
+              <h1 className="ml-[calc(1.5rem+1px)] pr-16 text-left text-4xl font-bold bg-gradient-cinema bg-clip-text text-transparent">CarciOscar</h1>
+            </div>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="absolute right-[calc(1rem+env(safe-area-inset-right))] top-[calc(1.25rem+env(safe-area-inset-top))] bg-card shadow-md" aria-label="Open session menu">
+                  <Menu aria-hidden="true" className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="overflow-y-auto" aria-describedby={undefined}>
+                <SheetHeader>
+                  <SheetTitle>Menu</SheetTitle>
+                </SheetHeader>
+                <div className="mt-6">
+            <div className="flex flex-col gap-3 mb-6">
+              <SheetClose asChild><Button
                 variant="outline"
                 size="sm"
                 onClick={() => session.setCurrentView('watched')}
@@ -62,9 +76,9 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
               >
                 <Award className="w-4 h-4 mr-2" />
                 Watched Movies
-              </Button>
+              </Button></SheetClose>
 
-              <Button
+              <SheetClose asChild><Button
                 variant="outline"
                 size="sm"
                 onClick={() => session.setCurrentView('stats')}
@@ -73,10 +87,10 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
               >
                 <BarChart className="w-4 h-4 mr-2" />
                 Session Stats
-              </Button>
+              </Button></SheetClose>
             </div>
 
-            <div className="max-w-xs mx-auto mb-4">
+            <div className="mb-4">
               <select
                 value={session.selectedPersonId}
                 onChange={e => session.setSelectedPersonId(e.target.value)}
@@ -88,28 +102,17 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
                 ))}
               </select>
             </div>
+
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
 
-          <Tabs defaultValue="people" className="space-y-6" onValueChange={(value) => {
+          <Tabs defaultValue="people" onValueChange={(value) => {
             if (value === "rate") {
               session.setShouldSort(true);
             }
           }}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="people" className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                People ({session.people.length})
-              </TabsTrigger>
-              <TabsTrigger value="rate" className="flex items-center gap-2">
-                <Film className="w-4 h-4" />
-                Rate Movies ({session.movieRatings.length})
-              </TabsTrigger>
-              <TabsTrigger value="results" className="flex items-center gap-2">
-                <Trophy className="w-4 h-4" />
-                Results
-              </TabsTrigger>
-            </TabsList>
-
             <TabsContent value="people">
               <PeoplePanel
                 people={session.people}
@@ -142,6 +145,22 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
             <TabsContent value="results">
               <ResultsPanel rankedMovies={session.rankedMovies} people={session.people} markMovieAsWatched={session.markMovieAsWatched} />
             </TabsContent>
+            {createPortal(<nav aria-label="Movie session navigation" style={{ position: "fixed", left: 0, right: 0, bottom: 0 }} className="z-40 border-t border-border bg-card/95 px-4 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur">
+              <TabsList aria-label="Movie session pages" className="mx-auto grid h-auto w-full max-w-lg grid-cols-3 gap-1 bg-transparent p-0">
+                <TabsTrigger value="people" className="flex min-h-14 min-w-0 flex-col gap-1 rounded-lg px-1 text-xs sm:text-sm data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none">
+                  <Users aria-hidden="true" className="h-5 w-5" />
+                  People ({session.people.length})
+                </TabsTrigger>
+                <TabsTrigger value="rate" className="flex min-h-14 min-w-0 flex-col gap-1 rounded-lg px-1 text-xs sm:text-sm data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none">
+                  <Film aria-hidden="true" className="h-5 w-5" />
+                  Rate Movies ({session.movieRatings.length})
+                </TabsTrigger>
+                <TabsTrigger value="results" className="flex min-h-14 min-w-0 flex-col gap-1 rounded-lg px-1 text-xs sm:text-sm data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none">
+                  <Trophy aria-hidden="true" className="h-5 w-5" />
+                  Results
+                </TabsTrigger>
+              </TabsList>
+            </nav>, document.body)}
           </Tabs>
         </div>
         </ErrorBoundary>

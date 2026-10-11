@@ -152,3 +152,4 @@ Tests live alongside code in `__tests__/` subdirectories. Current tests cover `M
 - Session URL sharing: session ID is in the URL, enabling multi-user access
 - shadcn/ui component library — add new components with `npx shadcn-ui@latest add <component>`, never hand-edit files inside `src/components/ui/`
 - Path alias `@` maps to `src/`
+- Always ask clarifying questions if the user request is ambiguous or incomplete or if different implementations are possible and have different tradeoffs; never assume details

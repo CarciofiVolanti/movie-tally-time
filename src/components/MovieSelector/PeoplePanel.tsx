@@ -30,7 +30,7 @@ const PeoplePanel = ({
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Add People</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight">Add People</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-2">

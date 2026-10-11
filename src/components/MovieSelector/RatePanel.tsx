@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { MovieRating, Person } from "@/types/session";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Film, RefreshCw, ChevronDown, ChevronRight, Heart, Search, X } from "lucide-react";
+import { Film, ChevronDown, ChevronRight, Heart, Search, X } from "lucide-react";
 import { MovieCard } from "../MovieCard";
 import useFavouriteMovie from "@/hooks/useFavouriteMovie";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,15 +16,12 @@ const RatePanel = ({
   people,
   selectedPersonId,
   setSelectedPersonId,
-  fetchingDetails,
-  fetchAllMovieDetails,
   updateRating,
   updateComment,
   searchMovieAgain,
   markMovieAsWatched,
   collapsedMovies,
   toggleCollapse,
-  setShouldSort,
 }: {
   movieRatings: MovieRating[];
   presentPeople: Person[];
@@ -107,11 +103,11 @@ const RatePanel = ({
       <Card>
         <CardHeader className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
-            <div className="flex items-center gap-2">
-              <span>Rate All Movies</span>
+            <div className="space-y-1.5">
+              <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight">Rate All Movies</CardTitle>
             </div>
-            <div className="flex flex-wrap items-center gap-2 justify-end">
-              <div className="flex items-center space-x-2 mr-1">
+            <div className="flex flex-wrap items-center gap-3 justify-start sm:justify-end">
+              <div className="flex items-center space-x-2">
                 <Switch
                   id="show-all-votes"
                   checked={showAllVotes}
@@ -121,12 +117,6 @@ const RatePanel = ({
                   Show all votes
                 </Label>
               </div>
-              <Button variant="outline" size="sm" onClick={() => setShouldSort(true)} className="text-xs">
-                <RefreshCw className="w-3 h-3 mr-1" /> Refresh Order
-              </Button>
-              <Button variant="outline" size="sm" onClick={fetchAllMovieDetails} disabled={fetchingDetails || movieRatings.length === 0} className="text-xs">
-                {fetchingDetails ? <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-1" />} Update Details
-              </Button>
               <Badge variant="secondary">
                 {showAllVotes
                   ? `${allPeople.length} total`
@@ -159,7 +149,7 @@ const RatePanel = ({
         </CardHeader>
       </Card>
 
-      <div className="flex flex-col gap-4 w-full max-w-xl mx-auto mt-4">
+      <div className="flex flex-col gap-4 w-full mt-4">
         {filteredMovieRatings.map(movie => {
           const hasVoted = selectedPersonId && movie.ratings[selectedPersonId] !== undefined && movie.ratings[selectedPersonId] > 0;
           // use attached proposalId/proposerId directly

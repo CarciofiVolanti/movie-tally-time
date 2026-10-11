@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { MovieWithStats, Person } from "@/types/session";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Film, Trophy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,13 +51,8 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Movie Rankings</h3>
-          </div>
+          <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight">Movie Rankings</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-sm">Movies ranked by average rating from present participants</p>
-        </CardContent>
       </Card>
 
       <div className="flex flex-col gap-4 mt-4">
