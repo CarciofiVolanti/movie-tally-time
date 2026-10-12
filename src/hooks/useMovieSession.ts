@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { setSelectedPersonForSession } from "@/lib/sessionCookies";
-import { Person, MovieRating } from "@/types/session";
+import { Person, MovieRating, RecentlyWatchedMovie } from "@/types/session";
 import { transformPeopleData, transformRatingsData, sortRatings } from "@/lib/sessionHelpers";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionSetup } from "./useSessionSetup";
@@ -20,6 +20,30 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
 
   const [people, setPeople] = useState<Person[]>([]);
   const [movieRatings, setMovieRatings] = useState<MovieRating[]>([]);
+  const [recentlyWatched, setRecentlyWatched] = useState<RecentlyWatchedMovie[]>([]);
+  const recentlyWatchedTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  const rememberRecentlyWatched = useCallback((movie: RecentlyWatchedMovie) => {
+    setRecentlyWatched(current => [movie, ...current.filter(item => item.id !== movie.id)]);
+    const existingTimer = recentlyWatchedTimers.current.get(movie.id);
+    if (existingTimer) clearTimeout(existingTimer);
+    const timer = setTimeout(() => {
+      setRecentlyWatched(current => current.filter(item => item.id !== movie.id));
+      recentlyWatchedTimers.current.delete(movie.id);
+    }, 15000);
+    recentlyWatchedTimers.current.set(movie.id, timer);
+  }, []);
+
+  useEffect(() => () => {
+    recentlyWatchedTimers.current.forEach(timer => clearTimeout(timer));
+    recentlyWatchedTimers.current.clear();
+  }, []);
+
+  useEffect(() => {
+    setRecentlyWatched([]);
+    recentlyWatchedTimers.current.forEach(timer => clearTimeout(timer));
+    recentlyWatchedTimers.current.clear();
+  }, [sessionId]);
 
   const [selectedPersonId, setSelectedPersonIdState] = useState<string>("");
   const [shouldSort, setShouldSort] = useState(true);
@@ -123,9 +147,10 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
   } = useProposalRatings({
     sessionId, people, setPeople, movieRatings, setMovieRatings,
     shouldSort, setShouldSort, setFetchingDetails, setCollapsedMovies, toast,
+    rememberRecentlyWatched,
   });
 
-  useRealtimeSync({ sessionId, setMovieRatings, setPeople, peopleRef });
+  useRealtimeSync({ sessionId, setMovieRatings, setPeople, peopleRef, rememberRecentlyWatched });
 
   // ── selectedPersonId setter (needs movieRatings + sessionId) ──────────────
   const setSelectedPersonId = (id: string) => {
@@ -153,6 +178,7 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
     currentView,
     presentPeople,
     rankedMovies,
+    recentlyWatched,
     getSortedMovies,
     setShowNewSession,
     setSessionId,

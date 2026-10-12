@@ -1,6 +1,7 @@
 import { useMemo, type Dispatch, type SetStateAction } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Person, MovieRating, MovieDetails, MovieWithStats } from "@/types/session";
+import type { RecentlyWatchedMovie } from "@/types/session";
 import { normalizeTitle } from "@/lib/utils";
 import { sortRatings } from "@/lib/sessionHelpers";
 import type { useToast } from "@/hooks/use-toast";
@@ -18,6 +19,7 @@ interface UseProposalRatingsConfig {
   setFetchingDetails: Dispatch<SetStateAction<boolean>>;
   setCollapsedMovies: Dispatch<SetStateAction<Record<string, boolean>>>;
   toast: Toast;
+  rememberRecentlyWatched: (movie: RecentlyWatchedMovie) => void;
 }
 
 import { useQueryClient } from "@tanstack/react-query";
@@ -33,6 +35,7 @@ export const useProposalRatings = ({
   setFetchingDetails,
   setCollapsedMovies,
   toast,
+  rememberRecentlyWatched,
 }: UseProposalRatingsConfig) => {
 
   const queryClient = useQueryClient();
@@ -127,42 +130,29 @@ export const useProposalRatings = ({
     }
   };
 
-  const markMovieAsWatched = async (movieTitle: string) => {
+  const markMovieAsWatched = async (movieTitle: string, proposalId?: string) => {
     if (!sessionId) return;
     try {
-      const { data: proposal, error: proposalError } = await supabase
-        .from('movie_proposals').select('*')
-        .eq('session_id', sessionId).eq('movie_title', movieTitle).single();
-      if (proposalError) throw proposalError;
-      if (!proposal) return;
-
-      const { data: proposer } = await supabase
-        .from('session_people').select('name').eq('id', proposal.person_id).single();
-      const { data: insertedWatched, error: insertError } = await supabase
-        .from('watched_movies').insert({
-          session_id: sessionId,
-          movie_title: movieTitle,
-          proposed_by: proposer?.name || 'Unknown',
-          poster: proposal.poster, genre: proposal.genre, runtime: proposal.runtime,
-          year: proposal.year, director: proposal.director, plot: proposal.plot,
-          imdb_rating: proposal.imdb_rating, imdb_id: proposal.imdb_id,
-          watched_at: new Date().toISOString(),
-        }).select('id').single();
-      if (insertError) throw insertError;
-
-      const watchedId = insertedWatched.id;
-      // Also setting proposal_id to null for correctness, though cascade might handle it
-      await supabase.from('movie_ratings').update({ watched_movie_id: watchedId, proposal_id: null }).eq('proposal_id', proposal.id);
-      await supabase.from('proposal_comments').delete().eq('proposal_id', proposal.id);
-      await supabase.from('movie_proposals').delete().eq('id', proposal.id);
+      const id = proposalId ?? movieRatings.find(movie => movie.movieTitle === movieTitle)?.proposalId;
+      if (!id) throw new Error('Movie proposal is no longer available.');
+      const { data, error } = await supabase.rpc('mark_movie_as_watched', {
+        p_proposal_id: id,
+      });
+      if (error) throw error;
+      const result = data?.[0];
+      if (!result) throw new Error('The movie could not be found in this session.');
 
       setMovieRatings(prev => prev.filter(movie => movie.movieTitle !== movieTitle));
       setPeople(prev => prev.map(person => ({
         ...person,
         movies: person.movies.filter(m => m !== movieTitle),
       })));
+      rememberRecentlyWatched({ id: result.watched_movie_id, movieTitle: result.movie_title });
       queryClient.invalidateQueries({ queryKey: ["stats", sessionId] });
-      toast({ title: "Movie marked as watched", description: `"${movieTitle}" has been moved to watched movies section` });
+      toast({
+        title: result.already_watched ? "Already marked as watched" : "Movie marked as watched",
+        description: `"${result.movie_title}" is now in the watched movies section.`,
+      });
     } catch (err) {
       console.error('Error marking movie as watched:', err);
       toast({ title: "Error", description: "Failed to mark movie as watched", variant: "destructive" });

@@ -57,11 +57,11 @@ const MovieRankings = ({ watchedMovies, detailedRatings, people }: WatchedMovies
         <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow relative">
           <CardHeader className="pb-3 p-4">
             <div className="flex items-start justify-between gap-2">
-              <div className="flex items-start gap-2 flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
                 <button
                   onClick={() => toggleCollapse(movie.id)}
                   aria-label={collapsedMovies[movie.id] ? "Expand" : "Collapse"}
-                  className="p-1 rounded hover:bg-accent/20 transition flex-shrink-0 mt-1"
+                  className="p-1 rounded hover:bg-accent/20 transition flex-shrink-0"
                   type="button"
                 >
                   {collapsedMovies[movie.id] ? (
@@ -70,7 +70,7 @@ const MovieRankings = ({ watchedMovies, detailedRatings, people }: WatchedMovies
                     <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
                   )}
                 </button>
-                <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground font-bold text-xs sm:text-sm flex-shrink-0 mt-1">
+                <div className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground font-bold text-xs sm:text-sm flex-shrink-0">
                   {index + 1}
                 </div>
                 <div className="flex-1 min-w-0">

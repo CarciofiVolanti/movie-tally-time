@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Star, Plus, Search, X } from "lucide-react";
+import { ArrowLeft, Star, Plus, Search, X, Trophy, Menu, BarChart } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
 import { AddMovieDialog } from "./AddMovieDialog";
 import  MovieRatingTab  from "./MovieRatingTab";
 import  MovieRankings from "./MovieRankings";
@@ -10,7 +11,7 @@ import { useWatchedMoviesData } from "./hooks/useWatchedMoviesData";
 import type { WatchedMoviesProps } from "./types";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMoviesProps) => {
+export const WatchedMovies = ({ sessionId, onBack, onShowStats, onSelectPerson, selectedPersonId }: WatchedMoviesProps) => {
   const [showAddMovie, setShowAddMovie] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { loading, ...data } = useWatchedMoviesData(sessionId);
@@ -44,34 +45,75 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 p-4">
-      <div className="container mx-auto max-w-4xl">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-          <Button 
-            onClick={onBack} 
-            variant="ghost" 
-            className="hover:bg-secondary/80 self-start"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Session
-          </Button>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="flex items-center justify-between gap-2">
-              <h1 className="text-xl sm:text-2xl font-bold flex items-center">
-                <Star className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-primary" />
-                Watched Movies
-              </h1>
-              <ThemeToggle className="shrink-0 sm:hidden" />
+      <div className="container mx-auto max-w-4xl pb-[calc(7rem+env(safe-area-inset-bottom))]">
+        <div className="mb-6 flex flex-col gap-4">
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              onClick={onBack}
+              variant="ghost"
+              className="hover:bg-secondary/80 px-2 sm:px-4"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Session
+            </Button>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <ThemeToggle className="shrink-0" />
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon" className="shrink-0 bg-card shadow-md" aria-label="Open session menu">
+                    <Menu aria-hidden="true" className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="overflow-y-auto" aria-describedby={undefined}>
+                  <SheetHeader>
+                    <SheetTitle>Menu</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-6 flex flex-col gap-3">
+                    <div>
+                      <select
+                        value={selectedPersonId ?? ""}
+                        onChange={event => onSelectPerson?.(event.target.value)}
+                        className="w-full rounded border border-border bg-card p-2 text-sm text-foreground transition focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        <option value="">Select who you are (optional)</option>
+                        {data.people.map(person => (
+                          <option key={person.id} value={person.id}>{person.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <SheetClose asChild>
+                      <Button variant="outline" size="sm" onClick={onBack}>
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Back to Session
+                      </Button>
+                    </SheetClose>
+                    {onShowStats && (
+                      <SheetClose asChild>
+                        <Button variant="outline" size="sm" onClick={onShowStats}>
+                          <BarChart className="w-4 h-4 mr-2" />
+                          Session Stats
+                        </Button>
+                      </SheetClose>
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
+          </div>
+          <div className="flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
+            <h1 className="text-center text-xl sm:text-2xl font-bold flex items-center whitespace-nowrap">
+              <Star className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-primary" />
+              Watched Movies
+            </h1>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowAddMovie(true)}
-              className="w-full sm:w-auto"
+              className="w-auto"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Movie
             </Button>
-            <ThemeToggle className="hidden shrink-0 sm:inline-flex" />
           </div>
         </div>
 
@@ -98,9 +140,15 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
         )}
 
         <Tabs defaultValue="rate" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="rate">Rate Movies</TabsTrigger>
-            <TabsTrigger value="rankings">Rankings</TabsTrigger>
+          <TabsList className="fixed inset-x-0 bottom-0 z-40 grid h-auto w-full grid-cols-2 gap-1 rounded-none border-t border-border bg-card/95 px-4 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur">
+            <TabsTrigger value="rate" className="flex min-h-14 min-w-0 flex-col gap-1 rounded-lg px-1 text-xs sm:text-sm data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none">
+              <Star aria-hidden="true" className="h-5 w-5" />
+              Rate Movies
+            </TabsTrigger>
+            <TabsTrigger value="rankings" className="flex min-h-14 min-w-0 flex-col gap-1 rounded-lg px-1 text-xs sm:text-sm data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none">
+              <Trophy aria-hidden="true" className="h-5 w-5" />
+              Rankings
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="rate" className="space-y-4">

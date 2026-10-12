@@ -30,6 +30,8 @@ export interface Person {
 export interface WatchedMoviesProps {
   sessionId: string;
   onBack: () => void;
+  onShowStats?: () => void;
+  onSelectPerson?: (personId: string) => void;
   selectedPersonId?: string;
 }
 

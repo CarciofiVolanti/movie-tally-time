@@ -57,3 +57,8 @@ export interface FavouriteMovie {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface RecentlyWatchedMovie {
+  id: string;
+  movieTitle: string;
+}

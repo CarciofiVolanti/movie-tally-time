@@ -146,7 +146,13 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
             </TabsContent>
 
             <TabsContent value="results">
-              <ResultsPanel rankedMovies={session.rankedMovies} people={session.people} markMovieAsWatched={session.markMovieAsWatched} />
+              <ResultsPanel
+                rankedMovies={session.rankedMovies}
+                people={session.people}
+                recentlyWatched={session.recentlyWatched}
+                markMovieAsWatched={session.markMovieAsWatched}
+                onGoToWatched={() => session.setCurrentView('watched')}
+              />
             </TabsContent>
             {createPortal(<nav aria-label="Movie session navigation" style={{ position: "fixed", left: 0, right: 0, bottom: 0 }} className="z-40 border-t border-border bg-card/95 px-4 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur">
               <TabsList aria-label="Movie session pages" className="mx-auto grid h-auto w-full max-w-lg grid-cols-3 gap-1 bg-transparent p-0">
@@ -175,6 +181,8 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
             <WatchedMovies
               sessionId={session.sessionId!}
               onBack={() => session.setCurrentView('session')}
+              onShowStats={() => session.setCurrentView('stats')}
+              onSelectPerson={session.setSelectedPersonId}
               selectedPersonId={session.selectedPersonId}
             />
           </Suspense>

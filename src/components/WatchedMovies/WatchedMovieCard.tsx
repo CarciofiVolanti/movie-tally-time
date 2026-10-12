@@ -104,11 +104,11 @@ const WatchedMovieCard = ({
     <Card className="transition-all duration-300 hover:shadow-glow relative">
       <CardHeader className="pb-3 p-4">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-start gap-2 flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             <button
               onClick={() => setCollapsed(!collapsed)}
               aria-label={collapsed ? "Expand" : "Collapse"}
-              className="p-1 rounded hover:bg-accent/20 transition flex-shrink-0 mt-1"
+              className="p-1 rounded hover:bg-accent/20 transition flex-shrink-0"
               type="button"
             >
               {collapsed ? (

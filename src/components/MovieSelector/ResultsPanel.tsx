@@ -2,19 +2,22 @@ import React, { useEffect, useState } from "react";
 import { MovieWithStats, Person } from "@/types/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Film, Trophy, Check } from "lucide-react";
+import { ArrowRight, Film, Trophy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatProposalAge, formatDateDDMMYYYY } from "@/lib/sessionHelpers";
+import type { RecentlyWatchedMovie } from "@/types/session";
 
-const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
+const ResultsPanel = ({ rankedMovies, people, recentlyWatched, markMovieAsWatched, onGoToWatched }: {
   rankedMovies: MovieWithStats[];
   people: Person[];
-  markMovieAsWatched: (title: string) => Promise<void>;
+  recentlyWatched: RecentlyWatchedMovie[];
+  markMovieAsWatched: (title: string, proposalId?: string) => Promise<void>;
+  onGoToWatched: () => void;
 }) => {
   const presentPeople = people.filter(p => p.isPresent);
 
-  const [pendingWatched, setPendingWatched] = useState<string | null>(null);
+  const [pendingWatched, setPendingWatched] = useState<{ title: string; proposalId?: string | null } | null>(null);
   const [favouritesByProposal, setFavouritesByProposal] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
@@ -54,6 +57,28 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
           <CardTitle className="text-xl sm:text-2xl font-semibold tracking-tight">Movie Rankings</CardTitle>
         </CardHeader>
       </Card>
+
+      {recentlyWatched.length > 0 && (
+        <div className="flex flex-col gap-3 mt-4" aria-live="polite">
+          {recentlyWatched.map(movie => (
+            <Card key={movie.id} className="w-full max-w-full border-primary/30">
+              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">Moved to Watched</p>
+                  <p className="font-semibold truncate">{movie.movieTitle}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onGoToWatched}
+                  className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded border px-3 py-2 text-sm"
+                >
+                  Go to Watched <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-col gap-4 mt-4">
         {rankedMovies.map((movie, index) => (
@@ -135,7 +160,7 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
                </div>
 
                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-3">
-                 <button onClick={() => setPendingWatched(movie.movieTitle)} className="inline-flex items-center gap-2 px-3 py-1 border rounded text-xs">
+                 <button onClick={() => setPendingWatched({ title: movie.movieTitle, proposalId: movie.proposalId })} className="inline-flex items-center gap-2 px-3 py-1 border rounded text-xs">
                    <Check className="w-3 h-3" />
                    Watched
                  </button>
@@ -145,7 +170,7 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
         )))}
       </div>
 
-      {rankedMovies.length === 0 && (
+      {rankedMovies.length === 0 && recentlyWatched.length === 0 && (
         <Card className="text-center py-8 mt-4">
           <CardContent>
             <Trophy className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -158,10 +183,10 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
         open={pendingWatched !== null}
         onOpenChange={(open) => { if (!open) setPendingWatched(null); }}
         title="Mark as watched?"
-        description={`Move "${pendingWatched}" to the watched movies section? This cannot be undone.`}
+        description={`Move "${pendingWatched?.title}" to the watched movies section? This cannot be undone.`}
         confirmLabel="Mark as watched"
         onConfirm={() => {
-          if (pendingWatched) markMovieAsWatched(pendingWatched);
+          if (pendingWatched) markMovieAsWatched(pendingWatched.title, pendingWatched.proposalId ?? undefined);
           setPendingWatched(null);
         }}
       />

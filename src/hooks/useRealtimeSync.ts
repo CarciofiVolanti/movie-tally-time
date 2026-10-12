@@ -1,12 +1,14 @@
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Person, MovieRating } from "@/types/session";
+import type { RecentlyWatchedMovie } from "@/types/session";
 
 interface UseRealtimeSyncConfig {
   sessionId: string | null;
   setMovieRatings: Dispatch<SetStateAction<MovieRating[]>>;
   setPeople: Dispatch<SetStateAction<Person[]>>;
   peopleRef: MutableRefObject<Person[]>;
+  rememberRecentlyWatched: (movie: RecentlyWatchedMovie) => void;
 }
 
 export const useRealtimeSync = ({
@@ -14,6 +16,7 @@ export const useRealtimeSync = ({
   setMovieRatings,
   setPeople,
   peopleRef,
+  rememberRecentlyWatched,
 }: UseRealtimeSyncConfig) => {
   useEffect(() => {
     if (!sessionId) return;
@@ -141,8 +144,14 @@ export const useRealtimeSync = ({
         });
       })
 
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'watched_movies', filter: `session_id=eq.${sessionId}` }, (payload) => {
+        const movie = payload.new as { id?: string; movie_title?: string; session_id?: string };
+        if (movie.session_id !== sessionId || !movie.id || !movie.movie_title) return;
+        rememberRecentlyWatched({ id: movie.id, movieTitle: movie.movie_title });
+      })
+
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [sessionId]);
+  }, [sessionId, rememberRecentlyWatched]);
 };

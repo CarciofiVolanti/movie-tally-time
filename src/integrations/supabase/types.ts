@@ -300,6 +300,7 @@ export type Database = {
           proposed_by: string
           runtime: string | null
           session_id: string
+          source_proposal_id: string | null
           updated_at: string
           watched_at: string
           year: string | null
@@ -317,6 +318,7 @@ export type Database = {
           proposed_by: string
           runtime?: string | null
           session_id: string
+          source_proposal_id?: string | null
           updated_at?: string
           watched_at?: string
           year?: string | null
@@ -334,6 +336,7 @@ export type Database = {
           proposed_by?: string
           runtime?: string | null
           session_id?: string
+          source_proposal_id?: string | null
           updated_at?: string
           watched_at?: string
           year?: string | null
@@ -345,6 +348,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      mark_movie_as_watched: {
+        Args: {
+          p_proposal_id: string
+        }
+        Returns: {
+          already_watched: boolean
+          movie_title: string
+          watched_movie_id: string
+        }[]
+      }
       create_movie_session: {
         Args: {
           p_name: string
