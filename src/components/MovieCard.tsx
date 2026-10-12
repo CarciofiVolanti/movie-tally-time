@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { StarRating } from "./StarRating";
 import { Film, Search } from "lucide-react";
 import { useState, useEffect, memo } from "react";
@@ -174,26 +175,28 @@ export const MovieCard = memo(({
                 {/* Proposer comment aligned under Genre */}
                 <div className="mt-1">
                   {isProposer ? (
-                    <div className="flex flex-col sm:flex-row sm:items-start gap-2">
-                      <span className="text-xs font-medium text-muted-foreground flex-shrink-0">Proposer comment:</span>
-                      <div className="flex-1 flex items-start gap-2">
-                        <Input
-                          placeholder={"Max " + MAX_WORDS + " words" }
-                          value={commentText}
-                          onChange={(e) => onCommentChange(e.target.value)}
-                          className="flex-1 text-xs"
-                        />
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">{wordCount(commentText)}/{MAX_WORDS}</span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={saveComment}
-                            disabled={isSavingComment || commentText.trim() === ((lastSavedComment ?? initialComment) ?? "").trim()}
-                          >
-                            {isSavingComment ? "Saving..." : "Save"}
-                          </Button>
-                        </div>
+                    <div className="w-full space-y-2">
+                      <label htmlFor={`proposal-comment-${proposalId}`} className="text-xs font-medium text-muted-foreground">
+                        Proposer comment:
+                      </label>
+                      <Textarea
+                        id={`proposal-comment-${proposalId}`}
+                        placeholder={`Max ${MAX_WORDS} words`}
+                        value={commentText}
+                        onChange={(e) => onCommentChange(e.target.value)}
+                        rows={4}
+                        className="min-h-24 resize-y text-sm"
+                      />
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs text-muted-foreground">{wordCount(commentText)}/{MAX_WORDS} words</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={saveComment}
+                          disabled={isSavingComment || commentText.trim() === ((lastSavedComment ?? initialComment) ?? "").trim()}
+                        >
+                          {isSavingComment ? "Saving..." : "Save"}
+                        </Button>
                       </div>
                     </div>
                   ) : (

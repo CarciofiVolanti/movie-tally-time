@@ -24,6 +24,32 @@ if (Test-Path -LiteralPath $linkedProjectPath) {
   }
 }
 
+$dockerCommand = Get-Command docker.exe -ErrorAction SilentlyContinue
+if (-not $dockerCommand) {
+  $dockerCandidates = @(
+    (Join-Path $env:ProgramFiles 'Docker\Docker\resources\bin\docker.exe'),
+    (Join-Path $env:LOCALAPPDATA 'Programs\DockerDesktop\resources\bin\docker.exe'),
+    (Join-Path $env:ProgramData 'DockerDesktop\version-bin\docker.exe')
+  )
+  $dockerPath = $dockerCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+  if ($dockerPath) {
+    $dockerCommandPath = $dockerPath
+    $dockerDirectory = Split-Path -Parent $dockerPath
+    if (($env:PATH -split ';') -notcontains $dockerDirectory) {
+      $env:PATH = "$dockerDirectory;$env:PATH"
+    }
+  } else {
+    throw 'Docker CLI was not found on PATH or in the standard Docker Desktop install locations. Start a PowerShell window that can run docker.exe, then retry.'
+  }
+} else {
+  $dockerCommandPath = $dockerCommand.Source
+}
+
+$dockerStatus = & $dockerCommandPath info --format '{{.ServerVersion}}' 2>&1
+if ($LASTEXITCODE -ne 0) {
+  throw "Docker CLI was found at '$dockerCommandPath', but Docker Engine did not respond. Start Docker Desktop and retry. $dockerStatus"
+}
+
 $supabaseCommand = Get-Command supabase -ErrorAction SilentlyContinue
 if ($supabaseCommand) {
   $cliExecutable = $supabaseCommand.Source
