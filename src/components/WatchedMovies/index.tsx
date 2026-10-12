@@ -10,6 +10,7 @@ import  MovieRankings from "./MovieRankings";
 import { useWatchedMoviesData } from "./hooks/useWatchedMoviesData";
 import type { WatchedMoviesProps } from "./types";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import PersonIdentityPicker from "@/components/PersonIdentityPicker";
 
 export const WatchedMovies = ({ sessionId, onBack, onShowStats, onSelectPerson, selectedPersonId }: WatchedMoviesProps) => {
   const [showAddMovie, setShowAddMovie] = useState(false);
@@ -44,19 +45,28 @@ export const WatchedMovies = ({ sessionId, onBack, onShowStats, onSelectPerson, 
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 p-4">
-      <div className="container mx-auto max-w-4xl pb-[calc(7rem+env(safe-area-inset-bottom))]">
-        <div className="mb-6 flex flex-col gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 px-4 pb-4">
+      <div className="sticky top-0 z-40 -mx-4 mb-4 border-b border-border bg-background/95 px-4 pt-[env(safe-area-inset-top)] pb-2 backdrop-blur">
+        <div className="container mx-auto max-w-4xl">
           <div className="flex items-center justify-between gap-2">
-            <Button
-              onClick={onBack}
-              variant="ghost"
-              className="hover:bg-secondary/80 px-2 sm:px-4"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Session
-            </Button>
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="min-w-0">
+              <Button
+                onClick={onBack}
+                variant="ghost"
+                className="hover:bg-secondary/80 px-2 sm:px-4"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Session
+              </Button>
+              <div className="pl-2 sm:pl-4">
+                <PersonIdentityPicker
+                  people={data.people}
+                  selectedPersonId={selectedPersonId}
+                  onSelect={personId => onSelectPerson?.(personId)}
+                />
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
               <ThemeToggle className="shrink-0" />
               <Sheet>
                 <SheetTrigger asChild>
@@ -70,17 +80,11 @@ export const WatchedMovies = ({ sessionId, onBack, onShowStats, onSelectPerson, 
                   </SheetHeader>
                   <div className="mt-6 flex flex-col gap-3">
                     <div>
-                      <select
-                        aria-label="Select who you are"
-                        value={selectedPersonId ?? ""}
-                        onChange={event => onSelectPerson?.(event.target.value)}
-                        className="w-full rounded border border-border bg-card p-2 text-sm text-foreground transition focus:outline-none focus:ring-2 focus:ring-primary"
-                      >
-                        <option value="">Select who you are (optional)</option>
-                        {data.people.map(person => (
-                          <option key={person.id} value={person.id}>{person.name}</option>
-                        ))}
-                      </select>
+                      <PersonIdentityPicker
+                        people={data.people}
+                        selectedPersonId={selectedPersonId}
+                        onSelect={personId => onSelectPerson?.(personId)}
+                      />
                     </div>
                     <SheetClose asChild>
                       <Button variant="outline" size="sm" onClick={onBack}>
@@ -101,6 +105,10 @@ export const WatchedMovies = ({ sessionId, onBack, onShowStats, onSelectPerson, 
               </Sheet>
             </div>
           </div>
+        </div>
+      </div>
+      <div className="container mx-auto max-w-4xl pb-[calc(7rem+env(safe-area-inset-bottom))]">
+        <div className="mb-6 flex flex-col gap-4">
           <div className="flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
             <h1 className="text-center text-xl sm:text-2xl font-bold flex items-center whitespace-nowrap">
               <Star className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-primary" />

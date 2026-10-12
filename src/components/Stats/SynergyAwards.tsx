@@ -5,6 +5,8 @@ interface RankedPair {
   name: string;
   value: string;
   score: number;
+  sampleCount: number;
+  sampleUnit: string;
 }
 
 interface SynergyAwardsProps {
@@ -80,6 +82,7 @@ export const SynergyAwards = ({ stats, expandedId, onToggleExpand }: SynergyAwar
                     <div className="mt-1">
                       <p className="font-bold text-lg text-primary">{winner.name}</p>
                       <p className="text-xs text-muted-foreground">{winner.value}</p>
+                      <p className="mt-1 text-[10px] text-muted-foreground">Based on {winner.sampleCount} {winner.sampleUnit}</p>
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground italic mt-2">No data yet</p>
@@ -100,9 +103,12 @@ export const SynergyAwards = ({ stats, expandedId, onToggleExpand }: SynergyAwar
                       <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
                         {others.map((pair, idx) => (
                           <div key={idx} className="flex items-center justify-between text-xs">
-                            <span className="flex items-center gap-2 min-w-0">
+                            <span className="flex min-w-0 items-start gap-2">
                               <span className="text-muted-foreground font-mono w-3 flex-shrink-0">{idx + 2}.</span>
-                              <span className="font-medium truncate">{pair.name}</span>
+                              <span className="min-w-0">
+                                <span className="block font-medium truncate">{pair.name}</span>
+                                <span className="block text-[10px] text-muted-foreground">n={pair.sampleCount} {pair.sampleUnit}</span>
+                              </span>
                             </span>
                             <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2 flex-shrink-0">
                               {pair.score.toFixed(1)}

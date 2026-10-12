@@ -13,7 +13,6 @@ import { SynergyAwards } from "./SynergyAwards";
 import { AnticipationAwards } from "./AnticipationAwards";
 import { PersonStats } from "./PersonStats";
 import { GroupHighlights } from "./GroupHighlights";
-import { GenreRadarChart } from "./GenreRadarChart";
 import { RuntimeScatterChart } from "./RuntimeScatterChart";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -50,7 +49,7 @@ export const Stats = ({ sessionId, onBack }: StatsProps) => {
     );
   }
 
-  const { averageRating, totalVotes, medianRating, averageHype, totalHypeVotes, medianHype, lengthPreferences, awards, genreData, movieAverages, anticipationStats, synergyStats, groupHighlights, groupRadarData, personStats, mostAnticipated, totalRuntime } = calc;
+  const { averageRating, totalVotes, medianRating, averageHype, totalHypeVotes, medianHype, lengthPreferences, awards, genreData, movieAverages, anticipationStats, synergyStats, groupHighlights, personStats, mostAnticipated, totalRuntime } = calc;
 
   const hasWatched = watchedMovies.length > 0;
   const hasProposals = proposals.length > 0;
@@ -59,37 +58,60 @@ export const Stats = ({ sessionId, onBack }: StatsProps) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 p-4">
       <div className="container mx-auto max-w-5xl">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-          <div className="flex items-center gap-2">
-            <Button onClick={onBack} variant="ghost" className="hover:bg-secondary/80">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            {viewingPersonId && (
-              <Button onClick={() => setViewingPersonId("")} variant="outline" size="sm">
-                View Group Stats
+        <div className="mb-6 space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Button onClick={onBack} variant="ghost" className="hover:bg-secondary/80">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
               </Button>
-            )}
+              {viewingPersonId && (
+                <Button onClick={() => setViewingPersonId("")} variant="outline" size="sm">
+                  View Group Stats
+                </Button>
+              )}
+            </div>
+            <ThemeToggle />
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="flex items-center text-xl font-bold sm:text-2xl">
+              <Star className="mr-2 h-5 w-5 text-primary sm:h-6 sm:w-6" />
+              {viewingPersonId ? "Personal Insights" : "Session Statistics"}
+            </h1>
             <select
               aria-label="Choose a person or group for stats"
               value={viewingPersonId}
               onChange={e => setViewingPersonId(e.target.value)}
-              className="p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm min-w-[200px]"
+              className="min-w-[200px] rounded border border-border bg-card p-2 text-sm text-foreground transition focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="">Group Insights</option>
               {people.map(person => (
                 <option key={person.id} value={person.id}>{person.name}'s Stats</option>
               ))}
             </select>
-            <h1 className="text-xl sm:text-2xl font-bold flex items-center hidden sm:flex">
-              <Star className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-primary" />
-              {viewingPersonId ? "Personal Insights" : "Session Statistics"}
-            </h1>
-            <ThemeToggle className="self-end sm:self-auto" />
           </div>
         </div>
+
+        {hasWatched && !viewingPersonId && (
+          <nav aria-label="Stats sections" className="sticky top-0 z-20 -mx-4 mb-6 border-y border-border bg-background px-4 py-2">
+            <div className="flex gap-2 overflow-x-auto">
+              {[
+                ["stats-overview", "Overview"],
+                ["stats-awards", "Awards"],
+                ["stats-movies", "Movie insights"],
+                ["stats-genres", "Genres"],
+              ].map(([id, label]) => (
+                <a
+                  key={id}
+                  href={`#${id}`}
+                  className="inline-flex min-h-11 shrink-0 items-center rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {label}
+                </a>
+              ))}
+            </div>
+          </nav>
+        )}
 
         {!hasWatched && !hasProposals ? (
           <div className="text-center py-12 bg-card rounded-lg border border-border/50">
@@ -100,7 +122,7 @@ export const Stats = ({ sessionId, onBack }: StatsProps) => {
         ) : viewingPersonId && personStats && selectedPerson ? (
           <PersonStats name={selectedPerson.name} stats={personStats} />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-500">
+          <div className="space-y-8 animate-in fade-in duration-500">
             {hasProposals && !hasWatched && (
               <Card className="col-span-full bg-primary/5 border-primary/20">
                 <CardHeader className="pb-2">
@@ -129,7 +151,9 @@ export const Stats = ({ sessionId, onBack }: StatsProps) => {
 
             {hasWatched && (
               <>
-                <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <section id="stats-overview" className="scroll-mt-20 space-y-4">
+                  <h2 className="text-lg font-semibold">At a glance</h2>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <StatCard title="Total Watch Time" value={formatRuntime(totalRuntime)} icon={Clock} />
                   <StatCard title="Movies Watched" value={watchedMovies.length} icon={Film} />
                   <StatCard
@@ -144,24 +168,31 @@ export const Stats = ({ sessionId, onBack }: StatsProps) => {
                     description={`From ${totalHypeVotes} votes • Median: ${medianHype.toFixed(1)}`}
                     icon={Sparkles}
                   />
-                </div>
+                  </div>
+                  <GroupHighlights surprise={groupHighlights.surprise} disappointment={groupHighlights.disappointment} />
+                </section>
 
-                <AwardsList awards={awards} expandedId={expandedRankingId} onToggleExpand={(id) => setExpandedRankingId(expandedRankingId === id ? null : id)} />
+                <section id="stats-awards" className="scroll-mt-20 space-y-4">
+                  <h2 className="text-lg font-semibold">Awards and rankings</h2>
+                  <AwardsList awards={awards} expandedId={expandedRankingId} onToggleExpand={(id) => setExpandedRankingId(expandedRankingId === id ? null : id)} />
+                  <AnticipationAwards stats={anticipationStats} expandedId={expandedRankingId} onToggleExpand={(id) => setExpandedRankingId(expandedRankingId === id ? null : id)} />
+                  <SynergyAwards stats={synergyStats} expandedId={expandedRankingId} onToggleExpand={(id) => setExpandedRankingId(expandedRankingId === id ? null : id)} />
+                </section>
 
-                <div className="col-span-full grid grid-cols-1 gap-6">
-                  <RuntimeScatterChart 
-                    data={lengthPreferences.scoreScatterData} 
-                    title="Group Post-Watch Score vs Runtime" 
+                <section id="stats-movies" className="scroll-mt-20 space-y-4">
+                  <h2 className="text-lg font-semibold">Movie insights</h2>
+                  <RuntimeScatterChart
+                    data={lengthPreferences.scoreScatterData}
+                    title="Group Post-Watch Score vs Runtime"
                     preferenceText={lengthPreferences.scorePreference}
                   />
-                </div>
+                  <TopMovies movies={movieAverages} />
+                </section>
 
-                <GroupHighlights surprise={groupHighlights.surprise} disappointment={groupHighlights.disappointment} />
-                <SynergyAwards stats={synergyStats} expandedId={expandedRankingId} onToggleExpand={(id) => setExpandedRankingId(expandedRankingId === id ? null : id)} />
-                <AnticipationAwards stats={anticipationStats} expandedId={expandedRankingId} onToggleExpand={(id) => setExpandedRankingId(expandedRankingId === id ? null : id)} />
-                <GenreRadarChart data={groupRadarData} title="Group Genre Analysis" />
-                <TopMovies movies={movieAverages} />
-                <GenreChart data={genreData} />
+                <section id="stats-genres" className="scroll-mt-20 space-y-4">
+                  <h2 className="text-lg font-semibold">Genres</h2>
+                  <GenreChart data={genreData} />
+                </section>
               </>
             )}
 

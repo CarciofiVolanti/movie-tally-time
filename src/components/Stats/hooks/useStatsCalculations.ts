@@ -12,7 +12,6 @@ import {
   calculateSynergyStats,
   calculatePersonStats,
   calculateGroupHighlights,
-  calculateGenreRadarData,
   calculateGroupLengthPreferences,
 } from "../utils";
 
@@ -45,7 +44,6 @@ export const useStatsCalculations = ({
       const anticipationStats = calculateAnticipationStats(proposalRatings, people, watchedMovies, proposals);
       const synergyStats = calculateSynergyStats(proposalRatings, detailedRatings, people, watchedMovies, proposals);
       const groupHighlights = calculateGroupHighlights(watchedMovies, detailedRatings, proposalRatings);
-      const groupRadarData = calculateGenreRadarData(watchedMovies, detailedRatings, proposalRatings);
 
       const mostAnticipated = proposals.length > 0
         ? [...proposals].map(p => {
@@ -72,7 +70,6 @@ export const useStatsCalculations = ({
         anticipationStats,
         synergyStats,
         groupHighlights,
-        groupRadarData,
         mostAnticipated,
       };
     } catch (err) {

@@ -7,10 +7,11 @@ export const calculateSynergyStats = (
   watchedMovies: WatchedMovie[],
   proposals: MovieProposal[]
 ) => {
+  type RankedPair = { name: string; value: string; score: number; sampleCount: number; sampleUnit: string };
   const stats = {
-    perfectMatch: [] as { name: string, value: string, score: number }[],
-    soulmates: [] as { name: string, value: string, score: number }[],
-    polarOpposites: [] as { name: string, value: string, score: number }[]
+    perfectMatch: [] as RankedPair[],
+    soulmates: [] as RankedPair[],
+    polarOpposites: [] as RankedPair[]
   };
 
   if (people.length < 2) return stats;
@@ -46,7 +47,9 @@ export const calculateSynergyStats = (
       return {
         name: `${raterName} ❤️ ${proposer}`,
         value: `${avg.toFixed(2)}/5 avg hype for their proposals`,
-        score: avg
+        score: avg,
+        sampleCount: data.count,
+        sampleUnit: "proposal ratings",
       };
     })
     .sort((a, b) => b.score - a.score);
@@ -79,7 +82,9 @@ export const calculateSynergyStats = (
       return {
         name: `${n1} & ${n2}`,
         value: `${avgDiff.toFixed(2)} avg rating diff (0-10)`,
-        score: avgDiff
+        score: avgDiff,
+        sampleCount: data.count,
+        sampleUnit: "shared movies",
       };
     });
 

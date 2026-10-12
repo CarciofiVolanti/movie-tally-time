@@ -2,11 +2,12 @@ import { WatchedMovie, DetailedRating, Person, MovieRating, MovieProposal } from
 import { calculateMovieAverages } from "./ratings";
 
 export const calculateAwards = (movies: WatchedMovie[], ratings: DetailedRating[], people: Person[]) => {
+  type RankedAward = { name: string; value: string; score: number; sampleCount: number; sampleUnit: string };
   const awards = {
-    cinephile: [] as { name: string, value: string, score: number }[],
-    harshestCritic: [] as { name: string, value: string, score: number }[],
-    easyPleaser: [] as { name: string, value: string, score: number }[],
-    tastemaker: [] as { name: string, value: string, score: number }[]
+    cinephile: [] as RankedAward[],
+    harshestCritic: [] as RankedAward[],
+    easyPleaser: [] as RankedAward[],
+    tastemaker: [] as RankedAward[]
   };
 
   if (people.length === 0 || movies.length === 0) return awards;
@@ -21,7 +22,13 @@ export const calculateAwards = (movies: WatchedMovie[], ratings: DetailedRating[
   awards.cinephile = Object.entries(attendanceCount)
     .map(([personId, count]) => {
       const person = people.find(p => p.id === personId);
-      return { name: person?.name || "Unknown", value: `${count} movies attended`, score: count };
+      return {
+        name: person?.name || "Unknown",
+        value: `${count} movies attended`,
+        score: count,
+        sampleCount: count,
+        sampleUnit: "movies attended",
+      };
     })
     .sort((a, b) => b.score - a.score);
 
@@ -42,7 +49,9 @@ export const calculateAwards = (movies: WatchedMovie[], ratings: DetailedRating[
       return {
         name: person?.name || "Unknown",
         value: `${avg.toFixed(2)}/10 avg rating (${data.count} movies)`,
-        score: avg
+        score: avg,
+        sampleCount: data.count,
+        sampleUnit: "movie ratings",
       };
     });
 
@@ -64,7 +73,9 @@ export const calculateAwards = (movies: WatchedMovie[], ratings: DetailedRating[
       return {
         name: proposerName,
         value: `${avg.toFixed(2)}/10 avg group rating (${data.count} proposals)`,
-        score: avg
+        score: avg,
+        sampleCount: data.count,
+        sampleUnit: "proposals",
       };
     })
     .sort((a, b) => b.score - a.score);
@@ -78,10 +89,11 @@ export const calculateAnticipationStats = (
   watchedMovies: WatchedMovie[],
   proposals: MovieProposal[]
 ) => {
+  type RankedAnticipation = { name: string; value: string; score: number; sampleCount: number; sampleUnit: string };
   const stats = {
-    hypeMan: [] as { name: string, value: string, score: number }[],
-    skeptic: [] as { name: string, value: string, score: number }[],
-    mostAnticipated: [] as { name: string, value: string, score: number }[]
+    hypeMan: [] as RankedAnticipation[],
+    skeptic: [] as RankedAnticipation[],
+    mostAnticipated: [] as RankedAnticipation[]
   };
 
   if (movieRatings.length === 0 || people.length === 0) return stats;
@@ -100,7 +112,13 @@ export const calculateAnticipationStats = (
     .map(([personId, data]) => {
       const p = people.find(p => p.id === personId);
       const avg = data.sum / data.count;
-      return { name: p?.name || "Unknown", value: `${avg.toFixed(2)}/5 avg hype`, score: avg };
+      return {
+        name: p?.name || "Unknown",
+        value: `${avg.toFixed(2)}/5 avg hype`,
+        score: avg,
+        sampleCount: data.count,
+        sampleUnit: "ratings",
+      };
     });
 
   stats.hypeMan = [...hypeRankings].sort((a, b) => b.score - a.score);
@@ -141,7 +159,9 @@ export const calculateAnticipationStats = (
       return {
         name: data.title,
         value: `${avg.toFixed(2)}/5 avg hype (${data.count} votes)`,
-        score: avg
+        score: avg,
+        sampleCount: data.count,
+        sampleUnit: "votes",
       };
     })
     .sort((a, b) => b.score - a.score);

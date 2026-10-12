@@ -6,6 +6,8 @@ interface RankedItem {
   name: string;
   value: string;
   score: number;
+  sampleCount: number;
+  sampleUnit: string;
 }
 
 interface AnticipationAwardsProps {
@@ -26,6 +28,7 @@ export const AnticipationAwards = ({ stats, expandedId, onToggleExpand }: Antici
       id: "hypeMan",
       title: "Premio essere Ste",
       description: "Highest average pre-watch ratings",
+      sampleShownInValue: false,
       icon: Flame,
       data: stats.hypeMan,
       color: "text-orange-600",
@@ -35,6 +38,7 @@ export const AnticipationAwards = ({ stats, expandedId, onToggleExpand }: Antici
       id: "skeptic",
       title: "Sisi gli ho messo 5 stelle",
       description: "Lowest average pre-watch ratings",
+      sampleShownInValue: false,
       icon: Glasses,
       data: stats.skeptic,
       color: "text-cyan-600",
@@ -44,6 +48,7 @@ export const AnticipationAwards = ({ stats, expandedId, onToggleExpand }: Antici
       id: "mostAnticipated",
       title: "Stasera Prisoners?",
       description: "Highest average hype for a movie",
+      sampleShownInValue: true,
       icon: Sparkles,
       data: stats.mostAnticipated,
       color: "text-amber-500",
@@ -85,6 +90,9 @@ export const AnticipationAwards = ({ stats, expandedId, onToggleExpand }: Antici
                     <div className="mt-1">
                       <p className="font-bold text-lg text-primary truncate max-w-[180px]">{winner.name}</p>
                       <p className="text-xs text-muted-foreground">{winner.value}</p>
+                      {!item.sampleShownInValue && (
+                        <p className="mt-1 text-[10px] text-muted-foreground">Based on {winner.sampleCount} {winner.sampleUnit}</p>
+                      )}
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground italic mt-2">No data yet</p>
@@ -105,9 +113,12 @@ export const AnticipationAwards = ({ stats, expandedId, onToggleExpand }: Antici
                       <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
                         {others.map((person, idx) => (
                           <div key={idx} className="flex items-center justify-between text-xs">
-                            <span className="flex items-center gap-2 min-w-0">
+                            <span className="flex min-w-0 items-start gap-2">
                               <span className="text-muted-foreground font-mono w-3 flex-shrink-0">{idx + 2}.</span>
-                              <span className="font-medium truncate">{person.name}</span>
+                              <span className="min-w-0">
+                                <span className="block font-medium truncate">{person.name}</span>
+                                <span className="block text-[10px] text-muted-foreground">n={person.sampleCount} {person.sampleUnit}</span>
+                              </span>
                             </span>
                             <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2 flex-shrink-0">
                               {person.score.toFixed(1)}

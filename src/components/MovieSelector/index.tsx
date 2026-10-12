@@ -11,6 +11,7 @@ import { Users, Film, Trophy, Award, BarChart, Menu } from "lucide-react";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import PersonIdentityPicker from "@/components/PersonIdentityPicker";
 
 const WatchedMovies = lazy(() => import("../WatchedMovies").then(m => ({ default: m.WatchedMovies })));
 const Stats = lazy(() => import("../Stats"));
@@ -54,9 +55,18 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
       {session.currentView === 'session' && (
         <ErrorBoundary>
         <div className="container mx-auto pt-[calc(7rem+env(safe-area-inset-top))] pb-[calc(7rem+env(safe-area-inset-bottom))] px-4">
-          <div className="fixed inset-x-0 top-0 z-40 flex min-h-[calc(5rem+env(safe-area-inset-top))] items-center border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur">
+          <div className="fixed inset-x-0 top-0 z-40 flex min-h-[calc(6.5rem+env(safe-area-inset-top))] items-center border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur">
             <div className="container mx-auto px-4">
-              <h1 className="ml-[calc(1.5rem+1px)] pr-16 text-left text-4xl font-bold bg-gradient-cinema bg-clip-text text-transparent">CarciOscar</h1>
+              <div className="ml-[calc(1.5rem+1px)] pr-24">
+                <h1 className="text-left text-4xl font-bold bg-gradient-cinema bg-clip-text text-transparent">CarciOscar</h1>
+                <div className="mt-2">
+                  <PersonIdentityPicker
+                    people={session.people}
+                    selectedPersonId={session.selectedPersonId}
+                    onSelect={session.setSelectedPersonId}
+                  />
+                </div>
+              </div>
             </div>
             <ThemeToggle className="absolute right-[calc(4.5rem+env(safe-area-inset-right))] top-[calc(1.25rem+env(safe-area-inset-top))] bg-card shadow-sm" />
             <Sheet>
@@ -95,17 +105,11 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
             </div>
 
             <div className="mb-4">
-              <select
-                aria-label="Select who you are"
-                value={session.selectedPersonId}
-                onChange={e => session.setSelectedPersonId(e.target.value)}
-                className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
-              >
-                <option value="">Select who you are (optional)</option>
-                {session.people.map(person => (
-                  <option key={person.id} value={person.id}>{person.name}</option>
-                ))}
-              </select>
+              <PersonIdentityPicker
+                people={session.people}
+                selectedPersonId={session.selectedPersonId}
+                onSelect={session.setSelectedPersonId}
+              />
             </div>
 
                 </div>

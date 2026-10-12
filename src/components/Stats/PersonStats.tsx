@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Clock, Film, Star, Sparkles, Target, TrendingUp, TrendingDown, Info, Heart, Zap, Ghost, AlertCircle, Frown } from "lucide-react";
-import { GenreRadarChart } from "./GenreRadarChart";
+import { User, Clock, Film, Star, Sparkles, Target, TrendingUp, Info, Heart, Zap, Ghost, Frown } from "lucide-react";
 import { RuntimeScatterChart } from "./RuntimeScatterChart";
 
 interface PersonStatsProps {
@@ -18,13 +17,14 @@ interface PersonStatsProps {
     bottomHypeGenre: { name: string; avg: number; count: number } | null;
     alignmentScore: string;
     alignmentHypeScore: string;
+    alignmentCount: number;
+    hypeAlignmentCount: number;
     totalRatings: number;
     totalHypeRatings: number;
-    bestSynergy: { name: string; avgHypeDiff: number | null; avgScoreDiff: number | null } | null;
-    worstSynergy: { name: string; avgHypeDiff: number | null; avgScoreDiff: number | null } | null;
+    bestSynergy: { name: string; avgHypeDiff: number | null; avgScoreDiff: number | null; hypeComparisons: number; scoreComparisons: number } | null;
+    worstSynergy: { name: string; avgHypeDiff: number | null; avgScoreDiff: number | null; hypeComparisons: number; scoreComparisons: number } | null;
     biggestSurprise: { title: string; hype: number; score: number; diff: number } | null;
     biggestDisappointment: { title: string; hype: number; score: number; diff: number } | null;
-    radarData: { subject: string; hype: number; score: number; fullMark: number }[];
     scoreLengthPreference: string;
     hypeLengthPreference: string;
     scoreScatterData: { runtime: number; score: number; title: string }[];
@@ -33,16 +33,40 @@ interface PersonStatsProps {
 }
 
 export const PersonStats = ({ name, stats }: PersonStatsProps) => {
+  const sectionLinks: [string, string][] = [
+    ["person-overview", "Overview"],
+    ["person-runtime", "Runtime"],
+    ["person-social", "Social taste"],
+  ];
+  if (stats.biggestDisappointment) sectionLinks.push(["person-takeaway", "Takeaway"]);
+  sectionLinks.push(["person-guide", "Guide"]);
+
   return (
     <div className="col-span-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
-      <div className="flex items-center gap-3 mb-2">
+      <div className="flex items-center gap-3">
         <div className="p-2 rounded-full bg-primary/10">
           <User className="w-6 h-6 text-primary" />
         </div>
         <h2 className="text-2xl font-bold">{name}'s Personal Stats</h2>
       </div>
 
+      <nav aria-label="Personal stats sections" className="sticky top-0 z-20 -mx-4 border-y border-border bg-background px-4 py-2">
+        <div className="flex gap-2 overflow-x-auto">
+          {sectionLinks.map(([id, label]) => (
+            <a
+              key={id}
+              href={`#${id}`}
+              className="inline-flex min-h-11 shrink-0 items-center rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {label}
+            </a>
+          ))}
+        </div>
+      </nav>
+
       {/* Primary Aggregate Cards */}
+      <section id="person-overview" className="scroll-mt-20 space-y-4">
+        <h3 className="text-lg font-semibold">At a glance</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -97,11 +121,6 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Radar Chart Card */}
-        <GenreRadarChart data={stats.radarData} title={`${name}'s Genre Analysis`} />
-
-        {/* Alignment & Taste Card */}
         <Card className="border-primary/20">
           <CardHeader className="bg-primary/5 border-b border-primary/10">
             <CardTitle className="text-lg flex items-center gap-2">
@@ -115,11 +134,13 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
                 <p className="text-xs text-muted-foreground mb-1 uppercase font-bold tracking-tighter">Post-Watch Alignment</p>
                 <div className="text-xl font-bold">{stats.alignmentScore} pts</div>
                 <p className="text-[10px] text-muted-foreground">Diff. from group rating (0-10)</p>
+                {stats.alignmentCount > 0 && <p className="text-xs text-muted-foreground">Based on {stats.alignmentCount} ratings</p>}
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1 uppercase font-bold tracking-tighter text-orange-700 dark:text-orange-300">Hype Alignment</p>
                 <div className="text-xl font-bold text-orange-700 dark:text-orange-300">{stats.alignmentHypeScore} pts</div>
                 <p className="text-[10px] text-muted-foreground">Diff. from group hype (0-5)</p>
+                {stats.hypeAlignmentCount > 0 && <p className="text-xs text-muted-foreground">Based on {stats.hypeAlignmentCount} votes</p>}
               </div>
             </div>
 
@@ -133,12 +154,14 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
                   <div className="p-2 rounded bg-green-500/5 border border-green-500/10">
                     <p className="text-[10px] text-green-700 dark:text-green-300 font-bold uppercase">Favorite Genre</p>
                     <p className="text-sm font-medium">{stats.topGenre.name}</p>
+                    <p className="text-xs text-muted-foreground">Based on {stats.topGenre.count} rated movies</p>
                   </div>
                 )}
                 {stats.topHypeGenre && (
                   <div className="p-2 rounded bg-orange-500/5 border border-orange-500/10">
                     <p className="text-[10px] text-orange-700 dark:text-orange-300 font-bold uppercase">Most Anticipated</p>
                     <p className="text-sm font-medium">{stats.topHypeGenre.name}</p>
+                    <p className="text-xs text-muted-foreground">Based on {stats.topHypeGenre.count} hype ratings</p>
                   </div>
                 )}
                 {stats.scoreLengthPreference !== "Not enough data" && (
@@ -152,18 +175,21 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </section>
 
       {/* Runtime Scatter Charts */}
-      <div className="grid grid-cols-1 gap-6">
+      <section id="person-runtime" className="scroll-mt-20 space-y-4">
+        <h3 className="text-lg font-semibold">Runtime and ratings</h3>
         <RuntimeScatterChart 
           data={stats.scoreScatterData} 
           title="Runtime vs Post-Watch Score" 
           preferenceText={stats.scoreLengthPreference}
         />
-      </div>
+      </section>
 
       {/* Social Synergy & Anti-Synergy */}
+      <section id="person-social" className="scroll-mt-20 space-y-4">
+      <h3 className="text-lg font-semibold">Social taste</h3>
       <Card className="border-pink-500/20">
         <CardHeader className="bg-pink-500/5 border-b border-pink-500/10">
           <CardTitle className="text-lg flex items-center gap-2">
@@ -186,13 +212,19 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
                     {stats.bestSynergy.avgScoreDiff !== null && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Avg. Rating Diff:</span>
-                        <span className="font-medium">{stats.bestSynergy.avgScoreDiff.toFixed(2)} pts</span>
+                        <span className="text-right">
+                          <span className="font-medium">{stats.bestSynergy.avgScoreDiff.toFixed(2)} pts</span>
+                          <span className="block text-xs text-muted-foreground">Based on {stats.bestSynergy.scoreComparisons} shared movies</span>
+                        </span>
                       </div>
                     )}
                     {stats.bestSynergy.avgHypeDiff !== null && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Avg. Hype Diff:</span>
-                        <span className="font-medium">{stats.bestSynergy.avgHypeDiff.toFixed(2)} pts</span>
+                        <span className="text-right">
+                          <span className="font-medium">{stats.bestSynergy.avgHypeDiff.toFixed(2)} pts</span>
+                          <span className="block text-xs text-muted-foreground">Based on {stats.bestSynergy.hypeComparisons} proposal ratings</span>
+                        </span>
                       </div>
                     )}
                   </div>
@@ -215,13 +247,19 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
                     {stats.worstSynergy.avgScoreDiff !== null && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Avg. Rating Diff:</span>
-                        <span className="font-medium">{stats.worstSynergy.avgScoreDiff.toFixed(2)} pts</span>
+                        <span className="text-right">
+                          <span className="font-medium">{stats.worstSynergy.avgScoreDiff.toFixed(2)} pts</span>
+                          <span className="block text-xs text-muted-foreground">Based on {stats.worstSynergy.scoreComparisons} shared movies</span>
+                        </span>
                       </div>
                     )}
                     {stats.worstSynergy.avgHypeDiff !== null && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Avg. Hype Diff:</span>
-                        <span className="font-medium">{stats.worstSynergy.avgHypeDiff.toFixed(2)} pts</span>
+                        <span className="text-right">
+                          <span className="font-medium">{stats.worstSynergy.avgHypeDiff.toFixed(2)} pts</span>
+                          <span className="block text-xs text-muted-foreground">Based on {stats.worstSynergy.hypeComparisons} proposal ratings</span>
+                        </span>
                       </div>
                     )}
                   </div>
@@ -233,10 +271,11 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
           </div>
         </CardContent>
       </Card>
+      </section>
 
     {/* Surprise & Disappointment */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {stats.biggestDisappointment && (
+      {stats.biggestDisappointment && <section id="person-takeaway" className="scroll-mt-20 space-y-4">
+      <h3 className="text-lg font-semibold">Movie takeaway</h3>
           <Card className="border-red-500/20 bg-red-500/5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -265,10 +304,10 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
               </div>
             </CardContent>
           </Card>
-        )}
-      </div>
+      </section>}
 
       {/* Footer Info */}
+      <section id="person-guide" className="scroll-mt-20">
       <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-500/5 border border-blue-500/10">
         <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
         <div className="text-sm text-blue-700 dark:text-blue-300">
@@ -280,6 +319,7 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
           </ul>
         </div>
       </div>
+      </section>
     </div>
   );
 };

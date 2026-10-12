@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronRight, Film } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, CircleMinus, Film, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   getAverageRating, 
@@ -56,15 +56,24 @@ const WatchedMovieCard = ({
     const presentIds = getPresentPersonIds(movie.id, people, detailedRatings, localPresentStates);
     const isPresent = presentIds.includes(selectedPersonId);
 
-    if (rating !== null) {
-      return <Badge className="bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30">✓ Voted</Badge>;
-    }
+    const status = rating !== null ? "Voted" : isPresent ? "Not voted" : "Absent";
+    const Icon = rating !== null ? Check : isPresent ? X : CircleMinus;
+    const statusColor = rating !== null
+      ? "text-green-700 dark:text-green-300"
+      : isPresent
+        ? "text-orange-700 dark:text-orange-300"
+        : "text-muted-foreground";
 
-    if (isPresent) {
-      return <Badge className="bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/30">Not Voted</Badge>;
-    }
-
-    return <Badge variant="outline" className="bg-card/40 text-muted-foreground border-border">Absent</Badge>;
+    return (
+      <span
+        role="img"
+        aria-label={status}
+        title={status}
+        className={`inline-flex h-7 w-7 items-center justify-center ${statusColor}`}
+      >
+        <Icon className="h-4 w-4" aria-hidden="true" />
+      </span>
+    );
   };
 
   const handlePresentChange = async (personId: string, newPresent: boolean) => {

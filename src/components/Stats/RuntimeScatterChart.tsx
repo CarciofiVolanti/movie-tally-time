@@ -80,14 +80,14 @@ export const RuntimeScatterChart = ({ data, title = "Runtime vs Rating", prefere
   return (
     <Card className="col-span-full">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5" style={{ color }} />
+        <CardTitle className="flex flex-col items-start gap-2 text-base sm:flex-row sm:items-center sm:justify-between sm:text-lg">
+          <div className="flex min-w-0 items-center gap-2">
+            <Clock className="h-5 w-5 shrink-0" style={{ color }} />
             {title}
           </div>
           {preferenceText && preferenceText !== "Not enough data" && preferenceText !== "No strong preference" && (
             <span 
-              className="text-xs font-normal px-2 py-1 rounded-full border" 
+              className="rounded-full border px-2 py-1 text-xs font-normal sm:self-auto" 
               style={{ color, borderColor: color, backgroundColor: isHype ? 'rgba(249,115,22,0.1)' : 'rgba(var(--primary), 0.1)' }}
             >
               {preferenceText}
@@ -95,17 +95,18 @@ export const RuntimeScatterChart = ({ data, title = "Runtime vs Rating", prefere
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-4">
+      <CardContent className="px-2 pb-4 pt-3 sm:p-6">
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: -20 }}>
+            <ScatterChart margin={{ top: 12, right: 4, bottom: 8, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 type="number" 
                 dataKey="runtime" 
                 name="Runtime" 
-                unit="m" 
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                tickMargin={8}
+                minTickGap={24}
                 domain={['dataMin - 10', 'dataMax + 10']}
               />
               <YAxis 
@@ -113,7 +114,9 @@ export const RuntimeScatterChart = ({ data, title = "Runtime vs Rating", prefere
                 dataKey="score" 
                 name={isHype ? "Hype" : "Rating"} 
                 domain={[0, isHype ? 5 : 10]}
-                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
+                width={28}
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                tickMargin={4}
               />
               <Tooltip cursor={{ strokeDasharray: '3 3' }} content={<CustomTooltip />} />
               {showTrendline && (

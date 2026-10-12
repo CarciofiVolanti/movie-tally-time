@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Film, ChevronDown, ChevronRight, Heart, Search, X } from "lucide-react";
+import { Film, ChevronDown, ChevronRight, Check, Heart, Search, X } from "lucide-react";
 import { MovieCard } from "../MovieCard";
 import QuickVotingPanel from "./QuickVotingPanel";
 import useFavouriteMovie from "@/hooks/useFavouriteMovie";
@@ -179,33 +179,36 @@ const RatePanel = ({
                     {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </button>
                   <span className="min-w-0 flex-1 pt-0.5 font-semibold text-base leading-snug sm:text-lg [overflow-wrap:anywhere]">{movie.movieTitle}</span>
-                </div>
-
-                {selectedPersonId && (
-                  <div className="flex flex-wrap items-center gap-2 pl-9">
-                    {/* hide heart entirely for own proposals or when we don't have a proposal id */}
-                    {proposalId && !disallowOwn && (
-                      <button
-                        type="button"
-                        onClick={() => toggleFavourite(proposalId)}
-                        disabled={!selectedPersonId || favLoading}
-                        className="p-1"
-                        title={isFavourite ? "Unmark favourite" : "Mark as favourite"}
-                        aria-label="Toggle favourite"
-                        aria-pressed={isFavourite}
+                  {selectedPersonId && (
+                    <div className="flex shrink-0 items-center gap-2 pt-0.5">
+                      {/* hide heart entirely for own proposals or when we don't have a proposal id */}
+                      {proposalId && !disallowOwn && (
+                        <button
+                          type="button"
+                          onClick={() => toggleFavourite(proposalId)}
+                          disabled={!selectedPersonId || favLoading}
+                          className="p-1"
+                          title={isFavourite ? "Unmark favourite" : "Mark as favourite"}
+                          aria-label={isFavourite ? "Remove favourite" : "Mark favourite"}
+                          aria-pressed={isFavourite}
+                        >
+                          <Heart
+                            className={`w-5 h-5 ${isFavourite ? "text-red-500 fill-current" : "text-muted-foreground"}`}
+                            style={isFavourite ? { stroke: "none" } : undefined}
+                          />
+                        </button>
+                      )}
+                      <span
+                        role="img"
+                        className={hasVoted ? "text-green-700 dark:text-green-300" : "text-orange-700 dark:text-orange-300"}
+                        title={hasVoted ? "Voted" : "Not voted"}
+                        aria-label={hasVoted ? "Voted" : "Not voted"}
                       >
-                        <Heart
-                          className={`w-5 h-5 ${isFavourite ? "text-red-500 fill-current" : "text-muted-foreground"}`}
-                          style={isFavourite ? { stroke: "none" } : undefined}
-                        />
-                      </button>
-                    )}
-
-                    <Badge variant={hasVoted ? "default" : "outline"} className={hasVoted ? "bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30" : "bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/30"}>
-                      {hasVoted ? "✓ Voted" : "Not Voted"}
-                    </Badge>
-                  </div>
-                )}
+                        {hasVoted ? <Check className="h-4 w-4" aria-hidden="true" /> : <X className="h-4 w-4" aria-hidden="true" />}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
 
               {!isCollapsed && (

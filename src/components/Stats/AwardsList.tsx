@@ -5,6 +5,8 @@ interface RankedPerson {
   name: string;
   value: string;
   score: number;
+  sampleCount: number;
+  sampleUnit: string;
 }
 
 interface AwardsListProps {
@@ -109,9 +111,12 @@ export const AwardsList = ({ awards, expandedId, onToggleExpand }: AwardsListPro
                       <div className="mt-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
                         {others.map((person, idx) => (
                           <div key={idx} className="flex items-center justify-between text-xs">
-                            <span className="flex items-center gap-2">
-                              <span className="text-muted-foreground font-mono w-3">{idx + 2}.</span>
-                              <span className="font-medium truncate max-w-[80px]">{person.name}</span>
+                            <span className="flex min-w-0 items-start gap-2">
+                              <span className="text-muted-foreground font-mono w-3 shrink-0">{idx + 2}.</span>
+                              <span className="min-w-0">
+                                <span className="block max-w-[100px] truncate font-medium">{person.name}</span>
+                                <span className="block text-[10px] text-muted-foreground">n={person.sampleCount} {person.sampleUnit}</span>
+                              </span>
                             </span>
                             <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
                               {person.score.toFixed(1)}

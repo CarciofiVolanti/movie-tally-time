@@ -1,6 +1,5 @@
 import { WatchedMovie, DetailedRating, MovieRating, Person, MovieProposal } from "../hooks/useStatsData";
 import { calculateTotalRuntime, formatRuntime, parseRuntime } from "./runtime";
-import { calculateGenreRadarData } from "./genre";
 
 export const calculatePearsonCorrelation = (x: number[], y: number[]): number | null => {
   if (x.length !== y.length || x.length < 2) return null;
@@ -182,7 +181,7 @@ export const calculatePersonStats = (
 
   const alignmentHypeScore = hypeAlignmentCount > 0 ? totalHypeAlignmentDiff / hypeAlignmentCount : null;
 
-  const personSynergy: { name: string, avgHypeDiff: number | null, avgScoreDiff: number | null, totalComparisons: number }[] = [];
+  const personSynergy: { name: string, avgHypeDiff: number | null, avgScoreDiff: number | null, hypeComparisons: number, scoreComparisons: number }[] = [];
   people.forEach(other => {
     if (other.id === personId) return;
 
@@ -216,7 +215,8 @@ export const calculatePersonStats = (
         name: other.name,
         avgHypeDiff: hypeDiffCount > 0 ? totalHypeDiff / hypeDiffCount : null,
         avgScoreDiff: scoreDiffCount > 0 ? totalScoreDiff / scoreDiffCount : null,
-        totalComparisons: hypeDiffCount + scoreDiffCount
+        hypeComparisons: hypeDiffCount,
+        scoreComparisons: scoreDiffCount,
       });
     }
   });
@@ -259,8 +259,6 @@ export const calculatePersonStats = (
     }
   });
 
-  const radarData = calculateGenreRadarData(watchedMovies, detailedRatings, movieRatings, personId);
-
   return {
     moviesWatched: attendedMovies.length,
     totalWatchTime: formatRuntime(totalRuntimeMinutes),
@@ -274,13 +272,14 @@ export const calculatePersonStats = (
     bottomHypeGenre,
     alignmentScore: alignmentScore !== null ? alignmentScore.toFixed(2) : "N/A",
     alignmentHypeScore: alignmentHypeScore !== null ? alignmentHypeScore.toFixed(2) : "N/A",
+    alignmentCount,
+    hypeAlignmentCount,
     totalRatings: personRatings.length,
     totalHypeRatings: personHype.length,
     bestSynergy,
     worstSynergy,
     biggestSurprise,
     biggestDisappointment,
-    radarData,
     scoreLengthPreference: getLengthPreference(scoreLengthCorrelation),
     hypeLengthPreference: getLengthPreference(hypeLengthCorrelation),
     scoreScatterData,
