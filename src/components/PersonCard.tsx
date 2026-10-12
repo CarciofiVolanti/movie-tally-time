@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, Search, Film, X } from "lucide-react";
+import { Trash2, Plus, Search, Film, X, ChevronDown, ChevronRight } from "lucide-react";
 import { useState, memo } from "react";
 import { cn } from "@/lib/utils";
 import { useMovieSearch, MovieSearchResult } from "@/hooks/useMovieSearch";
@@ -25,6 +25,7 @@ interface PersonCardProps {
 
 export const PersonCard = memo(({ person, onUpdatePerson, onDeletePerson }: PersonCardProps) => {
   const [newMovie, setNewMovie] = useState("");
+  const [proposalsExpanded, setProposalsExpanded] = useState(false);
   const { searchResults, isSearching, showSearchResults, searchMovies, clearResults } = useMovieSearch();
   const [pendingConfirm, setPendingConfirm] = useState<
     | { type: 'remove-movie'; index: number }
@@ -114,10 +115,22 @@ export const PersonCard = memo(({ person, onUpdatePerson, onDeletePerson }: Pers
       </CardHeader>
       
       <CardContent className="space-y-3">
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-muted-foreground">
+        <section>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-expanded={proposalsExpanded}
+            aria-controls={`proposals-${person.id}`}
+            onClick={() => setProposalsExpanded(expanded => !expanded)}
+            className="w-full justify-start px-2 text-sm font-medium text-muted-foreground"
+          >
+            {proposalsExpanded ? <ChevronDown className="mr-2 h-4 w-4" /> : <ChevronRight className="mr-2 h-4 w-4" />}
             Movie Suggestions ({person.movies.length}/3)
-          </h4>
+          </Button>
+
+          <div id={`proposals-${person.id}`} hidden={!proposalsExpanded} className="mt-2 space-y-3">
+            <div className="space-y-2">
           
           {person.movies.map((movie, index) => (
             <div key={index} className="flex items-center justify-between p-2 bg-secondary rounded-md">
@@ -133,7 +146,7 @@ export const PersonCard = memo(({ person, onUpdatePerson, onDeletePerson }: Pers
               </Button>
             </div>
           ))}
-        </div>
+            </div>
 
         {person.movies.length < 3 && (
           <div className="space-y-2">
@@ -230,6 +243,8 @@ export const PersonCard = memo(({ person, onUpdatePerson, onDeletePerson }: Pers
             )}
           </div>
         )}
+          </div>
+        </section>
       </CardContent>
 
       <ConfirmDialog
