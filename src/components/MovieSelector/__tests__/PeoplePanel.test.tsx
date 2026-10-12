@@ -5,7 +5,7 @@ import { Person } from '@/types/session';
 
 // Mock PersonCard to avoid testing child implementation details here
 vi.mock('@/components/PersonCard', () => ({
-  PersonCard: ({ person, onDeletePerson }: any) => (
+  PersonCard: ({ person, onDeletePerson }: { person: Person; onDeletePerson: (id: string) => void }) => (
     <div data-testid="person-card">
       {person.name}
       <button onClick={() => onDeletePerson(person.id)}>Delete</button>

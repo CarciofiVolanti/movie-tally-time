@@ -5,7 +5,11 @@ import { MovieRating, Person } from '@/types/session';
 
 // Mock the StarRating component to simplify tests
 vi.mock('../StarRating', () => ({
-  StarRating: ({ rating, onRatingChange, readonly }: any) => (
+  StarRating: ({ rating, onRatingChange, readonly }: {
+    rating: number;
+    onRatingChange?: (rating: number) => void;
+    readonly?: boolean;
+  }) => (
     <div data-testid="star-rating" onClick={() => onRatingChange?.(rating + 1)}>
       Rating: {rating} {readonly ? '(ReadOnly)' : ''}
     </div>

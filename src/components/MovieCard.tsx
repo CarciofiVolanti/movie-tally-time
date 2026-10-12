@@ -152,6 +152,8 @@ export const MovieCard = memo(({
               <img 
                 src={movie.details.poster} 
                 alt={`${movie.movieTitle} poster`}
+                loading="lazy"
+                decoding="async"
                 className="w-12 h-18 sm:w-16 sm:h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
               />
             ) : (
@@ -229,6 +231,7 @@ export const MovieCard = memo(({
           {showSearchInput && onSearchAgain && (
             <div className="flex flex-col sm:flex-row gap-2">
               <Input
+                aria-label={`Search for another movie instead of ${movie.movieTitle}`}
                 placeholder="Enter movie title..."
                 value={searchTitle}
                 onChange={(e) => setSearchTitle(e.target.value)}

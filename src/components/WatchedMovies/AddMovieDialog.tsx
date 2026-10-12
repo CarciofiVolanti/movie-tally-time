@@ -202,6 +202,8 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
                           <img
                             src={result.poster}
                             alt={`${result.title} poster`}
+                            loading={index === 0 ? "eager" : "lazy"}
+                            decoding="async"
                             className="w-10 h-14 sm:w-12 sm:h-16 object-cover rounded flex-shrink-0"
                           />
                         ) : (

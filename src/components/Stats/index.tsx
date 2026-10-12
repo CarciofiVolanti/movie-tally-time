@@ -43,7 +43,7 @@ export const Stats = ({ sessionId, onBack }: StatsProps) => {
   if (!calc.ok) {
     return (
       <div className="min-h-screen p-8 text-center">
-        <h2 className="text-xl font-bold text-red-500">Error Calculating Stats</h2>
+        <h2 className="text-xl font-bold text-red-500 dark:text-red-300">Error Calculating Stats</h2>
         <p className="text-muted-foreground mt-2">Something went wrong while processing the session data.</p>
         <Button onClick={onBack} className="mt-4">Back to Session</Button>
       </div>
@@ -73,6 +73,7 @@ export const Stats = ({ sessionId, onBack }: StatsProps) => {
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <select
+              aria-label="Choose a person or group for stats"
               value={viewingPersonId}
               onChange={e => setViewingPersonId(e.target.value)}
               className="p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm min-w-[200px]"

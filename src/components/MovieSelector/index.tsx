@@ -38,7 +38,8 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <input placeholder="Session name (e.g., Friday Movie Night)" value={newSessionName} onChange={e => setNewSessionName(e.target.value)} onKeyPress={e => e.key === "Enter" && session.createNewSession(newSessionName)} className="w-full p-2 rounded bg-input border" />
+            <label htmlFor="new-session-name" className="sr-only">Session name</label>
+            <input id="new-session-name" placeholder="Session name (e.g., Friday Movie Night)" value={newSessionName} onChange={e => setNewSessionName(e.target.value)} onKeyPress={e => e.key === "Enter" && session.createNewSession(newSessionName)} className="w-full p-2 rounded bg-input border" />
           </div>
           <Button onClick={() => session.createNewSession(newSessionName)} disabled={!newSessionName.trim()} className="w-full">
             Create Session
@@ -95,6 +96,7 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
 
             <div className="mb-4">
               <select
+                aria-label="Select who you are"
                 value={session.selectedPersonId}
                 onChange={e => session.setSelectedPersonId(e.target.value)}
                 className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"

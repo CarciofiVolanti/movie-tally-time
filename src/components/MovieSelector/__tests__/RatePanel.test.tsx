@@ -17,7 +17,12 @@ vi.mock('@/hooks/useFavouriteMovie', () => ({
 }));
 
 vi.mock('../../MovieCard', () => ({
-  MovieCard: ({ movie, people, ignorePresence, onSaveComment }: any) => (
+  MovieCard: ({ movie, people, ignorePresence, onSaveComment }: {
+    movie: MovieRating;
+    people: Person[];
+    ignorePresence?: boolean;
+    onSaveComment?: (proposalId: string, comment: string) => Promise<void>;
+  }) => (
     <div data-testid={`movie-card-${movie.movieTitle}`}>
       <span data-testid="card-title">{movie.movieTitle}</span>
       <span data-testid="card-proposer">{movie.proposedBy}</span>

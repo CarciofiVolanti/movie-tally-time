@@ -107,7 +107,7 @@ const WatchedMovieCard = ({
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <button
               onClick={() => setCollapsed(!collapsed)}
-              aria-label={collapsed ? "Expand" : "Collapse"}
+              aria-label={`${collapsed ? "Expand" : "Collapse"} ${movie.movie_title}`}
               className="p-1 rounded hover:bg-accent/20 transition flex-shrink-0"
               type="button"
             >
@@ -166,6 +166,8 @@ const WatchedMovieCard = ({
               <img 
                 src={movie.poster} 
                 alt={`${movie.movie_title} poster`}
+                loading="lazy"
+                decoding="async"
                 className="w-12 h-18 sm:w-16 sm:h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
               />
             ) : (
@@ -213,6 +215,7 @@ const WatchedMovieCard = ({
                       <label className="flex items-center gap-1 text-xs text-muted-foreground">
                         <input
                           type="checkbox"
+                          aria-label={`Mark ${person.name} present for ${movie.movie_title}`}
                           checked={localPresent}
                           onChange={(e) => handlePresentChange(person.id, e.target.checked)}
                           className="accent-primary bg-card border-border rounded"
@@ -221,6 +224,7 @@ const WatchedMovieCard = ({
                       </label>
                     </div>
                     <select
+                      aria-label={`Rating for ${person.name} on ${movie.movie_title}`}
                       className="w-full p-2 rounded bg-card text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary transition text-sm"
                       value={(() => {
                         const rating = getRatingForPerson(movie.id, person.id, detailedRatings);

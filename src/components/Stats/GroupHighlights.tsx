@@ -21,7 +21,7 @@ export const GroupHighlights = ({ surprise, disappointment }: GroupHighlightsPro
       {surprise && (
         <Card className="border-purple-500/20 bg-purple-500/5">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2 text-purple-700">
+            <CardTitle className="text-lg flex items-center gap-2 text-purple-700 dark:text-purple-300">
               <Sparkles className="w-5 h-5" />
               The Group's Biggest Surprise
               <AlertCircle className="w-4 h-4 opacity-50" />
@@ -37,7 +37,7 @@ export const GroupHighlights = ({ surprise, disappointment }: GroupHighlightsPro
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-2 rounded bg-orange-500/10 border border-orange-500/20 text-center">
-                  <p className="text-[10px] uppercase font-bold text-orange-600">Group Hype</p>
+                  <p className="text-[10px] uppercase font-bold text-orange-700 dark:text-orange-300">Group Hype</p>
                   <p className="text-lg font-bold">{surprise.avgHype.toFixed(1)}/5</p>
                 </div>
                 <div className="p-2 rounded bg-primary/10 border border-primary/20 text-center">
@@ -53,7 +53,7 @@ export const GroupHighlights = ({ surprise, disappointment }: GroupHighlightsPro
       {disappointment && (
         <Card className="border-red-500/20 bg-red-500/5">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2 text-red-700">
+            <CardTitle className="text-lg flex items-center gap-2 text-red-700 dark:text-red-300">
               <Frown className="w-5 h-5" />
               The Group's Biggest Disappointment
             </CardTitle>
@@ -68,11 +68,11 @@ export const GroupHighlights = ({ surprise, disappointment }: GroupHighlightsPro
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-2 rounded bg-orange-500/10 border border-orange-500/20 text-center">
-                  <p className="text-[10px] uppercase font-bold text-orange-600">Group Hype</p>
+                  <p className="text-[10px] uppercase font-bold text-orange-700 dark:text-orange-300">Group Hype</p>
                   <p className="text-lg font-bold">{disappointment.avgHype.toFixed(1)}/5</p>
                 </div>
                 <div className="p-2 rounded bg-red-500/10 border border-red-500/20 text-center">
-                  <p className="text-[10px] uppercase font-bold text-red-600">Group Rating</p>
+                  <p className="text-[10px] uppercase font-bold text-red-600 dark:text-red-300">Group Rating</p>
                   <p className="text-lg font-bold">{disappointment.avgScore.toFixed(1)}/10</p>
                 </div>
               </div>

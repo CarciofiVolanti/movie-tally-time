@@ -34,7 +34,7 @@ const PeoplePanel = ({
         </CardHeader>
         <CardContent>
           <div className="flex gap-2">
-            <Input placeholder="Enter person's name..." value={newPersonName} onChange={e => setNewPersonName(e.target.value)} onKeyPress={e => e.key === "Enter" && (onAddPerson(newPersonName).then(() => setNewPersonName("")))} className="flex-1" />
+            <Input aria-label="Person's name" placeholder="Enter person's name..." value={newPersonName} onChange={e => setNewPersonName(e.target.value)} onKeyPress={e => e.key === "Enter" && (onAddPerson(newPersonName).then(() => setNewPersonName("")))} className="flex-1" />
             <Button onClick={() => onAddPerson(newPersonName).then(() => setNewPersonName(""))} disabled={!newPersonName.trim()}>
               Add Person
             </Button>

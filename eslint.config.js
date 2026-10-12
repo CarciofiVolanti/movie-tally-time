@@ -25,5 +25,11 @@ export default tseslint.config(
       ],
       "@typescript-eslint/no-unused-vars": "off",
     },
-  }
+  },
+  {
+    files: ["src/components/ui/command.tsx", "src/components/ui/textarea.tsx"],
+    rules: {
+      "@typescript-eslint/no-empty-object-type": "off",
+    },
+  },
 );

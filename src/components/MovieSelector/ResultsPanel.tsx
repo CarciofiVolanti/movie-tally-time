@@ -25,7 +25,7 @@ const ResultsPanel = ({ rankedMovies, people, recentlyWatched, markMovieAsWatche
     (async () => {
       try {
         const { data, error } = await supabase
-          .from("favourite_movies" as any)
+          .from("favourite_movies")
           .select("person_id, proposal_id");
         if (error) throw error;
 
@@ -33,7 +33,7 @@ const ResultsPanel = ({ rankedMovies, people, recentlyWatched, markMovieAsWatche
 
         if (!mounted) return;
         const map: Record<string, string[]> = {};
-        (data || []).forEach((row: any) => {
+        (data || []).forEach(row => {
           if (!row || !row.proposal_id || !row.person_id) return;
           map[row.proposal_id] = map[row.proposal_id] || [];
           map[row.proposal_id].push(row.person_id);
@@ -117,7 +117,7 @@ const ResultsPanel = ({ rankedMovies, people, recentlyWatched, markMovieAsWatche
              <CardContent className="pt-0">
                <div className="flex gap-3 mb-3">
                  {movie.details?.poster && movie.details.poster !== 'N/A' ? (
-                   <img src={movie.details.poster} alt={`${movie.movieTitle} poster`} className="w-16 h-24 object-cover rounded-lg shadow-sm flex-shrink-0" />
+                   <img src={movie.details.poster} alt={`${movie.movieTitle} poster`} loading={index === 0 ? "eager" : "lazy"} decoding="async" className="w-16 h-24 object-cover rounded-lg shadow-sm flex-shrink-0" />
                  ) : (
                    <div className="w-16 h-24 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
                      <Film className="w-6 h-6 text-primary" />
@@ -138,7 +138,7 @@ const ResultsPanel = ({ rankedMovies, people, recentlyWatched, markMovieAsWatche
 
                   {(() => {
                     const absentVoters = people.filter(p => !p.isPresent && movie.ratings[p.id] === 1).map(p => p.name);
-                    const proposalId = (movie as any).proposalId ?? (movie as any).proposal_id ?? null;
+                    const proposalId = movie.proposalId ?? null;
                     const favPersonIds = proposalId ? favouritesByProposal[proposalId] ?? [] : [];
                     const absentFavNames = people.filter(p => !p.isPresent && favPersonIds.includes(p.id)).map(p => p.name);
                     const notYetRated = presentPeople.filter(p => !(movie.ratings[p.id] > 0)).map(p => p.name);

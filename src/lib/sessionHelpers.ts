@@ -3,10 +3,11 @@ import { Tables } from "@/integrations/supabase/types";
 import { normalizeTitle } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
-type SessionPersonRow = Tables<'session_people'>;
-type ProposalWithRelations = Tables<'movie_proposals'> & {
+export type SessionPersonRow = Tables<'session_people'>;
+export type ProposalWithRelations = Tables<'movie_proposals'> & {
   movie_ratings?: Tables<'movie_ratings'>[] | null;
   proposal_comments?: Tables<'proposal_comments'>[] | Tables<'proposal_comments'> | null;
+  proposal_comment?: Tables<'proposal_comments'>[] | Tables<'proposal_comments'> | null;
 };
 
 export const formatProposalAge = (createdAt?: string | null): string | null => {
@@ -50,7 +51,7 @@ export const sortPeople = (people: Person[], selectedPersonId?: string): Person[
 
 // Pure transformation functions
 
-export const transformPeopleData = (peopleData: SessionPersonRow[], proposals: ProposalWithRelations[]): Person[] => {
+export const transformPeopleData = (peopleData: SessionPersonRow[] | undefined, proposals: ProposalWithRelations[] | undefined): Person[] => {
   return (peopleData || []).map(person => ({
     id: person.id,
     name: person.name,
@@ -61,7 +62,7 @@ export const transformPeopleData = (peopleData: SessionPersonRow[], proposals: P
   }));
 };
 
-export const transformRatingsData = (proposalsData: { proposals: ProposalWithRelations[] }, peopleData: SessionPersonRow[]): MovieRating[] => {
+export const transformRatingsData = (proposalsData: { proposals: ProposalWithRelations[] } | undefined, peopleData: SessionPersonRow[]): MovieRating[] => {
   return (proposalsData?.proposals || []).map(proposal => {
     const proposer = (peopleData || []).find(p => p.id === proposal.person_id);
 
@@ -74,7 +75,7 @@ export const transformRatingsData = (proposalsData: { proposals: ProposalWithRel
     });
 
     // Extract comment (handles both 1-to-1 object and 1-to-many array)
-    const rawComments = (proposal as any).proposal_comments ?? (proposal as any).proposal_comment;
+    const rawComments = proposal.proposal_comments ?? proposal.proposal_comment;
     const commentRow = Array.isArray(rawComments) ? rawComments[0] : rawComments;
 
     const details: MovieDetails | undefined = proposal.poster ? {

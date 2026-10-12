@@ -21,7 +21,7 @@ describe('sessionCookies', () => {
   // Test retrieving a cookie value
   it('getSelectedPersonForSession retrieves value from cookie', () => {
     const mockSessionId = 'sess-123';
-    (Cookies.get as any).mockReturnValue('person-abc');
+    vi.mocked(Cookies.get).mockReturnValue('person-abc');
     
     const result = getSelectedPersonForSession(mockSessionId);
     
@@ -31,7 +31,7 @@ describe('sessionCookies', () => {
 
   // Test handling when no cookie exists
   it('getSelectedPersonForSession returns empty string if no cookie', () => {
-    (Cookies.get as any).mockReturnValue(undefined);
+    vi.mocked(Cookies.get).mockReturnValue(undefined);
     
     const result = getSelectedPersonForSession('sess-404');
     expect(result).toBe('');

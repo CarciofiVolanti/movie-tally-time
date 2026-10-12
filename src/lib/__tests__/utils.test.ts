@@ -10,7 +10,9 @@ describe('cn utility', () => {
 
   // Test that conditional classes (falsy values) are filtered out
   it('handles conditional classes', () => {
-    const result = cn('px-4', true && 'py-2', false && 'bg-red-500');
+    const includeVerticalPadding = true;
+    const includeDangerBackground = false;
+    const result = cn('px-4', includeVerticalPadding && 'py-2', includeDangerBackground && 'bg-red-500');
     expect(result).toBe('px-4 py-2');
   });
 

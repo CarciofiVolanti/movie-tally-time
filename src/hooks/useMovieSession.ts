@@ -8,6 +8,12 @@ import { useSessionSetup } from "./useSessionSetup";
 import { usePeopleManager } from "./usePeopleManager";
 import { useProposalRatings } from "./useProposalRatings";
 import { useRealtimeSync } from "./useRealtimeSync";
+import type { Tables } from "@/integrations/supabase/types";
+
+type ProposalWithCommentAlias = Tables<"movie_proposals"> & {
+  proposal_comments?: Tables<"proposal_comments">[] | Tables<"proposal_comments"> | null;
+  proposal_comment?: Tables<"proposal_comments">[] | Tables<"proposal_comments"> | null;
+};
 
 export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void }) => {
   const { toast } = useToast();
@@ -78,7 +84,8 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
 
     if (proposals && proposals.length > 0) {
       const hasAnyComment = proposals.some(p => {
-        const c = (p as any).proposal_comments ?? (p as any).proposal_comment;
+        const proposal = p as ProposalWithCommentAlias;
+        const c = proposal.proposal_comments ?? proposal.proposal_comment;
         return Array.isArray(c) ? c.length > 0 : Boolean(c);
       });
 
@@ -94,7 +101,7 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
           proposals.forEach(p => {
             const match = commentsByProposalId.get(p.id);
             if (match) {
-              (p as any).proposal_comments = match;
+              (p as ProposalWithCommentAlias).proposal_comments = match;
             }
           });
         }

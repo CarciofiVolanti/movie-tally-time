@@ -91,6 +91,7 @@ export const PersonCard = memo(({ person, onUpdatePerson, onDeletePerson }: Pers
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Checkbox
+              aria-label={`Mark ${person.name} as present`}
               checked={person.isPresent}
               onCheckedChange={togglePresent}
               className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
@@ -103,6 +104,7 @@ export const PersonCard = memo(({ person, onUpdatePerson, onDeletePerson }: Pers
           <Button
             variant="ghost"
             size="sm"
+            aria-label={`Remove ${person.name} from the session`}
             onClick={() => setPendingConfirm({ type: 'delete-person' })}
             className="text-destructive hover:text-destructive hover:bg-destructive/10"
           >
@@ -123,6 +125,7 @@ export const PersonCard = memo(({ person, onUpdatePerson, onDeletePerson }: Pers
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label={`Remove ${movie}`}
                 onClick={() => removeMovie(index)}
                 className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
               >
@@ -136,6 +139,7 @@ export const PersonCard = memo(({ person, onUpdatePerson, onDeletePerson }: Pers
           <div className="space-y-2">
             <div className="flex gap-2">
               <Input
+                aria-label={`Search for a movie to suggest for ${person.name}`}
                 placeholder="Search for a movie..."
                 value={newMovie}
                 onChange={(e) => {
@@ -145,10 +149,10 @@ export const PersonCard = memo(({ person, onUpdatePerson, onDeletePerson }: Pers
                 onKeyPress={(e) => e.key === "Enter" && searchMovies(newMovie)}
                 className="flex-1"
               />
-              <Button onClick={() => searchMovies(newMovie)} size="sm" disabled={!newMovie.trim() || isSearching}>
+              <Button aria-label="Search movie options" onClick={() => searchMovies(newMovie)} size="sm" disabled={!newMovie.trim() || isSearching}>
                 <Search className="w-4 h-4" />
               </Button>
-              <Button onClick={() => addMovie()} size="sm" disabled={!newMovie.trim()} variant="outline" title="Add manually without selecting details">
+              <Button aria-label="Add movie manually without details" onClick={() => addMovie()} size="sm" disabled={!newMovie.trim()} variant="outline" title="Add manually without selecting details">
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
@@ -179,6 +183,8 @@ export const PersonCard = memo(({ person, onUpdatePerson, onDeletePerson }: Pers
                             <img 
                               src={movie.poster} 
                               alt={movie.title}
+                              loading={index === 0 ? "eager" : "lazy"}
+                              decoding="async"
                               className="w-12 h-16 object-cover rounded flex-shrink-0"
                             />
                           ) : (

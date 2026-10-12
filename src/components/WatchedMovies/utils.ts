@@ -31,7 +31,7 @@ export const getPresentPersonIds = (
   return people
     .filter(person => {
       const localKey = `${movieId}-${person.id}`;
-      if (localPresentStates.hasOwnProperty(localKey)) {
+      if (Object.hasOwn(localPresentStates, localKey)) {
         return localPresentStates[localKey];
       }
       const detailed = detailedRatings.find(

@@ -60,7 +60,7 @@ const MovieRankings = ({ watchedMovies, detailedRatings, people }: WatchedMovies
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <button
                   onClick={() => toggleCollapse(movie.id)}
-                  aria-label={collapsedMovies[movie.id] ? "Expand" : "Collapse"}
+                  aria-label={`${collapsedMovies[movie.id] ? "Expand" : "Collapse"} ${movie.movie_title}`}
                   className="p-1 rounded hover:bg-accent/20 transition flex-shrink-0"
                   type="button"
                 >
@@ -102,6 +102,8 @@ const MovieRankings = ({ watchedMovies, detailedRatings, people }: WatchedMovies
                   <img 
                     src={movie.poster} 
                     alt={`${movie.movie_title} poster`}
+                    loading={index === 0 ? "eager" : "lazy"}
+                    decoding="async"
                     className="w-12 h-18 sm:w-16 sm:h-24 object-cover rounded-lg shadow-sm flex-shrink-0"
                   />
                 ) : (

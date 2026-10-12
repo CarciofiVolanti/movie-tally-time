@@ -71,6 +71,7 @@ export const WatchedMovies = ({ sessionId, onBack, onShowStats, onSelectPerson, 
                   <div className="mt-6 flex flex-col gap-3">
                     <div>
                       <select
+                        aria-label="Select who you are"
                         value={selectedPersonId ?? ""}
                         onChange={event => onSelectPerson?.(event.target.value)}
                         className="w-full rounded border border-border bg-card p-2 text-sm text-foreground transition focus:outline-none focus:ring-2 focus:ring-primary"
@@ -121,6 +122,7 @@ export const WatchedMovies = ({ sessionId, onBack, onShowStats, onSelectPerson, 
           <div className="relative mb-6">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
+              aria-label="Search watched movies by title, proposer, or genre"
               placeholder="Search watched movies by title, proposer, genre..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

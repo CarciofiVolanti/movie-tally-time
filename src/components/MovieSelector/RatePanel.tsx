@@ -139,6 +139,7 @@ const RatePanel = ({
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
+                aria-label="Search movies by title, proposer, or genre"
                 placeholder="Search movies by title, proposer, genre..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -174,7 +175,7 @@ const RatePanel = ({
             <Card key={movie.movieTitle} className="w-full min-w-0 max-w-full">
               <CardHeader className="space-y-3 p-4">
                 <div className="flex items-start gap-2 min-w-0">
-                  <button onClick={() => handleToggleCollapse(movie.movieTitle)} aria-label={isCollapsed ? "Expand" : "Collapse"} aria-expanded={!isCollapsed} className="shrink-0 p-1">
+                  <button onClick={() => handleToggleCollapse(movie.movieTitle)} aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${movie.movieTitle}`} aria-expanded={!isCollapsed} className="shrink-0 p-1">
                     {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </button>
                   <span className="min-w-0 flex-1 pt-0.5 font-semibold text-base leading-snug sm:text-lg [overflow-wrap:anywhere]">{movie.movieTitle}</span>

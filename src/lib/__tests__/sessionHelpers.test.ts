@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { sortRatings, sortPeople, transformPeopleData, transformRatingsData, formatProposalAge, formatDateDDMMYYYY } from '../sessionHelpers';
 import { MovieRating, Person } from '@/types/session';
+import type { ProposalWithRelations, SessionPersonRow } from '../sessionHelpers';
 
 const makeMovie = (title: string, ratings: Record<string, number> = {}): MovieRating => ({
   movieTitle: title, proposedBy: 'Alice', ratings,
@@ -114,7 +115,7 @@ describe('sessionHelpers', () => {
         { id: 'pr2', person_id: 'p1', movie_title: 'Interstellar', session_id: 's1', created_at: '', director: null, genre: null, imdb_id: null, imdb_rating: null, plot: null, poster: null, runtime: null, year: null },
       ];
 
-      const result = transformPeopleData(mockPeople as any, mockProposals as any);
+      const result = transformPeopleData(mockPeople as SessionPersonRow[], mockProposals as ProposalWithRelations[]);
       expect(result).toEqual([
         { id: 'p1', name: 'Alice', isPresent: true, movies: ['Inception', 'Interstellar'] },
         { id: 'p2', name: 'Bob', isPresent: false, movies: [] },
@@ -123,7 +124,7 @@ describe('sessionHelpers', () => {
 
     it('handles empty or undefined arrays gracefully', () => {
       expect(transformPeopleData([], [])).toEqual([]);
-      expect(transformPeopleData(undefined as any, undefined as any)).toEqual([]);
+      expect(transformPeopleData(undefined, undefined)).toEqual([]);
     });
   });
 
@@ -152,7 +153,7 @@ describe('sessionHelpers', () => {
         { id: 'p1', name: 'Alice', is_present: true, session_id: 's1', created_at: '' },
       ];
 
-      const result = transformRatingsData({ proposals: mockProposals as any }, mockPeople as any);
+      const result = transformRatingsData({ proposals: mockProposals as ProposalWithRelations[] }, mockPeople as SessionPersonRow[]);
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         movieTitle: 'Inception',
@@ -197,7 +198,7 @@ describe('sessionHelpers', () => {
         { id: 'p1', name: 'Alice', is_present: true, session_id: 's1', created_at: '' },
       ];
 
-      const result = transformRatingsData({ proposals: mockProposals as any }, mockPeople as any);
+      const result = transformRatingsData({ proposals: mockProposals as ProposalWithRelations[] }, mockPeople as SessionPersonRow[]);
       expect(result).toHaveLength(1);
       expect(result[0].ratings).toEqual({ p1: 5, p2: 4 });
       expect(result[0].comment).toBe('Great movie!');
@@ -222,7 +223,7 @@ describe('sessionHelpers', () => {
         { id: 'p1', name: 'Alice', is_present: true, session_id: 's1', created_at: '' },
       ];
 
-      const result = transformRatingsData({ proposals: mockProposals as any }, mockPeople as any);
+      const result = transformRatingsData({ proposals: mockProposals as ProposalWithRelations[] }, mockPeople as SessionPersonRow[]);
       expect(result).toHaveLength(1);
       expect(result[0].comment).toBe('Must see!');
     });

@@ -13,6 +13,12 @@ interface RuntimeScatterChartProps {
   isHype?: boolean;
 }
 
+type RuntimePoint = RuntimeScatterChartProps["data"][number];
+type ScatterTooltipProps = {
+  active?: boolean;
+  payload?: Array<{ payload: RuntimePoint }>;
+};
+
 export const RuntimeScatterChart = ({ data, title = "Runtime vs Rating", preferenceText, isHype = false }: RuntimeScatterChartProps) => {
   if (data.length < 3) {
     return (
@@ -30,7 +36,7 @@ export const RuntimeScatterChart = ({ data, title = "Runtime vs Rating", prefere
     );
   }
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: ScatterTooltipProps) => {
     if (active && payload && payload.length) {
       const point = payload[0].payload;
       return (

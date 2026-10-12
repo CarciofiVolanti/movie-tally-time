@@ -30,7 +30,7 @@ export const TopMovies = ({ movies }: TopMoviesProps) => {
               #{idx + 1}
             </div>
             {movie.poster && movie.poster !== 'N/A' ? (
-              <img src={movie.poster} alt={movie.movie_title} className="w-10 h-14 object-cover rounded shadow-sm" />
+              <img src={movie.poster} alt={movie.movie_title} loading="lazy" decoding="async" className="w-10 h-14 object-cover rounded shadow-sm" />
             ) : (
               <div className="w-10 h-14 bg-primary/10 rounded flex items-center justify-center">
                 <Film className="w-4 h-4 text-primary" />

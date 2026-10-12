@@ -117,8 +117,8 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
                 <p className="text-[10px] text-muted-foreground">Diff. from group rating (0-10)</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground mb-1 uppercase font-bold tracking-tighter text-orange-600">Hype Alignment</p>
-                <div className="text-xl font-bold text-orange-600">{stats.alignmentHypeScore} pts</div>
+                <p className="text-xs text-muted-foreground mb-1 uppercase font-bold tracking-tighter text-orange-700 dark:text-orange-300">Hype Alignment</p>
+                <div className="text-xl font-bold text-orange-700 dark:text-orange-300">{stats.alignmentHypeScore} pts</div>
                 <p className="text-[10px] text-muted-foreground">Diff. from group hype (0-5)</p>
               </div>
             </div>
@@ -131,19 +131,19 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {stats.topGenre && (
                   <div className="p-2 rounded bg-green-500/5 border border-green-500/10">
-                    <p className="text-[10px] text-green-600 font-bold uppercase">Favorite Genre</p>
+                    <p className="text-[10px] text-green-700 dark:text-green-300 font-bold uppercase">Favorite Genre</p>
                     <p className="text-sm font-medium">{stats.topGenre.name}</p>
                   </div>
                 )}
                 {stats.topHypeGenre && (
                   <div className="p-2 rounded bg-orange-500/5 border border-orange-500/10">
-                    <p className="text-[10px] text-orange-600 font-bold uppercase">Most Anticipated</p>
+                    <p className="text-[10px] text-orange-700 dark:text-orange-300 font-bold uppercase">Most Anticipated</p>
                     <p className="text-sm font-medium">{stats.topHypeGenre.name}</p>
                   </div>
                 )}
                 {stats.scoreLengthPreference !== "Not enough data" && (
                   <div className="p-2 rounded bg-blue-500/5 border border-blue-500/10">
-                    <p className="text-[10px] text-blue-600 font-bold uppercase">Runtime Pref (Post-Watch)</p>
+                    <p className="text-[10px] text-blue-600 dark:text-blue-300 font-bold uppercase">Runtime Pref (Post-Watch)</p>
                     <p className="text-sm font-medium">{stats.scoreLengthPreference}</p>
                   </div>
                 )}
@@ -175,7 +175,7 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Highest Synergy */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-green-600 font-semibold">
+              <div className="flex items-center gap-2 text-green-700 dark:text-green-300 font-semibold">
                 <Zap className="w-4 h-4" />
                 Highest Synergy
               </div>
@@ -204,7 +204,7 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
 
             {/* Lowest Synergy */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-red-600 font-semibold">
+              <div className="flex items-center gap-2 text-red-600 dark:text-red-300 font-semibold">
                 <Ghost className="w-4 h-4" />
                 Anti-Synergy
               </div>
@@ -247,18 +247,18 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
             <CardContent>
               <div className="flex flex-col gap-4">
                 <div>
-                  <h3 className="text-xl font-bold text-red-700">{stats.biggestDisappointment.title}</h3>
+                  <h3 className="text-xl font-bold text-red-700 dark:text-red-300">{stats.biggestDisappointment.title}</h3>
                   <p className="text-xs text-muted-foreground mt-1">
                     You were so excited for this, but it didn't live up to the hype.
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-2 rounded bg-orange-500/10 border border-orange-500/20 text-center">
-                    <p className="text-[10px] uppercase font-bold text-orange-600">Hype</p>
+                    <p className="text-[10px] uppercase font-bold text-orange-700 dark:text-orange-300">Hype</p>
                     <p className="text-lg font-bold">{stats.biggestDisappointment.hype}/5</p>
                   </div>
                   <div className="p-2 rounded bg-red-500/10 border border-red-500/20 text-center">
-                    <p className="text-[10px] uppercase font-bold text-red-600">Rating</p>
+                    <p className="text-[10px] uppercase font-bold text-red-600 dark:text-red-300">Rating</p>
                     <p className="text-lg font-bold">{stats.biggestDisappointment.score}/10</p>
                   </div>
                 </div>
@@ -271,9 +271,9 @@ export const PersonStats = ({ name, stats }: PersonStatsProps) => {
       {/* Footer Info */}
       <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-500/5 border border-blue-500/10">
         <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-        <div className="text-sm text-blue-700">
+        <div className="text-sm text-blue-700 dark:text-blue-300">
           <p className="font-semibold mb-1">Understanding your stats:</p>
-          <ul className="list-disc list-inside space-y-1 opacity-80">
+          <ul className="list-disc list-inside space-y-1">
             <li><strong>Pre-Watch Hype:</strong> Calculated from the 0-5 star "want to watch" votes on proposals.</li>
             <li><strong>Post-Watch Rating:</strong> Calculated from the 0-10 detailed ratings given after watching.</li>
             <li><strong>Synergy:</strong> Calculated by comparing the difference between your votes and others. Low difference = high synergy.</li>
