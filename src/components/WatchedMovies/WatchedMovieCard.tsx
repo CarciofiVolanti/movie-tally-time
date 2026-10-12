@@ -57,11 +57,11 @@ const WatchedMovieCard = ({
     const isPresent = presentIds.includes(selectedPersonId);
 
     if (rating !== null) {
-      return <Badge className="bg-green-100 text-green-800 border-green-300">✓ Voted</Badge>;
+      return <Badge className="bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30">✓ Voted</Badge>;
     }
 
     if (isPresent) {
-      return <Badge className="bg-orange-100 text-orange-800 border-orange-300">Not Voted</Badge>;
+      return <Badge className="bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/30">Not Voted</Badge>;
     }
 
     return <Badge variant="outline" className="bg-card/40 text-muted-foreground border-border">Absent</Badge>;
@@ -133,15 +133,15 @@ const WatchedMovieCard = ({
                 </h3>
               )}
               {rateSortMode === "not-fully-rated" && missingPresentRaters.length > 0 && (
-                <div className="mt-1 text-xs text-orange-700 flex flex-wrap gap-1 items-center">
+                <div className="mt-1 text-xs text-orange-700 dark:text-orange-300 flex flex-wrap gap-1 items-center">
                   <span className="font-medium">Missing:</span>
                   {missingPresentRaters.map((p, idx) => (
                     <span key={p.id} className="inline-flex items-center">
-                      <span className="bg-orange-100 border border-orange-200 rounded px-1 py-0.5">
+                      <span className="bg-orange-500/10 border border-orange-500/20 rounded px-1 py-0.5">
                         {p.name}
                       </span>
                       {idx < missingPresentRaters.length - 1 && (
-                        <span className="text-orange-700 mx-1">,</span>
+                        <span className="text-orange-700 dark:text-orange-300 mx-1">,</span>
                       )}
                     </span>
                   ))}

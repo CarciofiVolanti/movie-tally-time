@@ -66,10 +66,10 @@ export const GenreRadarChart = ({ data, title = "Genre Hype vs. Score" }: GenreR
                 fillOpacity={0.4}
               />
               <Tooltip 
-                contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
-                itemStyle={{ fontSize: '12px' }}
+                contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px', color: 'hsl(var(--foreground))' }}
+                itemStyle={{ fontSize: '12px', color: 'hsl(var(--foreground))' }}
               />
-              <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+              <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px', color: 'hsl(var(--foreground))' }} />
             </RadarChart>
           </ResponsiveContainer>
         </div>

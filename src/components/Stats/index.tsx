@@ -15,6 +15,7 @@ import { PersonStats } from "./PersonStats";
 import { GroupHighlights } from "./GroupHighlights";
 import { GenreRadarChart } from "./GenreRadarChart";
 import { RuntimeScatterChart } from "./RuntimeScatterChart";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface StatsProps {
   sessionId: string;
@@ -85,6 +86,7 @@ export const Stats = ({ sessionId, onBack }: StatsProps) => {
               <Star className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-primary" />
               {viewingPersonId ? "Personal Insights" : "Session Statistics"}
             </h1>
+            <ThemeToggle className="self-end sm:self-auto" />
           </div>
         </div>
 

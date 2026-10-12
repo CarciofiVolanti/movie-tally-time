@@ -200,7 +200,7 @@ const RatePanel = ({
                       </button>
                     )}
 
-                    <Badge variant={hasVoted ? "default" : "outline"} className={hasVoted ? "bg-green-100 text-green-800 border-green-300" : "bg-orange-100 text-orange-800 border-orange-300"}>
+                    <Badge variant={hasVoted ? "default" : "outline"} className={hasVoted ? "bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30" : "bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/30"}>
                       {hasVoted ? "✓ Voted" : "Not Voted"}
                     </Badge>
                   </div>

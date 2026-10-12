@@ -120,10 +120,10 @@ const ResultsPanel = ({ rankedMovies, people, markMovieAsWatched }: {
 
                     const nodes: React.ReactNode[] = [];
                     if (notYetRated.length > 0) {
-                      nodes.push(<p key="not-rated" className="text-yellow-600 font-medium mt-1">Waiting for: {notYetRated.join(", ")}</p>);
+                      nodes.push(<p key="not-rated" className="text-yellow-700 dark:text-yellow-300 font-medium mt-1">Waiting for: {notYetRated.join(", ")}</p>);
                     }
                     if (absentVoters.length > 0) {
-                      nodes.push(<p key="absent-1" className="text-green-600 font-medium mt-1">Rated 1 by absent: {absentVoters.join(", ")}</p>);
+                      nodes.push(<p key="absent-1" className="text-green-700 dark:text-green-300 font-medium mt-1">Rated 1 by absent: {absentVoters.join(", ")}</p>);
                     }
                     if (absentFavNames.length > 0) {
                       nodes.push(<p key="absent-fav" className="text-red-500 font-medium mt-1">Favoured by absent: {absentFavNames.join(", ")}</p>);

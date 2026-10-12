@@ -24,7 +24,7 @@ export default function QuickVotingPanel(props: QuickVotingPanelProps) {
     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 text-xl font-semibold [&::-webkit-details-marker]:hidden">
       <span>Quick voting</span>
       <span className="flex shrink-0 items-center gap-2">
-        {remaining !== null && <Badge variant={remaining === 0 ? "default" : "outline"} className={remaining === 0 ? "bg-green-100 text-green-800 border-green-300" : "bg-orange-100 text-orange-800 border-orange-300"}>{remaining} remaining</Badge>}
+        {remaining !== null && <Badge variant={remaining === 0 ? "default" : "outline"} className={remaining === 0 ? "bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30" : "bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/30"}>{remaining} remaining</Badge>}
         <ChevronDown aria-hidden="true" className="h-5 w-5 transition-transform group-open/quick:rotate-180" />
       </span>
     </summary>

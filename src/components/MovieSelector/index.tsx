@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Film, Trophy, Award, BarChart, Menu } from "lucide-react";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const WatchedMovies = lazy(() => import("../WatchedMovies").then(m => ({ default: m.WatchedMovies })));
 const Stats = lazy(() => import("../Stats"));
@@ -29,6 +30,7 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
 
   if (session.showNewSession) {
     return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
+      <ThemeToggle className="fixed right-4 top-4 z-10 bg-card shadow-sm" />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Create New Session</CardTitle>
@@ -55,6 +57,7 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
             <div className="container mx-auto px-4">
               <h1 className="ml-[calc(1.5rem+1px)] pr-16 text-left text-4xl font-bold bg-gradient-cinema bg-clip-text text-transparent">CarciOscar</h1>
             </div>
+            <ThemeToggle className="absolute right-[calc(4.5rem+env(safe-area-inset-right))] top-[calc(1.25rem+env(safe-area-inset-top))] bg-card shadow-sm" />
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon" className="absolute right-[calc(1rem+env(safe-area-inset-right))] top-[calc(1.25rem+env(safe-area-inset-top))] bg-card shadow-md" aria-label="Open session menu">

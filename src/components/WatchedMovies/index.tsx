@@ -8,6 +8,7 @@ import  MovieRatingTab  from "./MovieRatingTab";
 import  MovieRankings from "./MovieRankings";
 import { useWatchedMoviesData } from "./hooks/useWatchedMoviesData";
 import type { WatchedMoviesProps } from "./types";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMoviesProps) => {
   const [showAddMovie, setShowAddMovie] = useState(false);
@@ -53,11 +54,14 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Session
           </Button>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold flex items-center">
-              <Star className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-primary" />
-              Watched Movies
-            </h1>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex items-center justify-between gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold flex items-center">
+                <Star className="w-5 h-5 sm:w-6 sm:h-6 mr-2 text-primary" />
+                Watched Movies
+              </h1>
+              <ThemeToggle className="shrink-0 sm:hidden" />
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -67,6 +71,7 @@ export const WatchedMovies = ({ sessionId, onBack, selectedPersonId }: WatchedMo
               <Plus className="w-4 h-4 mr-2" />
               Add Movie
             </Button>
+            <ThemeToggle className="hidden shrink-0 sm:inline-flex" />
           </div>
         </div>
 
