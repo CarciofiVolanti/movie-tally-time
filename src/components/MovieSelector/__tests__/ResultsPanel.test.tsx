@@ -42,7 +42,9 @@ describe('ResultsPanel', () => {
         <ResultsPanel
           rankedMovies={mockRankedMovies}
           people={mockPeople}
+          recentlyWatched={[]}
           markMovieAsWatched={vi.fn()}
+          onGoToWatched={vi.fn()}
         />
       );
     });
@@ -60,7 +62,9 @@ describe('ResultsPanel', () => {
         <ResultsPanel
           rankedMovies={[]}
           people={mockPeople}
+          recentlyWatched={[]}
           markMovieAsWatched={vi.fn()}
+          onGoToWatched={vi.fn()}
         />
       );
     });
@@ -75,7 +79,9 @@ describe('ResultsPanel', () => {
         <ResultsPanel
           rankedMovies={mockRankedMovies}
           people={mockPeople}
+          recentlyWatched={[]}
           markMovieAsWatched={vi.fn()}
+          onGoToWatched={vi.fn()}
         />
       );
     });
@@ -102,7 +108,9 @@ describe('ResultsPanel', () => {
         <ResultsPanel
           rankedMovies={moviesWithAge}
           people={mockPeople}
+          recentlyWatched={[]}
           markMovieAsWatched={vi.fn()}
+          onGoToWatched={vi.fn()}
         />
       );
     });
@@ -128,7 +136,9 @@ describe('ResultsPanel', () => {
         <ResultsPanel
           rankedMovies={moviesWithComment}
           people={mockPeople}
+          recentlyWatched={[]}
           markMovieAsWatched={vi.fn()}
+          onGoToWatched={vi.fn()}
         />
       );
     });

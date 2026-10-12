@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 import QuickVotingPanel from '../QuickVotingPanel';
 import { MovieRating } from '@/types/session';
 
-const people = [{ id: 'alice', name: 'Alice', isPresent: true, movies: [] }, { id: 'bob', name: 'Bob', isPresent: false, movies: [] }];
+const people = [{ id: 'alice', name: 'Alice', isPresent: true, movies: [] }, { id: 'bob', name: 'Bob', isPresent: true, movies: [] }];
 const movies: MovieRating[] = [
   { movieTitle: 'Already rated', proposedBy: 'Bob', proposalId: '1', ratings: { alice: 4 } },
   { movieTitle: 'First unrated', proposedBy: 'Bob', proposalId: '2', ratings: {}, details: { plot: 'A movie plot', director: 'A director' } },
