@@ -31,21 +31,26 @@ export const StarRating = memo(({
           disabled={readonly}
           onClick={() => onRatingChange?.(rating === star ? 0 : star)}
           className={cn(
-            "inline-flex items-center justify-center transition-all duration-200",
+            "inline-flex items-center justify-center transition-all duration-200 motion-reduce:transition-none",
             readonly
               ? "cursor-default"
-              : "min-h-7 min-w-7 rounded-md cursor-pointer hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              : cn(
+                  size === "lg" ? "min-h-11 min-w-11" : "min-h-7 min-w-7",
+                  "rounded-md cursor-pointer motion-safe:hover:scale-110 motion-safe:active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                ),
             !readonly && "hover:drop-shadow-glow"
           )}
         >
           <Star
             className={cn(
               sizeClasses[size],
-              "transition-colors duration-200",
+              "transition-colors duration-200 motion-reduce:transition-none",
+              size === "lg" && star <= rating && "vote-star-selected",
               star <= rating
                 ? "fill-accent text-accent"
                 : "fill-transparent text-muted-foreground hover:text-accent"
             )}
+            style={size === "lg" && star <= rating ? { animationDelay: `${(star - 1) * 22}ms` } : undefined}
           />
         </button>
       ))}

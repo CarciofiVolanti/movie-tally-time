@@ -108,6 +108,7 @@ const RatePanel = ({
           updateRating={updateRating}
           searchMovieAgain={searchMovieAgain}
           markMovieAsWatched={markMovieAsWatched}
+          onSaveComment={onSaveComment}
         />
       </section>
       <Card>

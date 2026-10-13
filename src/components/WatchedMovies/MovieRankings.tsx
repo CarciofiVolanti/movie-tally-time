@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight, Star, Film } from "lucide-react";
@@ -9,24 +9,10 @@ import { normalizeTitle } from "@/lib/utils";
 const MovieRankings = ({ watchedMovies, detailedRatings, people }: WatchedMoviesData) => {
   const [collapsedMovies, setCollapsedMovies] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    if (watchedMovies.length > 0) {
-      setCollapsedMovies(prev => {
-        const newCollapsedState = { ...prev };
-        watchedMovies.forEach(movie => {
-          if (!(movie.id in newCollapsedState)) {
-            newCollapsedState[movie.id] = true;
-          }
-        });
-        return newCollapsedState;
-      });
-    }
-  }, [watchedMovies.length]);
-
   const toggleCollapse = (movieId: string) => {
     setCollapsedMovies(prev => ({
       ...prev,
-      [movieId]: !prev[movieId]
+      [movieId]: !(prev[movieId] ?? true)
     }));
   };
 
@@ -53,18 +39,20 @@ const MovieRankings = ({ watchedMovies, detailedRatings, people }: WatchedMovies
 
   return (
     <>
-      {sortedMovies.map((movie, index) => (
+      {sortedMovies.map((movie, index) => {
+        const isCollapsed = collapsedMovies[movie.id] ?? true;
+        return (
         <Card key={movie.id} className="transition-all duration-300 hover:shadow-glow relative">
           <CardHeader className="pb-3 p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <button
                   onClick={() => toggleCollapse(movie.id)}
-                  aria-label={`${collapsedMovies[movie.id] ? "Expand" : "Collapse"} ${movie.movie_title}`}
+                  aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${movie.movie_title}`}
                   className="p-1 rounded hover:bg-accent/20 transition flex-shrink-0"
                   type="button"
                 >
-                  {collapsedMovies[movie.id] ? (
+                  {isCollapsed ? (
                     <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
                   ) : (
                     <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -95,7 +83,7 @@ const MovieRankings = ({ watchedMovies, detailedRatings, people }: WatchedMovies
               </Badge>
             </div>
           </CardHeader>
-          {!collapsedMovies[movie.id] && (
+          {!isCollapsed && (
             <CardContent className="space-y-2 p-4 pt-0">
               <div className="flex gap-3">
                 {movie.poster && movie.poster !== 'N/A' ? (
@@ -158,7 +146,8 @@ const MovieRankings = ({ watchedMovies, detailedRatings, people }: WatchedMovies
             </CardContent>
           )}
         </Card>
-      ))}
+        );
+      })}
     </>
   );
 };
