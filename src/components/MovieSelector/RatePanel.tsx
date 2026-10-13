@@ -45,7 +45,8 @@ const RatePanel = ({
 
   const allPeople = people ?? presentPeople;
   const displayPeople = showAllVotes ? allPeople : presentPeople;
-  const selectedPersonName = allPeople.find(p => p.id === selectedPersonId)?.name;
+  const selectedPerson = allPeople.find(person => person.id === selectedPersonId);
+  const selectedPersonName = selectedPerson?.name;
 
   const isOwnProposalFor = (movie: MovieRating) => {
     if (selectedPersonId && movie.proposerId) {
@@ -218,6 +219,7 @@ const RatePanel = ({
                     movie={movie}
                     people={displayPeople}
                     ignorePresence={showAllVotes}
+                    pinnedPerson={selectedPerson}
                     currentPersonId={selectedPersonId}
                     onRatingChange={updateRating}
                     onSearchAgain={searchMovieAgain}

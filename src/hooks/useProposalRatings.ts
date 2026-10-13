@@ -54,7 +54,7 @@ export const useProposalRatings = ({
     const proposerId = movie.proposerId;
     if (!proposerId || !presentPeople.some(p => p.id === proposerId)) return false;
     // Require at least one vote from a present non-proposer so a lone default-5
-    // from the proposer doesn't inflate the ranking before anyone else has weighed in
+    // from the proposer doesn't inflate the ranking before anyone else has weighed in.
     return presentPeople.some(p =>
       p.id !== proposerId && typeof movie.ratings[p.id] === "number" && movie.ratings[p.id] > 0
     );

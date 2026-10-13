@@ -13,6 +13,7 @@ interface MovieCardProps {
   movie: MovieRating;
   people: Person[];
   ignorePresence?: boolean;
+  pinnedPerson?: Person;
   currentPersonId?: string;
   onRatingChange: (proposalId: string, personId: string, rating: number) => Promise<void>;
   onSearchAgain: (movieTitle: string) => Promise<void>;
@@ -27,6 +28,7 @@ export const MovieCard = memo(({
   movie,
   people,
   ignorePresence = false,
+  pinnedPerson,
   currentPersonId,
   onRatingChange,
   onSearchAgain,
@@ -102,6 +104,12 @@ export const MovieCard = memo(({
   // --- end comment additions ---
 
   const activePeople = ignorePresence ? people : people.filter(p => p.isPresent);
+  const visiblePeople = pinnedPerson
+    ? [
+        pinnedPerson,
+        ...activePeople.filter(person => person.id !== pinnedPerson.id),
+      ]
+    : activePeople;
   const ratedPeople = activePeople.filter(p => movie.ratings[p.id] && movie.ratings[p.id] > 0);
   const totalRatings = ratedPeople.length;
   const averageRating = totalRatings > 0
@@ -262,7 +270,7 @@ export const MovieCard = memo(({
           <div className="space-y-3">
             <h4 className="text-sm font-medium">Individual Ratings</h4>
             <div className="space-y-2">
-              {activePeople.map((person) => (
+              {visiblePeople.map((person) => (
                 <div key={person.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-md gap-2">
                   <span className="text-sm font-medium flex-1 min-w-0 truncate flex items-center gap-1.5">
                     <span className="truncate">{person.name}</span>

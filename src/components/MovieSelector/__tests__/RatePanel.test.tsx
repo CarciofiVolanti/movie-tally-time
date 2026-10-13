@@ -17,10 +17,11 @@ vi.mock('@/hooks/useFavouriteMovie', () => ({
 }));
 
 vi.mock('../../MovieCard', () => ({
-  MovieCard: ({ movie, people, ignorePresence, onSaveComment }: {
+  MovieCard: ({ movie, people, ignorePresence, pinnedPerson, onSaveComment }: {
     movie: MovieRating;
     people: Person[];
     ignorePresence?: boolean;
+    pinnedPerson?: Person;
     onSaveComment?: (proposalId: string, comment: string) => Promise<void>;
   }) => (
     <div data-testid={`movie-card-${movie.movieTitle}`}>
@@ -29,6 +30,7 @@ vi.mock('../../MovieCard', () => ({
       <span data-testid="card-comment">{movie.comment || 'No comment'}</span>
       <span data-testid="card-ignore-presence">{String(ignorePresence)}</span>
       <span data-testid="card-people-count">{people?.length ?? 0}</span>
+      <span data-testid="pinned-person">{pinnedPerson?.id ?? 'none'}</span>
       {onSaveComment && (
         <button
           data-testid="save-comment-btn"
@@ -87,6 +89,23 @@ describe('RatePanel', () => {
 
     expect(screen.getAllByText('The Matrix').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Interstellar').length).toBeGreaterThan(0);
+  });
+
+  it('passes the selected absent person to each rating card', () => {
+    const absentPerson: Person = { id: 'p3', name: 'Charlie', isPresent: false, movies: [] };
+    const people = [...mockPeople, absentPerson];
+
+    render(
+      <RatePanel
+        {...defaultProps}
+        people={people}
+        presentPeople={mockPeople}
+        selectedPersonId="p3"
+      />
+    );
+
+    expect(screen.getAllByTestId('pinned-person').map(element => element.textContent))
+      .toEqual(['p3', 'p3']);
   });
 
   it('displays comments when movie cards are expanded', () => {
