@@ -7,11 +7,12 @@ import ResultsPanel from "./ResultsPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Film, Trophy, Award, BarChart, Menu } from "lucide-react";
+import { Users, Film, Trophy, Award, BarChart, Menu, Info } from "lucide-react";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import PersonIdentityPicker from "@/components/PersonIdentityPicker";
+import About from "@/components/About";
 
 const WatchedMovies = lazy(() => import("../WatchedMovies").then(m => ({ default: m.WatchedMovies })));
 const Stats = lazy(() => import("../Stats"));
@@ -19,6 +20,11 @@ const Stats = lazy(() => import("../Stats"));
 const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => void }) => {
   const session = useMovieSession({ onSessionLoad });
   const [newSessionName, setNewSessionName] = useState("");
+  const [aboutReturnView, setAboutReturnView] = useState<'session' | 'watched' | 'stats'>('session');
+  const openAbout = () => {
+    setAboutReturnView(session.currentView === 'about' ? 'session' : session.currentView);
+    session.setCurrentView('about');
+  };
 
   if (session.loading) {
     return <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
@@ -112,6 +118,11 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
               />
             </div>
 
+            <SheetClose asChild><Button variant="outline" size="sm" onClick={openAbout}>
+              <Info aria-hidden="true" className="mr-2 h-4 w-4" />
+              About CarciOscar
+            </Button></SheetClose>
+
                 </div>
               </SheetContent>
             </Sheet>
@@ -188,6 +199,7 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
               sessionId={session.sessionId!}
               onBack={() => session.setCurrentView('session')}
               onShowStats={() => session.setCurrentView('stats')}
+              onShowAbout={openAbout}
               onSelectPerson={session.setSelectedPersonId}
               selectedPersonId={session.selectedPersonId}
             />
@@ -201,9 +213,14 @@ const MovieSelectorRoot = ({ onSessionLoad }: { onSessionLoad?: (id: string) => 
             <Stats
               sessionId={session.sessionId!}
               onBack={() => session.setCurrentView('session')}
+              onShowAbout={openAbout}
             />
           </Suspense>
         </ErrorBoundary>
+      )}
+
+      {session.currentView === 'about' && (
+        <About onBack={() => session.setCurrentView(aboutReturnView)} />
       )}
     </div>
   );

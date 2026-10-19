@@ -22,7 +22,7 @@ export const useMovieSession = (opts?: { onSessionLoad?: (id: string) => void })
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showNewSession, setShowNewSession] = useState(false);
-  const [currentView, setCurrentView] = useState<'session' | 'watched' | 'stats'>('session');
+  const [currentView, setCurrentView] = useState<'session' | 'watched' | 'stats' | 'about'>('session');
 
   const [people, setPeople] = useState<Person[]>([]);
   const [movieRatings, setMovieRatings] = useState<MovieRating[]>([]);

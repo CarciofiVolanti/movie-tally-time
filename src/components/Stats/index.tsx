@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Clock, Film, Star, Sparkles } from "lucide-react";
+import { ArrowLeft, Clock, Film, Star, Sparkles, Info } from "lucide-react";
 import { useStatsData } from "./hooks/useStatsData";
 import { useStatsCalculations } from "./hooks/useStatsCalculations";
 import { formatRuntime } from "./utils";
@@ -19,9 +19,10 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 interface StatsProps {
   sessionId: string;
   onBack: () => void;
+  onShowAbout: () => void;
 }
 
-export const Stats = ({ sessionId, onBack }: StatsProps) => {
+export const Stats = ({ sessionId, onBack, onShowAbout }: StatsProps) => {
   const { watchedMovies, detailedRatings, proposals, proposalRatings, people, loading } = useStatsData(sessionId);
   const [viewingPersonId, setViewingPersonId] = useState<string>("");
   const [expandedRankingId, setExpandedRankingId] = useState<string | null>(null);
@@ -71,7 +72,13 @@ export const Stats = ({ sessionId, onBack }: StatsProps) => {
                 </Button>
               )}
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              <Button onClick={onShowAbout} variant="outline" size="sm">
+                <Info aria-hidden="true" className="mr-2 h-4 w-4" />
+                About
+              </Button>
+              <ThemeToggle />
+            </div>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="flex items-center text-xl font-bold sm:text-2xl">

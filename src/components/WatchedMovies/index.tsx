@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Star, Plus, Search, X, Trophy, Menu, BarChart } from "lucide-react";
+import { ArrowLeft, Star, Plus, Search, X, Trophy, Menu, BarChart, Info } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
 import { AddMovieDialog } from "./AddMovieDialog";
@@ -12,7 +12,7 @@ import type { WatchedMoviesProps } from "./types";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import PersonIdentityPicker from "@/components/PersonIdentityPicker";
 
-export const WatchedMovies = ({ sessionId, onBack, onShowStats, onSelectPerson, selectedPersonId }: WatchedMoviesProps) => {
+export const WatchedMovies = ({ sessionId, onBack, onShowStats, onShowAbout, onSelectPerson, selectedPersonId }: WatchedMoviesProps) => {
   const [showAddMovie, setShowAddMovie] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { loading, ...data } = useWatchedMoviesData(sessionId);
@@ -97,6 +97,14 @@ export const WatchedMovies = ({ sessionId, onBack, onShowStats, onSelectPerson, 
                         <Button variant="outline" size="sm" onClick={onShowStats}>
                           <BarChart className="w-4 h-4 mr-2" />
                           Session Stats
+                        </Button>
+                      </SheetClose>
+                    )}
+                    {onShowAbout && (
+                      <SheetClose asChild>
+                        <Button variant="outline" size="sm" onClick={onShowAbout}>
+                          <Info aria-hidden="true" className="mr-2 h-4 w-4" />
+                          About CarciOscar
                         </Button>
                       </SheetClose>
                     )}
