@@ -7,7 +7,20 @@ import { Badge } from "@/components/ui/badge";
 import { X, Search, RefreshCw, Film, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Person, MovieSearchResult } from "./types";
+
+type Proposal = { id: string; movie_title: string; imdb_id: string | null; year: string | null; person_id: string };
+
+const normalizeMovieTitle = (title: string) => title.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+
+const matchesProposal = (proposal: Proposal, title: string, movie: MovieSearchResult | null) => {
+  if (proposal.imdb_id && movie?.imdbId && proposal.imdb_id !== "N/A" && movie.imdbId !== "N/A") {
+    return proposal.imdb_id === movie.imdbId;
+  }
+  return normalizeMovieTitle(proposal.movie_title) === normalizeMovieTitle(title)
+    && (!proposal.year || !movie?.year || proposal.year === movie.year);
+};
 
 interface AddMovieDialogProps {
   sessionId: string;
@@ -24,10 +37,14 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedProposer, setSelectedProposer] = useState("");
+  const [matchingProposals, setMatchingProposals] = useState<Proposal[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const searchMovies = async () => {
     if (!newMovieTitle.trim()) return;
+    setMatchingProposals([]);
     
     setIsSearching(true);
     setHasSearched(true);
@@ -60,13 +77,26 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
     }
   };
 
-  const addWatchedMovie = async () => {
+  const addWatchedMovie = async (addAnyway = false) => {
     if (!sessionId || !selectedProposer) return;
     
     const movieTitle = selectedMovie?.title || newMovieTitle.trim();
     if (!movieTitle) return;
 
+    setIsSaving(true);
     try {
+      if (!addAnyway) {
+        const { data: proposals, error: proposalsError } = await supabase
+          .from("movie_proposals")
+          .select("id, movie_title, imdb_id, year, person_id")
+          .eq("session_id", sessionId);
+        if (proposalsError) throw proposalsError;
+        const matches = (proposals || []).filter(proposal => matchesProposal(proposal, movieTitle, selectedMovie));
+        if (matches.length) {
+          setMatchingProposals(matches);
+          return;
+        }
+      }
       const { error } = await supabase
         .from("watched_movies")
         .insert({
@@ -97,9 +127,29 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
       console.error('Error adding watched movie:', error);
       toast({
         title: "Error",
-        description: "Failed to add watched movie",
+        description: "Could not check proposals or add the movie. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const moveProposal = async (proposal: Proposal) => {
+    setIsSaving(true);
+    try {
+      const { data, error } = await supabase.rpc("mark_movie_as_watched", { p_proposal_id: proposal.id });
+      if (error) throw error;
+      if (!data?.[0]) throw new Error("Proposal not found");
+      queryClient.invalidateQueries({ queryKey: ["stats", sessionId] });
+      await onMovieAdded();
+      handleClose();
+      toast({ title: "Movie marked as watched", description: `"${data[0].movie_title}" is now in watched movies.` });
+    } catch (error) {
+      console.error("Error moving proposal:", error);
+      toast({ title: "Error", description: "Could not move the proposal. Please try again.", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -109,6 +159,7 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
     setSelectedMovie(null);
     setSelectedProposer("");
     setHasSearched(false);
+    setMatchingProposals([]);
     setSelectedDate(new Date().toISOString().split('T')[0]);
     onClose();
   };
@@ -148,6 +199,10 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
                 value={newMovieTitle}
                 onChange={e => {
                   setNewMovieTitle(e.target.value);
+                  setMatchingProposals([]);
+                  setSelectedMovie(null);
+                  setSearchResults([]);
+                  setHasSearched(false);
                   if (!e.target.value.trim()) {
                     setSearchResults([]);
                     setSelectedMovie(null);
@@ -195,7 +250,7 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
                           ? 'bg-primary/20 border-primary ring-1 ring-primary' 
                           : 'hover:bg-accent/50'
                       }`}
-                      onClick={() => setSelectedMovie(result)}
+                      onClick={() => { setSelectedMovie(result); setMatchingProposals([]); }}
                     >
                       <div className="flex gap-3 items-start">
                         {result.poster && result.poster !== 'N/A' ? (
@@ -276,11 +331,22 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
             />
           </div>
 
-          {selectedMovie ? (
+          {matchingProposals.length > 0 ? (
+            <div role="alert" className="space-y-3 rounded-md border border-primary/40 bg-primary/5 p-3">
+              <p className="text-sm font-medium">This movie is already in the proposals.</p>
+              <p className="text-sm text-muted-foreground">Move the proposal to keep its pre-watch ratings. The proposal's proposer and today's date will be used.</p>
+              {matchingProposals.map(proposal => (
+                <Button key={proposal.id} className="w-full" disabled={isSaving} onClick={() => moveProposal(proposal)}>
+                  Move {proposal.movie_title} to watched{people.find(person => person.id === proposal.person_id) ? ` · ${people.find(person => person.id === proposal.person_id)?.name}` : ""}
+                </Button>
+              ))}
+              <Button variant="outline" className="w-full" disabled={isSaving} onClick={() => addWatchedMovie(true)}>Add separately anyway</Button>
+            </div>
+          ) : selectedMovie ? (
             <Button
               className="w-full"
-              onClick={addWatchedMovie}
-              disabled={!selectedProposer}
+              onClick={() => addWatchedMovie()}
+              disabled={!selectedProposer || isSaving}
             >
               Add Selected Movie
             </Button>
@@ -288,8 +354,8 @@ export const AddMovieDialog = ({ sessionId, people, onClose, onMovieAdded }: Add
             <Button
               variant="outline"
               className="w-full"
-              onClick={addWatchedMovie}
-              disabled={!newMovieTitle.trim() || !selectedProposer}
+              onClick={() => addWatchedMovie()}
+              disabled={!newMovieTitle.trim() || !selectedProposer || isSaving}
             >
               Add Without Details
             </Button>
